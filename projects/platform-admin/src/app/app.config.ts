@@ -1,10 +1,5 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { ApplicationConfig } from '@angular/core';
+import { createAdminAppConfig } from 'admin-core';
 import { routes } from './app.routes';
 
-export const appConfig: ApplicationConfig = {
-  providers: [
-    provideBrowserGlobalErrorListeners(),
-    provideRouter(routes)
-  ]
-};
+export const appConfig: ApplicationConfig = createAdminAppConfig({ routes });

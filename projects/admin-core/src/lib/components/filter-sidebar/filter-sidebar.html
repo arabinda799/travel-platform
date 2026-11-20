@@ -1,0 +1,27 @@
+<p-drawer
+  [(visible)]="visible"
+  position="right"
+  [modal]="true"
+  styleClass="filter-drawer">
+
+  <ng-template #header>
+    <div class="filter-drawer-header">
+      <span class="icon">filter_list</span>
+      <span class="filter-drawer-title">{{ title() }}</span>
+    </div>
+  </ng-template>
+
+  <div class="filter-drawer-body">
+    <ng-content></ng-content>
+  </div>
+
+  <div class="filter-drawer-footer">
+    <lib-button variant="outline-danger" icon="restart_alt" (click)="onReset()">
+      Reset
+    </lib-button>
+    <lib-button variant="primary" icon="check" (click)="onApply()">
+      Apply Filters
+    </lib-button>
+  </div>
+
+</p-drawer>

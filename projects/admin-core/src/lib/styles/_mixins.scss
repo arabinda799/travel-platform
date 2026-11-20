@@ -1,0 +1,64 @@
+/* ══════════════════════════════════════════════════════════════
+   REUSABLE MIXINS
+   ══════════════════════════════════════════════════════════════ */
+
+@mixin slim-scrollbar($track: transparent, $thumb: rgba(163, 150, 188, 0.35)) {
+    &::-webkit-scrollbar {
+        width: 0.25rem !important;  /* 4px - sleek, perfect scrollbar */
+        height: 0.25rem !important; /* 4px - sleek, perfect scrollbar */
+    }
+
+    &::-webkit-scrollbar-track {
+        background: $track !important;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: $thumb !important;
+        border-radius: 0.25rem !important;
+
+        &:hover {
+            background: var(--accent) !important;
+        }
+
+        &:active {
+            background: var(--accent-hover, #E64A19) !important;
+        }
+    }
+
+    &::-webkit-scrollbar-button {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+    }
+
+    &::-webkit-scrollbar-corner {
+        background: $track !important;
+    }
+}
+
+@mixin row-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    justify-content: center;
+}
+
+@mixin btn-icon-action($size: 1.875rem) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: $size;
+    height: $size;
+    border-radius: var(--radius, 0.375rem);
+    border: 0.0625rem solid var(--border);
+    background: var(--bg-card);
+    color: var(--fg-muted);
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+    &:hover {
+        color: var(--accent);
+        border-color: var(--accent);
+        background: var(--accent-soft, rgba(255, 87, 34, 0.1));
+    }
+}

@@ -1,0 +1,560 @@
+<lib-page-container
+  title="Company Setting"
+  subtitle="Manage platform configuration, branding and system preferences"
+  icon="settings"
+  [breadcrumbs]="breadcrumbs">
+
+  <div page-actions>
+    <lib-button
+      variant="primary"
+      icon="save"
+      [loading]="saving()"
+      (click)="onSave()">
+      Save Changes
+    </lib-button>
+  </div>
+
+  <!-- Tab Bar -->
+  <div class="settings-tabs">
+    @for (tab of tabs; track tab.key) {
+      <button
+        type="button"
+        class="settings-tab"
+        [class.active]="activeTab() === tab.key"
+        (click)="setTab(tab.key)">
+        <span class="icon">{{ tab.icon }}</span>
+        <span class="tab-label">{{ tab.label }}</span>
+      </button>
+    }
+  </div>
+
+  @switch (activeTab()) {
+    @case ('company') {
+      <div class="settings-section">
+        <div class="section-header">
+          <span class="icon section-icon">business</span>
+          <div>
+            <h3>Company Information</h3>
+            <p>Legal and registered business details used on invoices and tax documents.</p>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <lib-text-field
+            label="Company Name"
+            placeholder="e.g. EasyFlys Technologies Pvt. Ltd."
+            [required]="true"
+            prefixIcon="apartment"
+            [maxlength]="150"
+            [formControl]="companyForm.controls.companyName" />
+
+          <lib-text-field
+            label="Legal Name"
+            placeholder="Registered legal name as per PAN/GST"
+            hint="Used for invoicing and tax documents"
+            prefixIcon="gavel"
+            [maxlength]="150"
+            [formControl]="companyForm.controls.legalName" />
+
+          <lib-text-field
+            label="PAN Number"
+            placeholder="e.g. ABCDE1234F"
+            prefixIcon="badge"
+            [maxlength]="20"
+            [formControl]="companyForm.controls.panNumber" />
+
+          <lib-text-field
+            label="CIN Number"
+            placeholder="e.g. U74999MH2020PTC123456"
+            prefixIcon="article"
+            [maxlength]="21"
+            [formControl]="companyForm.controls.ciNumber" />
+
+          <lib-text-field
+            label="TAN Number"
+            placeholder="e.g. MUMA12345F"
+            prefixIcon="receipt_long"
+            [maxlength]="15"
+            [formControl]="companyForm.controls.tanNumber" />
+        </div>
+
+        <div class="section-divider"></div>
+        <h4 class="subsection-title">GST Details</h4>
+
+        <div class="form-grid">
+          <lib-text-field
+            label="GSTIN"
+            placeholder="e.g. 27ABCDE1234F1Z5"
+            [required]="true"
+            prefixIcon="receipt"
+            [maxlength]="30"
+            [formControl]="companyForm.controls.gstNumber" />
+
+          <lib-text-field
+            label="GST State Code"
+            placeholder="e.g. 27"
+            [required]="true"
+            prefixIcon="pin"
+            [maxlength]="10"
+            [formControl]="companyForm.controls.gstStateCode" />
+
+          <lib-text-field
+            label="GST Email"
+            type="email"
+            placeholder="gst@company.com"
+            prefixIcon="email"
+            [maxlength]="100"
+            [formControl]="companyForm.controls.gstEmail" />
+
+          <lib-text-field
+            label="GST Phone"
+            type="tel"
+            placeholder="+91 XXXXX XXXXX"
+            prefixIcon="phone"
+            [maxlength]="20"
+            [formControl]="companyForm.controls.gstPhone" />
+        </div>
+
+        <div class="section-divider"></div>
+        <h4 class="subsection-title">Registered Address</h4>
+
+        <div class="form-grid form-grid--full">
+          <lib-textarea-field
+            label="Address"
+            placeholder="Street address, building, floor"
+            [rows]="2"
+            [formControl]="companyForm.controls.address" />
+        </div>
+
+        <div class="form-grid">
+          <lib-text-field
+            label="ZIP / Postal Code"
+            placeholder="400001"
+            prefixIcon="local_post_office"
+            [maxlength]="20"
+            [formControl]="companyForm.controls.zipCode" />
+
+          <lib-select-field
+            label="Country"
+            placeholder="Select country"
+            [options]="countryOptions"
+            [formControl]="companyForm.controls.country" />
+
+          <lib-select-field
+            label="State"
+            placeholder="Select state"
+            [options]="stateOptions"
+            [formControl]="companyForm.controls.state" />
+
+          <lib-select-field
+            label="City"
+            placeholder="Select city"
+            [options]="cityOptions"
+            [formControl]="companyForm.controls.city" />
+        </div>
+      </div>
+    }
+
+    @case ('localization') {
+      <div class="settings-section">
+        <div class="section-header">
+          <span class="icon section-icon">language</span>
+          <div>
+            <h3>Localization & Formats</h3>
+            <p>Configure regional preferences, date/time formats, and document prefixes.</p>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <lib-text-field
+            label="Timezone"
+            placeholder="e.g. Asia/Kolkata"
+            prefixIcon="schedule"
+            [formControl]="localizationForm.controls.timezone" />
+
+          <lib-text-field
+            label="Preferred Language"
+            placeholder="e.g. en-US"
+            prefixIcon="translate"
+            [formControl]="localizationForm.controls.preferredLanguage" />
+
+          <lib-select-field
+            label="Date Format"
+            [options]="dateFormatOptions"
+            [required]="true"
+            [formControl]="localizationForm.controls.dateFormat" />
+
+          <lib-select-field
+            label="Time Format"
+            [options]="timeFormatOptions"
+            [required]="true"
+            [formControl]="localizationForm.controls.timeFormat" />
+
+          <lib-select-field
+            label="Name Format"
+            [options]="nameFormatOptions"
+            [required]="true"
+            [formControl]="localizationForm.controls.nameFormat" />
+        </div>
+
+        <div class="section-divider"></div>
+        <h4 class="subsection-title">Document Prefixes</h4>
+        <p class="subsection-desc">These prefixes appear on transaction IDs and invoice numbers.</p>
+
+        <div class="form-grid form-grid--narrow">
+          <lib-text-field
+            label="Transaction Prefix"
+            placeholder="TXN"
+            hint="e.g. TXN2024001"
+            prefixIcon="tag"
+            [maxlength]="10"
+            [formControl]="localizationForm.controls.transactionPrefix" />
+
+          <lib-text-field
+            label="Invoice Prefix"
+            placeholder="INV"
+            hint="e.g. INV2024001"
+            prefixIcon="receipt_long"
+            [maxlength]="10"
+            [formControl]="localizationForm.controls.invoicePrefix" />
+        </div>
+      </div>
+    }
+
+    @case ('branding') {
+      <div class="settings-section">
+        <div class="section-header">
+          <span class="icon section-icon">palette</span>
+          <div>
+            <h3>Branding & Appearance</h3>
+            <p>Logos, colors, support contacts, social links, and SEO metadata.</p>
+          </div>
+        </div>
+
+        <h4 class="subsection-title">Logo Uploads</h4>
+        <div class="logo-grid">
+          @for (logo of logoConfigs; track logo.key) {
+            <div class="logo-upload-card">
+              <div class="logo-preview {{ logo.previewClass }}" (click)="fileInput.click()">
+                @if (logoPreviews()[logo.key]) {
+                  <img [src]="logoPreviews()[logo.key]" [alt]="logo.label + ' preview'" class="logo-img {{ logo.imgClass }}" />
+                  <button type="button" class="btn-remove-logo" [title]="'Remove ' + logo.label" (click)="$event.stopPropagation(); onRemoveLogo(logo.key)">
+                    <span class="icon">close</span>
+                  </button>
+                } @else {
+                  <div class="placeholder-content">
+                    <span class="icon logo-placeholder-icon">{{ logo.placeholderIcon }}</span>
+                    <span class="placeholder-hint">{{ logo.placeholderHint }}</span>
+                  </div>
+                }
+              </div>
+              <div class="logo-card-info">
+                <span class="logo-label">{{ logo.label }}</span>
+                <span class="logo-specs">{{ logo.specs }}</span>
+              </div>
+              <input type="file" #fileInput [accept]="logo.accept" hidden (change)="onUploadLogo(logo.key, $event)" />
+              <lib-button variant="outline" size="sm" icon="upload" (click)="fileInput.click()">
+                Upload
+              </lib-button>
+            </div>
+          }
+        </div>
+
+        <div class="section-divider"></div>
+        <h4 class="subsection-title">Brand Colors</h4>
+
+        <div class="color-preview-bar">
+          <span class="color-preview-swatch" [style.background]="brandColors().primary" title="Primary"></span>
+          <span class="color-preview-swatch" [style.background]="brandColors().secondary" title="Secondary"></span>
+          <span class="color-preview-swatch" [style.background]="brandColors().accent" title="Accent"></span>
+          <span class="color-preview-swatch" [style.background]="brandColors().background" title="Background"></span>
+          <span class="color-preview-swatch" [style.background]="brandColors().text" title="Text"></span>
+          <div class="color-preview-sample" [style.background]="brandColors().background" [style.color]="brandColors().text">
+            <span [style.color]="brandColors().primary" class="sample-company-name">{{ displayCompanyName() }}</span>
+            &nbsp;— Sample Text
+          </div>
+        </div>
+
+        <div class="color-grid">
+          <div class="color-field">
+            <label class="color-label">Primary</label>
+            <div class="color-input-row">
+              <input type="color" class="color-swatch" aria-label="Primary color"
+                [value]="brandColors().primary"
+                (input)="onColorInput('primaryColor', $event)" />
+              <lib-text-field [formControl]="brandingForm.controls.primaryColor" placeholder="#F1C49D" />
+            </div>
+          </div>
+          <div class="color-field">
+            <label class="color-label">Secondary</label>
+            <div class="color-input-row">
+              <input type="color" class="color-swatch" aria-label="Secondary color"
+                [value]="brandColors().secondary"
+                (input)="onColorInput('secondaryColor', $event)" />
+              <lib-text-field [formControl]="brandingForm.controls.secondaryColor" placeholder="#E57514" />
+            </div>
+          </div>
+          <div class="color-field">
+            <label class="color-label">Accent</label>
+            <div class="color-input-row">
+              <input type="color" class="color-swatch" aria-label="Accent color"
+                [value]="brandColors().accent"
+                (input)="onColorInput('accentColor', $event)" />
+              <lib-text-field [formControl]="brandingForm.controls.accentColor" placeholder="#FFF3E9" />
+            </div>
+          </div>
+          <div class="color-field">
+            <label class="color-label">Background</label>
+            <div class="color-input-row">
+              <input type="color" class="color-swatch" aria-label="Background color"
+                [value]="brandColors().background"
+                (input)="onColorInput('backgroundColor', $event)" />
+              <lib-text-field [formControl]="brandingForm.controls.backgroundColor" placeholder="#ffffff" />
+            </div>
+          </div>
+          <div class="color-field">
+            <label class="color-label">Text</label>
+            <div class="color-input-row">
+              <input type="color" class="color-swatch" aria-label="Text color"
+                [value]="brandColors().text"
+                (input)="onColorInput('textColor', $event)" />
+              <lib-text-field [formControl]="brandingForm.controls.textColor" placeholder="#212529" />
+            </div>
+          </div>
+        </div>
+
+        <div class="section-divider"></div>
+        <h4 class="subsection-title">Support Contacts</h4>
+
+        <div class="form-grid">
+          <lib-text-field label="Support Email" type="email" placeholder="support@company.com" prefixIcon="email" [formControl]="brandingForm.controls.supportEmail" />
+          <lib-text-field label="Support Phone" placeholder="+91 XXXXX XXXXX" prefixIcon="phone" [formControl]="brandingForm.controls.supportPhone" />
+          <lib-text-field label="WhatsApp Number" placeholder="+91 XXXXX XXXXX" prefixIcon="chat" [formControl]="brandingForm.controls.supportWhatsapp" />
+          <lib-text-field label="Toll Free Number" placeholder="1800-000-0000" prefixIcon="call" [formControl]="brandingForm.controls.supportTollfree" />
+        </div>
+
+        <div class="section-divider"></div>
+        <h4 class="subsection-title">Social Links</h4>
+
+        <div class="form-grid">
+          <lib-text-field label="Facebook" placeholder="https://facebook.com/page" prefixIcon="link" [formControl]="brandingForm.controls.facebook" />
+          <lib-text-field label="Twitter / X" placeholder="https://twitter.com/handle" prefixIcon="link" [formControl]="brandingForm.controls.twitter" />
+          <lib-text-field label="Instagram" placeholder="https://instagram.com/handle" prefixIcon="link" [formControl]="brandingForm.controls.instagram" />
+          <lib-text-field label="LinkedIn" placeholder="https://linkedin.com/company" prefixIcon="link" [formControl]="brandingForm.controls.linkedin" />
+          <lib-text-field label="YouTube" placeholder="https://youtube.com/channel" prefixIcon="link" [formControl]="brandingForm.controls.youtube" />
+        </div>
+
+        <div class="section-divider"></div>
+        <h4 class="subsection-title">SEO & Meta</h4>
+
+        <div class="form-grid">
+          <lib-text-field label="Meta Title" placeholder="Site title" prefixIcon="title" [formControl]="brandingForm.controls.metaTitle" />
+          <lib-text-field label="Meta Keywords" placeholder="travel, booking, hotels" prefixIcon="label" [formControl]="brandingForm.controls.metaKeywords" />
+          <lib-select-field label="Meta Robots" [options]="metaRobotsOptions" [formControl]="brandingForm.controls.metaRobots" />
+        </div>
+
+        <div class="form-grid form-grid--full">
+          <lib-textarea-field label="Meta Description" placeholder="Brief description for search engines" [rows]="2" [maxlength]="160" [formControl]="brandingForm.controls.metaDescription" />
+          <lib-textarea-field label="Footer Text" placeholder="© 2026 Company. All rights reserved." [rows]="2" [formControl]="brandingForm.controls.footerText" />
+        </div>
+      </div>
+    }
+
+    @case ('smtp') {
+      <div class="settings-section">
+        <div class="section-header">
+          <span class="icon section-icon">email</span>
+          <div>
+            <h3>SMTP Configuration</h3>
+            <p>Outgoing email server settings for transactional emails and notifications.</p>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <lib-text-field label="SMTP Host" placeholder="smtp.example.com" [required]="true" prefixIcon="dns" [formControl]="smtpForm.controls.smtpHost" />
+          <lib-text-field label="Port" type="number" placeholder="465" [required]="true" prefixIcon="outlet" [formControl]="smtpForm.controls.smtpPort" />
+          <lib-text-field label="Username" placeholder="admin@example.com" [required]="true" prefixIcon="person" [formControl]="smtpForm.controls.smtpUsername" />
+          <lib-text-field label="Password" type="password" placeholder="••••••••" prefixIcon="lock" [formControl]="smtpForm.controls.smtpPassword" />
+          <lib-text-field label="From Email" type="email" placeholder="noreply@example.com" [required]="true" prefixIcon="alternate_email" [formControl]="smtpForm.controls.smtpFromEmail" />
+          <lib-text-field label="From Name" placeholder="EasyFlys" [required]="true" prefixIcon="badge" [formControl]="smtpForm.controls.smtpFromName" />
+          <lib-text-field label="Reply-To Email" type="email" placeholder="support@example.com" prefixIcon="reply" [formControl]="smtpForm.controls.smtpReplyToEmail" />
+        </div>
+
+        <div class="form-grid form-grid--full">
+          <lib-textarea-field label="CC Emails" placeholder="One email per line" hint="These addresses receive a copy of every outgoing email" [rows]="2" [formControl]="smtpForm.controls.smtpCcEmails" />
+          <lib-textarea-field label="BCC Emails" placeholder="One email per line" hint="These addresses receive a blind copy of every outgoing email" [rows]="2" [formControl]="smtpForm.controls.smtpBccEmails" />
+        </div>
+
+        <div class="section-divider"></div>
+
+        <div class="inline-switch-row">
+          <lib-switch-field label="Use SSL/TLS" description="Enable for port 465 (SSL) or disable for port 587 (STARTTLS)" [formControl]="smtpForm.controls.smtpSecure" />
+        </div>
+
+        <div class="smtp-test-row">
+          <lib-button variant="outline" icon="send" size="sm">Send Test Email</lib-button>
+          <span class="smtp-test-hint">Sends a test email to verify your SMTP configuration.</span>
+        </div>
+      </div>
+    }
+
+    @case ('integrations') {
+      <div class="settings-section">
+        <div class="section-header">
+          <span class="icon section-icon">extension</span>
+          <div>
+            <h3>Third-Party Integrations</h3>
+            <p>Configure SMS, WhatsApp, CAPTCHA and Maps API providers.</p>
+          </div>
+        </div>
+
+        <!-- SMS -->
+        <div class="integration-card">
+          <div class="integration-card-header">
+            <span class="icon">sms</span>
+            <div>
+              <h4>SMS Gateway</h4>
+              <p>Send OTPs and notifications via SMS.</p>
+            </div>
+            <lib-switch-field label="" [formControl]="integrationsForm.controls.smsActive" />
+          </div>
+          <div class="form-grid integration-card-body">
+            <lib-select-field label="Provider" [options]="smsProviderOptions" placeholder="Select SMS provider" [formControl]="integrationsForm.controls.smsProvider" />
+            <lib-text-field label="Sender ID" placeholder="EASFLY" prefixIcon="badge" [formControl]="integrationsForm.controls.smsSenderId" />
+          </div>
+        </div>
+
+        <!-- WhatsApp -->
+        <div class="integration-card">
+          <div class="integration-card-header">
+            <span class="icon">chat</span>
+            <div>
+              <h4>WhatsApp Gateway</h4>
+              <p>Send booking confirmations and updates via WhatsApp Business API.</p>
+            </div>
+            <lib-switch-field label="" [formControl]="integrationsForm.controls.whatsappActive" />
+          </div>
+          <div class="form-grid integration-card-body">
+            <lib-select-field label="Provider" [options]="smsProviderOptions" placeholder="Select WhatsApp provider" [formControl]="integrationsForm.controls.whatsappProvider" />
+            <lib-text-field label="Sender ID / Number" placeholder="+91XXXXXXXXXX" prefixIcon="phone" [formControl]="integrationsForm.controls.whatsappSenderId" />
+          </div>
+        </div>
+
+        <!-- CAPTCHA -->
+        <div class="integration-card">
+          <div class="integration-card-header">
+            <span class="icon">security</span>
+            <div>
+              <h4>CAPTCHA</h4>
+              <p>Protect forms from bots with a CAPTCHA challenge.</p>
+            </div>
+            <lib-switch-field label="" [formControl]="integrationsForm.controls.captchaActive" />
+          </div>
+          <div class="form-grid integration-card-body">
+            <lib-select-field label="Provider" [options]="captchaProviderOptions" [formControl]="integrationsForm.controls.captchaProvider" />
+            <lib-text-field label="Site Key" placeholder="Public site key" prefixIcon="vpn_key" [formControl]="integrationsForm.controls.captchaSiteKey" />
+            <lib-text-field label="Secret Key" type="password" placeholder="••••••••" prefixIcon="lock" [formControl]="integrationsForm.controls.captchaSecretKey" />
+          </div>
+        </div>
+
+        <!-- Google Places -->
+        <div class="integration-card">
+          <div class="integration-card-header">
+            <span class="icon">place</span>
+            <div>
+              <h4>Google Places API</h4>
+              <p>Enable address autocomplete on forms.</p>
+            </div>
+            <lib-switch-field label="" [formControl]="integrationsForm.controls.googlePlacesActive" />
+          </div>
+          <div class="form-grid integration-card-body">
+            <lib-text-field label="API Key" type="password" placeholder="••••••••" prefixIcon="vpn_key" [formControl]="integrationsForm.controls.googlePlacesKey" />
+          </div>
+        </div>
+      </div>
+    }
+
+    @case ('security') {
+      <div class="settings-section">
+        <div class="section-header">
+          <span class="icon section-icon">shield</span>
+          <div>
+            <h3>Security Settings</h3>
+            <p>Login protection, account lockout policy, and two-factor authentication rules.</p>
+          </div>
+        </div>
+
+        <div class="form-grid form-grid--narrow">
+          <lib-text-field
+            label="Max Login Attempts"
+            type="number"
+            placeholder="5"
+            hint="Account locks after this many failed attempts"
+            [required]="true"
+            prefixIcon="lock_clock"
+            [formControl]="securityForm.controls.maxLoginAttempts" />
+
+          <lib-text-field
+            label="Lockout Duration (minutes)"
+            type="number"
+            placeholder="15"
+            hint="Account stays locked for this many minutes"
+            [required]="true"
+            prefixIcon="timer"
+            [formControl]="securityForm.controls.lockoutDurationMinutes" />
+        </div>
+
+        <div class="section-divider"></div>
+        <h4 class="subsection-title">Two-Factor Authentication</h4>
+        <p class="subsection-desc">Require 2FA for specific roles to increase account security.</p>
+
+        <div class="switch-list">
+          <div class="switch-row">
+            <div class="switch-row-info">
+              <span class="switch-row-label">Super Admin / Platform Users</span>
+              <span class="switch-row-desc">Require 2FA for all platform admin accounts</span>
+            </div>
+            <lib-switch-field label="" [formControl]="securityForm.controls.twoFactorSuperadmin" />
+          </div>
+        </div>
+      </div>
+    }
+
+    @case ('maintenance') {
+      <div class="settings-section">
+        <div class="section-header">
+          <span class="icon section-icon">construction</span>
+          <div>
+            <h3>Maintenance Mode</h3>
+            <p>Take the platform offline for scheduled maintenance. All public-facing pages will show the maintenance message.</p>
+          </div>
+        </div>
+
+        <div class="maintenance-toggle-card" [class.active]="maintenanceForm.controls.maintenanceMode.value">
+          <div class="maintenance-toggle-row">
+            <div class="maintenance-toggle-info">
+              <span class="icon maintenance-icon">{{ maintenanceForm.controls.maintenanceMode.value ? 'warning' : 'check_circle' }}</span>
+              <div>
+                <strong>{{ maintenanceForm.controls.maintenanceMode.value ? 'Maintenance Mode is ON' : 'Platform is Live' }}</strong>
+                <p>{{ maintenanceForm.controls.maintenanceMode.value ? 'The platform is currently unavailable to users.' : 'The platform is running normally.' }}</p>
+              </div>
+            </div>
+            <lib-switch-field label="" [formControl]="maintenanceForm.controls.maintenanceMode" />
+          </div>
+
+          @if (maintenanceForm.controls.maintenanceMode.value) {
+            <div class="form-grid form-grid--full maintenance-msg">
+              <lib-textarea-field
+                label="Maintenance Message"
+                placeholder="We are currently performing scheduled maintenance. We'll be back shortly."
+                hint="Shown to users visiting the platform during maintenance"
+                [rows]="3"
+                [formControl]="maintenanceForm.controls.maintenanceMsg" />
+            </div>
+          }
+        </div>
+      </div>
+    }
+  }
+
+</lib-page-container>

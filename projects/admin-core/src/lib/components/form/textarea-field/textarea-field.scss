@@ -1,0 +1,22 @@
+.app-textarea-control {
+  width: 100% !important;
+  min-height: 5.5rem !important;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: var(--fs-md);
+  line-height: 1.5;
+  padding: 0.625rem 0.875rem;
+  resize: vertical;
+}
+
+:host ::ng-deep textarea.p-textarea {
+  min-height: 5.5rem !important;
+}
+
+.char-counter {
+  display: flex;
+  justify-content: flex-end;
+  font-size: var(--fs-xs);
+  color: var(--fg-muted);
+  margin-top: 0.25rem;
+}

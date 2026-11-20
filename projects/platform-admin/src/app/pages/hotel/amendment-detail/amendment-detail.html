@@ -1,0 +1,327 @@
+<lib-page-container
+  [title]="'Amendment #' + amendment().amendmentId"
+  [subtitle]="amendment().amendmentType + ' · Booking ' + amendment().bookingId"
+  icon="edit_note"
+  [breadcrumbs]="breadcrumbs">
+
+  <!-- Action Bar -->
+  <div page-actions class="page-top-actions">
+    <lib-button variant="outline-danger" icon="arrow_back" (btnClick)="goBack()">
+      Back
+    </lib-button>
+
+    <lib-button variant="primary" icon="description" (btnClick)="viewBookingDetails()">
+      Booking Detail
+    </lib-button>
+
+    @if (amendment().amendmentStatus === 'Pending' || amendment().amendmentStatus === 'In Review') {
+      <lib-button variant="danger" icon="close" [loading]="isRejecting()" (btnClick)="onReject()">
+        Reject
+      </lib-button>
+      <lib-button variant="success" icon="check_circle" [loading]="isApproving()" (btnClick)="onApprove()">
+        Approve
+      </lib-button>
+    }
+  </div>
+
+  <div class="amend-wrapper">
+
+    <!-- KPI Hero Strip -->
+    <div class="amend-hero-card">
+      <div class="hero-kpi-strip">
+        <div class="kpi-cell">
+          <span class="kpi-label">Amendment ID</span>
+          <strong class="kpi-value mono">#{{ amendment().amendmentId }}</strong>
+        </div>
+        <div class="kpi-cell">
+          <span class="kpi-label">Status</span>
+          <lib-status-badge [status]="amendment().amendmentStatus" />
+        </div>
+        <div class="kpi-cell">
+          <span class="kpi-label">Amendment Type</span>
+          <strong class="kpi-value">{{ amendment().amendmentType }}</strong>
+        </div>
+        <div class="kpi-cell">
+          <span class="kpi-label">Booking ID</span>
+          <strong class="kpi-value mono">{{ amendment().bookingId }}</strong>
+        </div>
+        <div class="kpi-cell">
+          <span class="kpi-label">Confirmation No.</span>
+          <strong class="kpi-value mono">{{ amendment().confirmationNumber }}</strong>
+        </div>
+        <div class="kpi-cell">
+          <span class="kpi-label">Created On</span>
+          <strong class="kpi-value">{{ amendment().createdOn }}</strong>
+        </div>
+      </div>
+
+      @if (amendment().remark) {
+        <div class="remark-bar">
+          <span class="icon remark-icon">info</span>
+          <span class="remark-label">Remark:</span>
+          <span class="remark-text">{{ amendment().remark }}</span>
+        </div>
+      }
+    </div>
+
+    <!-- Main 2-col grid -->
+    <div class="amend-main-grid">
+
+      <!-- Left Column -->
+      <div class="main-col">
+
+        <!-- Company Info Card -->
+        <section class="detail-card">
+          <header class="detail-card-header">
+            <div class="header-left">
+              <span class="icon header-icon">business</span>
+              <h3>Company Info</h3>
+            </div>
+          </header>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">Company Name</span>
+              <span class="info-value">{{ amendment().companyName }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Company ID</span>
+              <span class="info-value mono">{{ amendment().companyId }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Email</span>
+              <span class="info-value">{{ amendment().companyEmail }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Mobile Number</span>
+              <span class="info-value mono">{{ amendment().mobileNumber }}</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Amendment Detail (Editable) Card -->
+        <section class="detail-card">
+          <header class="detail-card-header">
+            <div class="header-left">
+              <span class="icon header-icon">currency_rupee</span>
+              <h3>Amendment Detail</h3>
+            </div>
+          </header>
+
+          <div class="amend-detail-body">
+
+            <!-- Read-only Fare Row -->
+            <div class="fare-kpi-row">
+              <div class="fare-kpi-cell">
+                <span class="fare-kpi-label">Published Fare</span>
+                <strong class="fare-kpi-value">₹ {{ amendment().publishedFare | number }}</strong>
+              </div>
+              <div class="fare-kpi-cell">
+                <span class="fare-kpi-label">Offered Fare</span>
+                <strong class="fare-kpi-value">₹ {{ amendment().offeredFare | number }}</strong>
+              </div>
+              <div class="fare-kpi-cell">
+                <span class="fare-kpi-label">Agent Commission</span>
+                <strong class="fare-kpi-value">₹ {{ amendment().agentCommission | number }}</strong>
+              </div>
+              <div class="fare-kpi-cell">
+                <span class="fare-kpi-label">GST Amount</span>
+                <strong class="fare-kpi-value">₹ {{ amendment().gstAmount | number }}</strong>
+              </div>
+              <div class="fare-kpi-cell">
+                <span class="fare-kpi-label">TDS</span>
+                <strong class="fare-kpi-value">₹ {{ amendment().tds | number }}</strong>
+              </div>
+            </div>
+
+            <!-- Editable Cancellation Fields -->
+            <form [formGroup]="form" class="amend-form-grid">
+              <lib-text-field
+                label="Cancellation Charge"
+                type="number"
+                placeholder="0"
+                prefix="₹"
+                formControlName="cancellationCharge"
+                [required]="true" />
+
+              <lib-text-field
+                label="Cancellation Service Charge"
+                type="number"
+                placeholder="0"
+                prefix="₹"
+                formControlName="cancellationServiceCharge"
+                [required]="true" />
+
+              <lib-text-field
+                label="Cancellation Charge GST"
+                type="number"
+                placeholder="0"
+                prefix="₹"
+                formControlName="cancellationChargeGst"
+                [required]="true" />
+
+              <lib-text-field
+                label="Refund Amount"
+                type="number"
+                prefix="₹"
+                formControlName="refundAmount"
+                [optional]="true" />
+
+              <div class="form-checks-row">
+                <lib-checkbox-field
+                  label="TDS Return"
+                  formControlName="tdsReturn" />
+
+                <lib-checkbox-field
+                  label="If change booking currency rate"
+                  formControlName="changeBookingCurrencyRate" />
+              </div>
+
+              @if (showCurrencyRate()) {
+                <lib-text-field
+                  label="Current Currency Rate"
+                  type="number"
+                  placeholder="1"
+                  formControlName="currentCurrencyRate"
+                  [required]="true" />
+              }
+
+              <!-- Save Changes inside the form -->
+              <div class="form-actions-row">
+                <lib-button
+                  type="submit"
+                  variant="primary"
+                  icon="save"
+                  [loading]="isSaving()"
+                  (btnClick)="onSave()">
+                  Save Changes
+                </lib-button>
+              </div>
+            </form>
+
+          </div>
+        </section>
+
+        <!-- Booking Basic Detail Card -->
+        <section class="detail-card">
+          <header class="detail-card-header">
+            <div class="header-left">
+              <span class="icon header-icon">hotel</span>
+              <h3>Booking Basic Detail</h3>
+            </div>
+            <lib-button variant="ghost" size="sm" icon="open_in_new" (btnClick)="viewBookingDetails()">
+              View Booking
+            </lib-button>
+          </header>
+          <div class="info-grid info-grid--4col">
+            <div class="info-item">
+              <span class="info-label">Booking ID</span>
+              <span class="info-value mono">{{ amendment().bookingId }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Hotel</span>
+              <span class="info-value">{{ amendment().hotelName }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Hotel Confirmation No.</span>
+              <span class="info-value mono">{{ amendment().hotelConfirmationNo }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Amount</span>
+              <span class="info-value">₹ {{ amendment().amount | number }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Booking Status</span>
+              <lib-status-badge [status]="amendment().bookingStatus" />
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- Right Sidebar -->
+      <aside class="side-col">
+
+        <!-- Fare Summary -->
+        <section class="detail-card">
+          <header class="detail-card-header">
+            <div class="header-left">
+              <span class="icon header-icon">payments</span>
+              <h3>Fare Breakup</h3>
+            </div>
+          </header>
+          <div class="fare-summary-body">
+            <div class="fare-row">
+              <span class="fare-label">Apply Mark Up</span>
+              <span class="fare-amount">₹ {{ amendment().applyMarkUp | number }}</span>
+            </div>
+            <div class="fare-row">
+              <span class="fare-label">Apply Discount</span>
+              <span class="fare-amount">₹ {{ amendment().applyDiscount | number }}</span>
+            </div>
+            <div class="fare-divider"></div>
+            <div class="fare-row">
+              <span class="fare-label">Published Price</span>
+              <span class="fare-amount">₹ {{ amendment().publishedPrice | number }}</span>
+            </div>
+            <div class="fare-row">
+              <span class="fare-label">Comm. Earned (−)</span>
+              <span class="fare-amount">₹ {{ amendment().commEarned | number }}</span>
+            </div>
+            <div class="fare-row">
+              <span class="fare-label">TDS (+)</span>
+              <span class="fare-amount">₹ {{ amendment().tdsBreakup | number }}</span>
+            </div>
+            <div class="fare-row">
+              <span class="fare-label">Convenience Fee (+)</span>
+              <span class="fare-amount">₹ {{ amendment().convenienceFee | number }}</span>
+            </div>
+            <div class="fare-row fare-row--total">
+              <span class="fare-label">Total Amount</span>
+              <strong class="fare-amount fare-amount--total">₹ {{ amendment().totalAmount | number }}</strong>
+            </div>
+          </div>
+        </section>
+
+        <!-- GST Breakdown -->
+        <section class="detail-card">
+          <header class="detail-card-header">
+            <div class="header-left">
+              <span class="icon header-icon">receipt</span>
+              <h3>GST Breakdown</h3>
+            </div>
+          </header>
+          <div class="table-wrapper">
+            <table class="gst-table">
+              <thead>
+                <tr>
+                  <th>Service</th>
+                  <th class="text-right">Taxable</th>
+                  <th class="text-right">CGST 9%</th>
+                  <th class="text-right">SGST 9%</th>
+                  <th class="text-right">IGST 0%</th>
+                  <th class="text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of amendment().gstRows; track row.serviceDescription) {
+                  <tr>
+                    <td>{{ row.serviceDescription }}</td>
+                    <td class="text-right">{{ row.taxableValue | number }}</td>
+                    <td class="text-right">{{ row.cgst | number }}</td>
+                    <td class="text-right">{{ row.sgst | number }}</td>
+                    <td class="text-right">{{ row.igst | number }}</td>
+                    <td class="text-right font-semibold">{{ row.total | number }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+      </aside>
+
+    </div>
+
+  </div>
+
+</lib-page-container>

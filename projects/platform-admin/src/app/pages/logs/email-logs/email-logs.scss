@@ -1,0 +1,47 @@
+.log-recipient {
+  font-weight: 500;
+  color: var(--fg);
+}
+
+.log-subject-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  cursor: pointer;
+
+  &:hover .log-subject { color: var(--accent); }
+}
+
+.log-subject {
+  font-weight: 500;
+  color: var(--fg);
+  transition: color 0.15s ease;
+}
+
+.log-error-hint {
+  font-size: var(--fs-xs);
+  color: #ef4444;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 22rem;
+}
+
+
+.log-error-box {
+  margin-top: 0.75rem;
+  padding: 0.875rem 1rem;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: var(--radius-sm);
+
+  .log-detail-label { color: #ef4444; }
+
+  p {
+    margin: 0.375rem 0 0;
+    font-size: var(--fs-base);
+    color: #ef4444;
+    line-height: 1.5;
+    word-break: break-word;
+  }
+}

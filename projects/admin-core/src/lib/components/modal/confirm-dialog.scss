@@ -1,0 +1,85 @@
+:host {
+  display: contents;
+}
+
+.modal-header-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  .modal-icon-badge {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: var(--radius, 0.5rem);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    .icon {
+      font-size: 1.375rem;
+    }
+
+    &.badge-danger {
+      background: rgba(239, 68, 68, 0.14);
+      color: var(--danger, #EF4444);
+    }
+
+    &.badge-warning {
+      background: rgba(245, 158, 11, 0.14);
+      color: var(--warning, #F59E0B);
+    }
+
+    &.badge-primary {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+  }
+
+  .modal-title {
+    font-size: var(--fs-xl);
+    font-weight: 700;
+    color: var(--fg);
+    margin: 0;
+  }
+}
+
+.confirm-body {
+  padding: 0.5rem 0;
+
+  .confirm-message {
+    font-size: var(--fs-base);
+    color: var(--fg);
+    line-height: 1.5;
+    margin: 0 0 0.875rem 0;
+  }
+
+  .confirm-meta-box {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 0.0625rem solid var(--border);
+    border-radius: var(--radius);
+    font-size: var(--fs-sm);
+    color: var(--fg-muted);
+
+    .icon {
+      font-size: var(--fs-lg);
+      color: var(--accent);
+    }
+
+    strong {
+      color: var(--fg);
+    }
+  }
+}
+
+.modal-footer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.625rem;
+  width: 100%;
+}

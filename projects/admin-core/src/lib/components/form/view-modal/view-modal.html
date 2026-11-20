@@ -1,0 +1,58 @@
+<p-dialog
+  [(visible)]="visible"
+  [modal]="modal()"
+  [closable]="closable()"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: width(), maxWidth: '95vw', maxHeight: '90vh' }"
+  styleClass="app-modal app-view-modal"
+  appendTo="body"
+  (onHide)="onHide()">
+
+  <ng-template #header>
+    <lib-modal-header [icon]="icon()" [title]="title()" [subtitle]="subtitle()" />
+  </ng-template>
+
+  <div class="view-modal-body">
+    <!-- Top Circular Image Hero Banner -->
+    @if (imageUrl()) {
+      <div class="view-modal-hero">
+        <div class="view-modal-avatar-wrapper">
+          <img [src]="imageUrl()" [alt]="imageAlt() || title()" class="view-modal-avatar-img" />
+        </div>
+        @if (heroTitle()) {
+          <h4 class="view-modal-hero-title">{{ heroTitle() }}</h4>
+        }
+        @if (heroSubtitle()) {
+          <span class="view-modal-hero-subtitle">{{ heroSubtitle() }}</span>
+        }
+        @if (heroBadge()) {
+          <span class="view-modal-hero-badge" [class]="'badge-' + heroBadgeSeverity()">
+            {{ heroBadge() }}
+          </span>
+        }
+      </div>
+    }
+
+    <!-- Detail Items / Content Sections -->
+    <div class="view-modal-content">
+      <ng-content select="[view-details]"></ng-content>
+      <ng-content></ng-content>
+    </div>
+  </div>
+
+  <ng-template #footer>
+    <div class="view-modal-footer">
+      <ng-content select="[view-modal-extra-actions]"></ng-content>
+      @if (showEditButton()) {
+        <lib-button variant="primary" icon="edit" (click)="onEdit()">
+          {{ editLabel() }}
+        </lib-button>
+      }
+      <lib-button variant="outline" (click)="close()">
+        {{ closeLabel() }}
+      </lib-button>
+    </div>
+  </ng-template>
+
+</p-dialog>

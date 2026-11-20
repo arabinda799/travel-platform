@@ -1,1 +1,36 @@
 /* You can add global styles to this file, and also import other style files */
+@use "../../admin-core/src/lib/styles/theme";
+
+// ─── Shared Log Detail Modal Styles ───────────────────────────────────────────
+.log-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.log-detail-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0.625rem 0;
+  border-bottom: 1px solid var(--border);
+
+  &:last-child { border-bottom: none; }
+}
+
+.log-detail-label {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fg-muted);
+  min-width: 8rem;
+  flex-shrink: 0;
+  padding-top: 0.1rem;
+}
+
+.log-detail-value {
+  font-size: var(--fs-md);
+  color: var(--fg);
+  word-break: break-word;
+}

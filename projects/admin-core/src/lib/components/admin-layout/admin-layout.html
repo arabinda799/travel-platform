@@ -1,0 +1,40 @@
+<div class="admin-shell">
+  <!-- Toast Provider Root for System Notifications -->
+  <p-toast position="top-right" [baseZIndex]="99999" />
+
+  <!-- Sidebar -->
+  <lib-sidebar 
+    [items]="navItems()">
+    <ng-content select="[sidebar-brand]" sidebar-brand></ng-content>
+    <ng-content select="[sidebar-nav]" sidebar-nav></ng-content>
+    <ng-content select="[sidebar-footer]" sidebar-footer></ng-content>
+  </lib-sidebar>
+
+  <!-- Right Section: Header + Main Content + Footer -->
+  <div class="admin-main-wrapper">
+    <!-- Header -->
+    <lib-header
+      [userName]="userName()"
+      [userInitials]="userInitials()"
+      [userRole]="userRole()"
+      [userEmail]="userEmail()"
+      [notificationCount]="notificationCount()">
+      <ng-content select="[header-left]" header-left></ng-content>
+      <ng-content select="[header-center]" header-center></ng-content>
+      <ng-content select="[header-right]" header-right></ng-content>
+    </lib-header>
+
+    <!-- Main Content Body -->
+    <main class="admin-content">
+      <ng-content select="[admin-content]"></ng-content>
+      <ng-content></ng-content>
+    </main>
+
+    <!-- Footer Strip -->
+    <lib-footer>
+      <ng-content select="[footer-left]" footer-left></ng-content>
+      <ng-content select="[footer-center]" footer-center></ng-content>
+      <ng-content select="[footer-right]" footer-right></ng-content>
+    </lib-footer>
+  </div>
+</div>

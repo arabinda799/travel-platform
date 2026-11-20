@@ -1,0 +1,231 @@
+@use 'mixins' as *;
+
+:host {
+  display: block;
+}
+
+.page-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+/* ═══════════════════════════════════════════════
+   TABLE CELLS
+   ═══════════════════════════════════════════════ */
+.gateway-logo-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 1.75rem;
+
+  /* logos need contain + white bg, override component default */
+  ::ng-deep .thumb-img {
+    object-fit: contain;
+    background: #ffffff;
+    padding: 0.125rem 0.25rem;
+    border: 0.0625rem solid var(--border);
+    border-radius: var(--radius-sm);
+  }
+}
+
+.modes-pill-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  align-items: center;
+}
+
+.mode-tag {
+  display: inline-block;
+  padding: 0.1875rem 0.5rem;
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--fg) 5%, var(--bg-card));
+  color: var(--fg);
+  border: 0.0625rem solid var(--border);
+  white-space: nowrap;
+
+  &.more-tag {
+    background: color-mix(in srgb, var(--accent) 10%, var(--bg-card));
+    color: var(--accent);
+    border-color: color-mix(in srgb, var(--accent) 25%, transparent);
+    font-weight: 600;
+  }
+}
+
+.date-cell {
+  font-size: var(--fs-base);
+  color: var(--fg-muted);
+}
+
+/* ═══════════════════════════════════════════════
+   MODAL FORM & MULTI-SELECT DROPDOWN (IMAGE 1)
+   ═══════════════════════════════════════════════ */
+.gateway-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.125rem;
+  padding: 0.25rem 0;
+}
+
+.form-row-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.form-field-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.field-label {
+  font-size: var(--fs-base);
+  font-weight: 600;
+  color: var(--fg);
+
+  .required-star {
+    color: var(--danger, #EF4444);
+    margin-left: 0.125rem;
+  }
+}
+
+.multi-select-container {
+  position: relative;
+  width: 100%;
+}
+
+.multi-select-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.625rem 0.875rem;
+  background: var(--bg-input, var(--bg-card));
+  border: 0.0625rem solid var(--border);
+  border-radius: var(--radius);
+  color: var(--fg);
+  font-size: var(--fs-md);
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    border-color: var(--accent);
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 0.125rem color-mix(in srgb, var(--accent) 25%, transparent);
+  }
+
+  .trigger-text {
+    font-weight: 500;
+  }
+
+  .trigger-icon {
+    color: var(--fg-muted);
+    font-size: var(--fs-2xl);
+  }
+}
+
+.multi-select-dropdown {
+  position: absolute;
+  top: calc(100% + 0.375rem);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background: var(--bg-card);
+  border: 0.0625rem solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg, 0 10px 25px rgba(0, 0, 0, 0.25));
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.dropdown-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.875rem;
+  background: color-mix(in srgb, var(--fg) 3%, var(--bg-card));
+  border-bottom: 0.0625rem solid var(--border);
+
+  .header-caption {
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    color: var(--fg-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+
+    .link-btn {
+      background: none;
+      border: none;
+      padding: 0;
+      color: var(--accent);
+      font-size: var(--fs-sm);
+      font-weight: 600;
+      cursor: pointer;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+
+    .sep {
+      color: var(--fg-muted);
+      font-size: var(--fs-xs);
+    }
+  }
+}
+
+.modes-checkbox-list {
+  max-height: 14rem;
+  overflow-y: auto;
+  padding: 0.375rem 0;
+  @include slim-scrollbar(transparent, rgba(163, 150, 188, 0.35));
+}
+
+.mode-checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.875rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: color-mix(in srgb, var(--accent) 8%, var(--bg-card));
+  }
+
+  input[type='checkbox'] {
+    width: 1.125rem;
+    height: 1.125rem;
+    border-radius: var(--radius-sm);
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
+  .mode-name {
+    font-size: var(--fs-md);
+    color: var(--fg);
+    user-select: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .form-row-2col {
+    grid-template-columns: 1fr;
+  }
+}

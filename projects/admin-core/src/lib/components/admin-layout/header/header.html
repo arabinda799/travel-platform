@@ -1,0 +1,71 @@
+<header class="app-header">
+  @if (isMobileSearchOpen()) {
+    <div class="mobile-search-backdrop" (click)="closeMobileSearch()" aria-hidden="true"></div>
+  }
+
+  <div class="header-left">
+    <button 
+      type="button" 
+      class="sidebar-toggle-btn" 
+      (click)="toggleSidebar()" 
+      title="Toggle Sidebar"
+      aria-label="Toggle Navigation Sidebar">
+      <span class="icon">menu</span>
+    </button>
+
+    <!-- Mobile Search Trigger Icon Button -->
+    <button 
+      type="button" 
+      class="sidebar-toggle-btn mobile-search-trigger" 
+      (click)="openMobileSearch()" 
+      title="Search"
+      aria-label="Open Search">
+      <span class="icon">search</span>
+    </button>
+
+    <div class="header-search" [class.mobile-open]="isMobileSearchOpen()">
+      <span class="icon search-icon">search</span>
+      <input 
+        #searchInput
+        type="text" 
+        placeholder="Search..." 
+        class="search-input"
+        (keydown.escape)="closeMobileSearch()" />
+      <button 
+        type="button" 
+        class="mobile-search-close-btn" 
+        (click)="closeMobileSearch()" 
+        title="Close Search"
+        aria-label="Close Search">
+        <span class="icon">close</span>
+      </button>
+    </div>
+
+    <ng-content select="[header-left]"></ng-content>
+  </div>
+
+  <div class="header-center">
+    <ng-content select="[header-center]"></ng-content>
+  </div>
+
+  <div class="header-right">
+    <button type="button" class="btn-custom icon-btn" [title]="currentTheme() === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'" (click)="toggleTheme()">
+      <span class="icon">{{ currentTheme() === 'dark' ? 'light_mode' : 'dark_mode' }}</span>
+    </button>
+
+    <button type="button" class="btn-custom icon-btn" title="Notifications" aria-label="Notifications">
+      <span class="icon">notifications</span>
+      <p-badge [value]="notificationCount()" severity="danger" />
+    </button>
+
+    <div class="user-profile-trigger" role="button" tabindex="0" aria-label="User profile menu" (click)="userMenu.toggle($event)" (keydown.enter)="userMenu.toggle($event)" (keydown.space)="userMenu.toggle($event)">
+      <p-avatar [label]="userInitials()" shape="circle" styleClass="custom-avatar" />
+      <span class="user-name">{{ userName() }}</span>
+      <span class="icon expand-icon">expand_more</span>
+    </div>
+
+    <p-menu #userMenu [model]="userMenuItems()" [popup]="true" appendTo="body" />
+
+    <ng-content select="[header-right]"></ng-content>
+  </div>
+</header>

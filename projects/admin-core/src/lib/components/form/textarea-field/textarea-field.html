@@ -1,0 +1,33 @@
+<lib-form-field
+  [label]="label()"
+  [forId]="inputId()"
+  [required]="required()"
+  [optional]="optional()"
+  [hint]="hint()"
+  [error]="error()"
+  [control]="effectiveControl"
+  [value]="effectiveValue"
+  [touched]="effectiveTouched"
+  [disabled]="disabled()">
+
+  <textarea
+    pTextarea
+    [id]="inputId()"
+    [rows]="rows()"
+    [cols]="cols()"
+    [placeholder]="placeholder()"
+    [disabled]="disabled()"
+    [readonly]="readonly()"
+    [autoResize]="autoResize()"
+    [attr.maxlength]="maxlength() || null"
+    [value]="value()"
+    (input)="onInput($event)"
+    (blur)="onBlur()"
+    class="app-textarea-control"></textarea>
+
+  @if (maxlength()) {
+    <div class="char-counter">
+      {{ value().length }} / {{ maxlength() }}
+    </div>
+  }
+</lib-form-field>

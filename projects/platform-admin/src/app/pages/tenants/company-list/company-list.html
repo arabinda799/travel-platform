@@ -1,0 +1,164 @@
+<lib-page-container
+  title="Tenant Companies"
+  subtitle="Manage B2B travel agency tenants and their whitelabel configuration"
+  icon="corporate_fare"
+  [breadcrumbs]="[
+    { label: 'Dashboard', route: '/dashboard' },
+    { label: 'Tenant Management' },
+    { label: 'Companies' }
+  ]">
+
+  <div page-actions>
+    <lib-button variant="primary" icon="add_business" (click)="openAddModal()">
+      Add Tenant
+    </lib-button>
+  </div>
+
+  <lib-data-table
+    [value]="filteredCompanies()"
+    [columns]="columns()"
+    [totalRecords]="filteredCompanies().length"
+    [loading]="loading()"
+    [searchable]="true"
+    searchPlaceholder="Search by name, code, domain..."
+    (search)="onSearch($event)">
+
+    <div table-actions class="table-actions-group">
+      <lib-button
+        variant="outline"
+        icon="tune"
+        [badge]="activeFilterCount() ? activeFilterCount() : ''"
+        (click)="filterVisible.set(true)">
+        Filters
+      </lib-button>
+    </div>
+
+    <!-- Company name + code cell -->
+    <ng-template #nameTpl let-row>
+      <div class="company-name-cell">
+        <div class="company-avatar">
+          <span class="icon">domain</span>
+        </div>
+        <div class="company-info">
+          <span class="company-fullname">{{ row.companyName }}</span>
+          <span class="company-code">{{ row.companyCode }}</span>
+        </div>
+      </div>
+    </ng-template>
+
+    <!-- Firm type cell -->
+    <ng-template #firmTypeTpl let-row>
+      <span class="firm-type-chip">{{ getFirmTypeLabel(row.firmType) }}</span>
+    </ng-template>
+
+    <!-- Status badge -->
+    <ng-template #statusTpl let-row>
+      <lib-status-badge [status]="row.status" />
+    </ng-template>
+
+    <!-- Row actions -->
+    <ng-template #actionsTpl let-row>
+      <div class="table-row-actions">
+        <lib-table-action action="custom" icon="tune" tooltip="Whitelabel Settings" (clicked)="openSettings(row)" />
+        <lib-table-action action="edit" tooltip="Edit Company" (clicked)="openEditModal(row)" />
+        <lib-table-action action="delete" tooltip="Delete Tenant" (clicked)="confirmDelete(row)" />
+      </div>
+    </ng-template>
+  </lib-data-table>
+
+  <!-- Filter Sidebar -->
+  <lib-filter-sidebar
+    [(visible)]="filterVisible"
+    title="Filter Companies"
+    (apply)="applyFilters()"
+    (reset)="resetFilters()">
+    <lib-select-field
+      label="Status"
+      placeholder="All Statuses"
+      [options]="statusOptions"
+      [clearable]="true"
+      [value]="selectedStatusFilter()"
+      (valueChange)="selectedStatusFilter.set($event)" />
+  </lib-filter-sidebar>
+
+  <!-- Add / Edit Modal -->
+  <lib-form-modal
+    [(visible)]="modalVisible"
+    [title]="isEditing() ? 'Edit Tenant' : 'Add Tenant'"
+    width="44rem"
+    [submitLabel]="isEditing() ? 'Update' : 'Save & Configure'"
+    submitIcon="save"
+    (submitted)="saveCompany()">
+    <div class="modal-form-grid">
+      <div class="form-row-2">
+        <lib-text-field
+          label="Company Name"
+          placeholder="e.g. Nexus Travels Pvt. Ltd."
+          [required]="true"
+          [formControl]="form.controls.companyName" />
+        <lib-text-field
+          label="Company Code"
+          placeholder="e.g. NEXUS"
+          hint="Short unique identifier (auto-uppercased)"
+          [required]="true"
+          [formControl]="form.controls.companyCode" />
+      </div>
+
+      <lib-text-field
+        label="Domain"
+        placeholder="e.g. nexustravels.com"
+        hint="Primary domain for this tenant's platform"
+        prefixIcon="language"
+        [required]="true"
+        [formControl]="form.controls.domain" />
+
+      <div class="form-row-2">
+        <lib-select-field
+          label="Firm Type"
+          [required]="true"
+          [options]="firmTypeOptions"
+          [formControl]="form.controls.firmType" />
+        <lib-select-field
+          label="Payment Gateway Owner"
+          [required]="true"
+          [options]="pgOwnerOptions"
+          [formControl]="form.controls.pgOwner" />
+      </div>
+
+      <div class="form-row-2">
+        <lib-text-field
+          label="Legal Name"
+          placeholder="Registered legal name"
+          hint="As per PAN/GST for invoicing"
+          [formControl]="form.controls.legalName" />
+        <lib-text-field
+          label="GST Number"
+          placeholder="e.g. 27AABCN1234F1Z5"
+          [formControl]="form.controls.gstNumber" />
+      </div>
+
+      <div class="form-row-2">
+        <lib-select-field
+          label="Status"
+          [required]="true"
+          [options]="statusOptions"
+          [formControl]="form.controls.status" />
+        <lib-text-field
+          label="Trial Ends At"
+          placeholder="YYYY-MM-DD"
+          hint="Only for TRIAL status"
+          [formControl]="form.controls.trialEndsAt" />
+      </div>
+    </div>
+  </lib-form-modal>
+
+  <!-- Delete Confirmation -->
+  <lib-confirm-dialog
+    [(visible)]="confirmDeleteVisible"
+    title="Delete Tenant"
+    [message]="itemToDelete() ? 'Are you sure you want to delete &quot;' + itemToDelete()!.companyName + '&quot;? All tenant data will be removed. This cannot be undone.' : ''"
+    confirmLabel="Delete"
+    severity="danger"
+    (confirmed)="executeDelete()" />
+
+</lib-page-container>

@@ -1,0 +1,144 @@
+<lib-page-container
+  title="SMS Logs"
+  subtitle="System-generated SMS dispatch records and delivery status"
+  [breadcrumbs]="breadcrumbs">
+
+  <lib-data-table
+    [value]="filteredLogs()"
+    [columns]="columns()"
+    [totalRecords]="filteredLogs().length"
+    [loading]="loading()"
+    [checkbox]="true"
+    [(selection)]="selectedItems"
+    [searchable]="true"
+    searchPlaceholder="Search by phone, message or trigger..."
+    (search)="onSearch($event)">
+
+    <div table-actions class="table-actions-group">
+      <lib-button
+        variant="outline"
+        icon="tune"
+        [badge]="activeFilterCount() ? activeFilterCount() : ''"
+        (click)="filterVisible.set(true)">
+        Filters
+      </lib-button>
+    </div>
+
+    <div selection-actions class="selection-actions-group">
+      <lib-button variant="outline" icon="download" (click)="exportSelected()">
+        Export Selected ({{ selectedItems().length }})
+      </lib-button>
+      <lib-button variant="danger" icon="delete" (click)="confirmBulkDelete()">
+        Delete Selected ({{ selectedItems().length }})
+      </lib-button>
+    </div>
+
+    <ng-template #toTpl let-row>
+      <span class="log-phone">{{ row.to }}</span>
+    </ng-template>
+
+    <ng-template #messageTpl let-row>
+      <div class="log-message-cell" (click)="openDetail(row)" role="button" tabindex="0">
+        <span class="log-message-preview">{{ row.message }}</span>
+      </div>
+    </ng-template>
+
+    <ng-template #statusTpl let-row>
+      <lib-status-badge [status]="statusBadge(row.status)" [label]="row.status" />
+    </ng-template>
+
+    <ng-template #actionsTpl let-row>
+      <div class="table-row-actions">
+        @if (row.status === 'Failed') {
+          <lib-table-action action="custom" icon="replay" tooltip="Resend SMS" (clicked)="onResend(row)" />
+        } @else {
+          <span class="action-spacer" aria-hidden="true"></span>
+        }
+        <lib-table-action action="view" tooltip="View Details" (clicked)="openDetail(row)" />
+        <lib-table-action action="delete" tooltip="Delete Log" (clicked)="confirmDeleteSingle(row)" />
+      </div>
+    </ng-template>
+
+  </lib-data-table>
+
+</lib-page-container>
+
+<!-- Filter Sidebar -->
+<lib-filter-sidebar
+  [(visible)]="filterVisible"
+  (apply)="onApplyFilters()"
+  (reset)="onResetFilters()">
+
+  <div class="filter-group">
+    <lib-select-field
+      label="Status"
+      [options]="statusOptions"
+      [value]="selectedStatusFilter()"
+      (valueChange)="selectedStatusFilter.set($event)"
+      placeholder="All Statuses"
+      [clearable]="true" />
+  </div>
+
+</lib-filter-sidebar>
+
+<!-- Detail Modal -->
+<lib-view-modal
+  [(visible)]="detailVisible"
+  title="SMS Log Details"
+  subtitle="Full message content and delivery metadata"
+  icon="sms"
+  width="40rem">
+
+  @if (activeLog(); as log) {
+    <div class="log-detail">
+      <div class="log-detail-row">
+        <span class="log-detail-label">Phone</span>
+        <span class="log-detail-value">{{ log.to }}</span>
+      </div>
+      <div class="log-detail-row">
+        <span class="log-detail-label">Template</span>
+        <span class="log-detail-value">{{ log.template }}</span>
+      </div>
+      <div class="log-detail-row">
+        <span class="log-detail-label">Status</span>
+        <lib-status-badge [status]="statusBadge(log.status)" [label]="log.status" />
+      </div>
+      <div class="log-detail-row">
+        <span class="log-detail-label">Triggered By</span>
+        <span class="log-detail-value">{{ log.triggeredBy }}</span>
+      </div>
+      <div class="log-detail-row">
+        <span class="log-detail-label">Sent At</span>
+        <span class="log-detail-value">{{ log.sentAt }}</span>
+      </div>
+      <div class="log-detail-row">
+        <span class="log-detail-label">Message</span>
+        <span class="log-detail-value">{{ log.message }}</span>
+      </div>
+      @if (log.errorMessage) {
+        <div class="log-error-box">
+          <span class="log-detail-label">Error</span>
+          <p>{{ log.errorMessage }}</p>
+        </div>
+      }
+    </div>
+
+    @if (log.status === 'Failed') {
+      <div view-modal-extra-actions>
+        <lib-button variant="outline-primary" icon="replay" (click)="onResend(log)">
+          Resend SMS
+        </lib-button>
+      </div>
+    }
+  }
+
+</lib-view-modal>
+
+<!-- Confirm Delete -->
+<lib-confirm-dialog
+  [(visible)]="confirmDeleteVisible"
+  [title]="itemToDelete() ? 'Delete Log Entry' : 'Delete Selected Logs'"
+  [message]="itemToDelete() ? 'Remove this SMS log entry permanently?' : 'Remove ' + selectedItems().length + ' selected log entries permanently?'"
+  confirmLabel="Delete"
+  severity="danger"
+  (confirmed)="executeDelete()" />

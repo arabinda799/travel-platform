@@ -1,0 +1,231 @@
+<lib-page-container
+  title="My Profile"
+  subtitle="Manage your personal information, security, and account preferences"
+  [breadcrumbs]="breadcrumbs">
+
+  <div page-actions>
+    <lib-button
+      variant="primary"
+      icon="save"
+      [loading]="saving()"
+      (click)="onSaveProfile()">
+      Save Changes
+    </lib-button>
+  </div>
+
+  <div class="profile-layout">
+
+    <!-- ── Left Column: Avatar + Account Meta ── -->
+    <div class="profile-sidebar">
+
+      <!-- Avatar Card -->
+      <div class="avatar-card">
+        <div class="avatar-wrapper">
+          @if (profile().avatarUrl) {
+            <img [src]="profile().avatarUrl" [alt]="displayName()" class="avatar-img" />
+          } @else {
+            <div class="avatar-initials">{{ avatarInitials() }}</div>
+          }
+          <label class="avatar-upload-btn" title="Change photo">
+            <span class="icon">photo_camera</span>
+            <input type="file" accept="image/*" (change)="onAvatarUpload($event)" hidden />
+          </label>
+        </div>
+        <div class="avatar-info">
+          <h2 class="profile-display-name">{{ displayName() }}</h2>
+          <span class="profile-role-badge">{{ profile().role }}</span>
+          <p class="profile-department">{{ profile().department }}</p>
+        </div>
+      </div>
+
+      <!-- Account Meta Card -->
+      <div class="meta-card">
+        <div class="meta-row">
+          <span class="meta-icon"><span class="icon">schedule</span></span>
+          <div class="meta-content">
+            <span class="meta-label">Last Login</span>
+            <span class="meta-value">{{ profile().lastLoginAt }}</span>
+          </div>
+        </div>
+        <div class="meta-row">
+          <span class="meta-icon"><span class="icon">router</span></span>
+          <div class="meta-content">
+            <span class="meta-label">Login IP</span>
+            <span class="meta-value">{{ profile().lastLoginIp }}</span>
+          </div>
+        </div>
+        <div class="meta-row">
+          <span class="meta-icon"><span class="icon">calendar_today</span></span>
+          <div class="meta-content">
+            <span class="meta-label">Member Since</span>
+            <span class="meta-value">{{ profile().createdAt }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Change Password -->
+      <div class="password-card">
+        <div class="password-card-header">
+          <span class="icon">lock</span>
+          <div>
+            <h4>Password & Security</h4>
+            <p>Update your login password</p>
+          </div>
+        </div>
+        <lib-button variant="primary" icon="key" (click)="openChangePassword()">
+          Change Password
+        </lib-button>
+      </div>
+
+    </div>
+
+    <!-- ── Right Column: Profile Form ── -->
+    <div class="profile-form-panel">
+
+      <!-- Personal Information -->
+      <div class="form-section">
+        <div class="section-heading">
+          <span class="icon">person</span>
+          <span>Personal Information</span>
+        </div>
+        <div class="form-grid two-cols">
+          <lib-text-field
+            label="First Name"
+            placeholder="e.g. Arabinda"
+            [formControl]="profileForm.controls.firstName"
+            [required]="true" />
+          <lib-text-field
+            label="Last Name"
+            placeholder="e.g. Jena"
+            [formControl]="profileForm.controls.lastName"
+            [required]="true" />
+        </div>
+        <div class="form-grid two-cols">
+          <lib-text-field
+            label="Email Address"
+            type="email"
+            placeholder="admin@example.com"
+            [formControl]="profileForm.controls.email"
+            [required]="true"
+            hint="Used for login and system notifications" />
+          <lib-text-field
+            label="Phone Number"
+            placeholder="+91 98765 43210"
+            [formControl]="profileForm.controls.phone" />
+        </div>
+      </div>
+
+      <!-- Preferences -->
+      <div class="form-section">
+        <div class="section-heading">
+          <span class="icon">tune</span>
+          <span>Preferences</span>
+        </div>
+        <div class="form-grid one-col">
+          <lib-select-field
+            label="Timezone"
+            [options]="timezoneOptions"
+            [formControl]="profileForm.controls.timezone"
+            [required]="true"
+            hint="All dates and times in the platform will display in this timezone" />
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</lib-page-container>
+
+<!-- ─── Change Password Modal ─── -->
+<lib-form-modal
+  [(visible)]="changePasswordVisible"
+  title="Change Password"
+  subtitle="Choose a strong password to keep your account secure"
+  icon="key"
+  width="34rem"
+  submitLabel="Update Password"
+  submitIcon="lock_reset"
+  (submitted)="onChangePassword()">
+
+  <div class="pw-form-grid">
+
+    <!-- Current Password -->
+    <div class="pw-field-row">
+      <lib-text-field
+        label="Current Password"
+        [type]="showCurrentPw() ? 'text' : 'password'"
+        placeholder="Enter current password"
+        [formControl]="changePasswordForm.controls.currentPassword"
+        [required]="true" />
+      <button type="button" class="pw-toggle" (click)="showCurrentPw.set(!showCurrentPw())">
+        <span class="icon">{{ showCurrentPw() ? 'visibility_off' : 'visibility' }}</span>
+      </button>
+    </div>
+
+    <div class="pw-divider"></div>
+
+    <!-- New Password -->
+    <div class="pw-field-row">
+      <lib-text-field
+        label="New Password"
+        [type]="showNewPw() ? 'text' : 'password'"
+        placeholder="At least 8 characters"
+        [formControl]="changePasswordForm.controls.newPassword"
+        [required]="true"
+        hint="Must contain uppercase, lowercase and a number" />
+      <button type="button" class="pw-toggle" (click)="showNewPw.set(!showNewPw())">
+        <span class="icon">{{ showNewPw() ? 'visibility_off' : 'visibility' }}</span>
+      </button>
+    </div>
+
+    <!-- Password Strength Bar -->
+    @if (pwStrength() > 0) {
+      <div class="pw-strength">
+        <div class="pw-strength-bar">
+          <div
+            class="pw-strength-fill"
+            [class]="pwStrengthClass()"
+            [style.width.%]="pwStrength() * 25">
+          </div>
+        </div>
+        <span class="pw-strength-label" [class]="pwStrengthClass()">{{ pwStrengthLabel() }}</span>
+      </div>
+    }
+
+    <!-- Confirm Password -->
+    <div class="pw-field-row">
+      <lib-text-field
+        label="Confirm New Password"
+        [type]="showConfirmPw() ? 'text' : 'password'"
+        placeholder="Re-enter new password"
+        [formControl]="changePasswordForm.controls.confirmPassword"
+        [required]="true"
+        [hint]="changePasswordForm.controls.confirmPassword.errors?.['mismatch'] ? 'Passwords do not match' : ''" />
+      <button type="button" class="pw-toggle" (click)="showConfirmPw.set(!showConfirmPw())">
+        <span class="icon">{{ showConfirmPw() ? 'visibility_off' : 'visibility' }}</span>
+      </button>
+    </div>
+
+    <!-- Requirements list -->
+    <ul class="pw-requirements">
+      <li [class.met]="(changePasswordForm.controls.newPassword.value?.length ?? 0) >= 8">
+        <span class="icon">{{ (changePasswordForm.controls.newPassword.value?.length ?? 0) >= 8 ? 'check_circle' : 'radio_button_unchecked' }}</span>
+        At least 8 characters
+      </li>
+      <li [class.met]="!!changePasswordForm.controls.newPassword.value && /[A-Z]/.test(changePasswordForm.controls.newPassword.value)">
+        <span class="icon">{{ !!changePasswordForm.controls.newPassword.value && /[A-Z]/.test(changePasswordForm.controls.newPassword.value) ? 'check_circle' : 'radio_button_unchecked' }}</span>
+        One uppercase letter
+      </li>
+      <li [class.met]="!!changePasswordForm.controls.newPassword.value && /[a-z]/.test(changePasswordForm.controls.newPassword.value)">
+        <span class="icon">{{ !!changePasswordForm.controls.newPassword.value && /[a-z]/.test(changePasswordForm.controls.newPassword.value) ? 'check_circle' : 'radio_button_unchecked' }}</span>
+        One lowercase letter
+      </li>
+      <li [class.met]="!!changePasswordForm.controls.newPassword.value && /\d/.test(changePasswordForm.controls.newPassword.value)">
+        <span class="icon">{{ !!changePasswordForm.controls.newPassword.value && /\d/.test(changePasswordForm.controls.newPassword.value) ? 'check_circle' : 'radio_button_unchecked' }}</span>
+        One number
+      </li>
+    </ul>
+
+  </div>
+
+</lib-form-modal>

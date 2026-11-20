@@ -1,0 +1,26 @@
+<p-dialog
+  [(visible)]="visible"
+  [modal]="modal()"
+  [closable]="closable()"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: width(), maxWidth: '95vw' }"
+  styleClass="app-modal"
+  appendTo="body"
+  (onHide)="onHide()">
+
+  <ng-template #header>
+    <lib-modal-header [icon]="icon()" [title]="title()" [subtitle]="subtitle()" />
+  </ng-template>
+
+  <div class="modal-body-container">
+    <ng-content />
+  </div>
+
+  <ng-template #footer>
+    <div class="modal-footer-wrapper">
+      <ng-content select="[modal-footer]" />
+    </div>
+  </ng-template>
+
+</p-dialog>

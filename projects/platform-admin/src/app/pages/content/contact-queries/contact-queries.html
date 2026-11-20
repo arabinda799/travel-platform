@@ -1,0 +1,191 @@
+<lib-page-container
+  title="Contact Queries"
+  subtitle="Customer inquiries, partnership requests, and website contact submissions"
+  [breadcrumbs]="breadcrumbs">
+
+  <lib-data-table
+    [value]="filteredQueries()"
+    [columns]="columns()"
+    [totalRecords]="filteredQueries().length"
+    [loading]="loading()"
+    [checkbox]="true"
+    [(selection)]="selectedQueries"
+    [searchable]="true"
+    searchPlaceholder="Search by name, email, subject or message..."
+    (search)="onSearch($event)">
+
+    <div table-actions class="table-actions-group">
+      <lib-button
+        variant="outline"
+        icon="tune"
+        [badge]="activeFilterCount() ? activeFilterCount() : ''"
+        (click)="filterVisible.set(true)">
+        Filters
+      </lib-button>
+    </div>
+
+    <div selection-actions class="selection-actions-group">
+      <lib-button variant="outline" icon="download" (click)="exportData(true)">
+        Export Selected ({{ selectedQueries().length }})
+      </lib-button>
+      <lib-button variant="danger" icon="delete" (click)="confirmBulkDelete()">
+        Delete Selected ({{ selectedQueries().length }})
+      </lib-button>
+    </div>
+
+    <!-- Name + Phone -->
+    <ng-template #nameTpl let-row>
+      <div class="contact-name-cell">
+        <span class="name-text">{{ row.name }}</span>
+        @if (row.phone) {
+          <span class="phone-subtext">{{ row.phone }}</span>
+        }
+      </div>
+    </ng-template>
+
+    <!-- Email -->
+    <ng-template #emailTpl let-row>
+      <span class="email-link">{{ row.email }}</span>
+    </ng-template>
+
+    <!-- Query Type pill -->
+    <ng-template #queryTypeTpl let-row>
+      <span class="query-type-pill" [class]="'type-' + (row.queryType || 'general').toLowerCase()">
+        {{ row.queryType }}
+      </span>
+    </ng-template>
+
+    <!-- Subject + message snippet (click to open detail) -->
+    <ng-template #subjectTpl let-row>
+      <div class="contact-subject-cell" (click)="openViewModal(row)" role="button" tabindex="0">
+        <span class="subject-title">{{ row.subject }}</span>
+        <span class="subject-snippet">{{ row.message }}</span>
+      </div>
+    </ng-template>
+
+    <!-- Status badge -->
+    <ng-template #statusTpl let-row>
+      <lib-status-badge
+        [status]="row.status === 'Resolved' ? 'Active' : row.status === 'In Progress' ? 'Pending' : 'Draft'"
+        [label]="row.status" />
+    </ng-template>
+
+    <!-- Row actions -->
+    <ng-template #actionsTpl let-row>
+      <div class="table-row-actions">
+        <lib-table-action action="view" tooltip="View Full Message" (clicked)="openViewModal(row)" />
+        <lib-table-action action="delete" tooltip="Delete Query" (clicked)="confirmDeleteSingle(row)" />
+      </div>
+    </ng-template>
+
+  </lib-data-table>
+
+</lib-page-container>
+
+<!-- ─── Filter Sidebar ─── -->
+<lib-filter-sidebar
+  [(visible)]="filterVisible"
+  (apply)="onApplyFilters()"
+  (reset)="onResetFilters()">
+
+  <div class="filter-group">
+    <lib-select-field
+      label="Status"
+      [options]="statusOptions"
+      [value]="selectedStatusFilter()"
+      (valueChange)="selectedStatusFilter.set($event)"
+      placeholder="All Statuses"
+      [clearable]="true" />
+  </div>
+
+  <div class="filter-group">
+    <lib-select-field
+      label="Query Type"
+      [options]="queryTypeOptions"
+      [value]="selectedTypeFilter()"
+      (valueChange)="selectedTypeFilter.set($event)"
+      placeholder="All Types"
+      [clearable]="true" />
+  </div>
+
+  <div class="filter-group">
+    <lib-datepicker-field
+      label="Created Date Range"
+      selectionMode="range"
+      dateFormat="dd/mm/yy"
+      placeholder="Select start and end date"
+      [value]="selectedDateRangeFilter()"
+      (valueChange)="selectedDateRangeFilter.set($event)" />
+  </div>
+
+</lib-filter-sidebar>
+
+<!-- ─── View Query Detail Modal ─── -->
+<lib-modal
+  [(visible)]="viewModalVisible"
+  title="Contact Query Details"
+  subtitle="View submission and manage resolution status"
+  icon="contact_mail"
+  width="42rem">
+
+  @if (activeQuery(); as q) {
+    <div class="query-detail-container">
+
+      <!-- Sender header -->
+      <div class="detail-header-card">
+        <div class="sender-avatar">
+          <span class="icon">person</span>
+        </div>
+        <div class="sender-meta">
+          <h3 class="sender-name">{{ q.name }}</h3>
+          <div class="sender-sub">
+            <span class="icon-text"><span class="icon">mail</span> {{ q.email }}</span>
+            @if (q.phone) {
+              <span class="icon-text"><span class="icon">phone</span> {{ q.phone }}</span>
+            }
+          </div>
+        </div>
+        <span class="query-type-pill" [class]="'type-' + q.queryType.toLowerCase()">{{ q.queryType }}</span>
+      </div>
+
+      <!-- Subject -->
+      <div class="detail-section">
+        <div class="section-label">Subject</div>
+        <div class="subject-box">{{ q.subject }}</div>
+      </div>
+
+      <!-- Message -->
+      <div class="detail-section">
+        <div class="section-label">Message</div>
+        <div class="message-box">{{ q.message }}</div>
+      </div>
+
+      <!-- Footer: date + status update -->
+      <div class="detail-footer-grid">
+        <div class="meta-item">
+          <span class="meta-label">Received:</span>
+          <span class="meta-val">{{ q.createdDate }}</span>
+        </div>
+        <div class="status-action-row">
+          <span class="meta-label">Status:</span>
+          <div class="status-buttons">
+            <button type="button" class="status-pill-btn new" [class.active]="q.status === 'New'" (click)="updateQueryStatus('New')">New</button>
+            <button type="button" class="status-pill-btn in-progress" [class.active]="q.status === 'In Progress'" (click)="updateQueryStatus('In Progress')">In Progress</button>
+            <button type="button" class="status-pill-btn resolved" [class.active]="q.status === 'Resolved'" (click)="updateQueryStatus('Resolved')">Resolved</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  }
+
+</lib-modal>
+
+<!-- ─── Confirm Delete ─── -->
+<lib-confirm-dialog
+  [(visible)]="confirmDeleteVisible"
+  [title]="itemToDelete() ? 'Delete Contact Query' : 'Delete Selected Queries'"
+  [message]="itemToDelete() ? 'Are you sure you want to delete the query from &quot;' + itemToDelete()?.name + '&quot;?' : 'Are you sure you want to delete the ' + selectedQueries().length + ' selected queries?'"
+  confirmLabel="Delete"
+  severity="danger"
+  (confirmed)="executeDelete()" />

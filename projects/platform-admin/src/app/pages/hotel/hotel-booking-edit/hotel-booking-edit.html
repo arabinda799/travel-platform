@@ -1,0 +1,736 @@
+<lib-page-container
+  title="Edit Hotel Booking"
+  [subtitle]="'Booking #' + booking().bookingId + ' • ' + booking().hotelName"
+  icon="edit_note"
+  [breadcrumbs]="[
+    { label: 'Dashboard', route: '/dashboard' },
+    { label: 'Hotel Bookings', route: '/hotel/bookings' },
+    { label: '#' + booking().bookingId, route: '/hotel/bookings/' + booking().bookingId },
+    { label: 'Edit' }
+  ]">
+
+  <!-- Top Action Bar -->
+  <div page-actions class="page-top-actions">
+    <lib-button
+      variant="outline-danger"
+      icon="arrow_back"
+      (btnClick)="goBack()">
+      Back
+    </lib-button>
+
+    <lib-button
+      variant="primary"
+      icon="visibility"
+      (btnClick)="viewConfirmation()">
+      View Confirmation
+    </lib-button>
+  </div>
+
+  <div class="edit-page-container">
+
+    <!-- Top Identity Card (Theme Based, Non-intrusive) -->
+    <header class="booking-identity-bar">
+      <div class="identity-info">
+        <span class="identity-badge">HOTEL BOOKING</span>
+        <h1 class="identity-title">
+          Booking #{{ booking().bookingId }}
+          <span class="ref-sub">({{ booking().hotelConfirmationNo }})</span>
+        </h1>
+        <span class="property-tag">{{ booking().hotelName }}</span>
+      </div>
+
+      <div class="identity-actions">
+        <lib-button variant="outline" size="sm" icon="description" (btnClick)="openBookingSummary()">
+          Summary
+        </lib-button>
+
+        <lib-button variant="primary" size="sm" icon="edit" (btnClick)="scrollToEdit()">
+          Edit Controls
+        </lib-button>
+      </div>
+    </header>
+
+    <!-- 1. SECTION: Booking Basic Detail -->
+    <section class="accordion-card">
+      <header class="accordion-header" (click)="toggleSection('basic')">
+        <div class="accordion-title-wrap">
+          <span class="icon header-icon">info</span>
+          <h2 class="accordion-title">Booking Basic Detail</h2>
+        </div>
+        <button type="button" class="accordion-toggle-btn" aria-label="Toggle Booking Basic Detail">
+          <span class="icon">{{ expanded().basic ? 'expand_less' : 'expand_more' }}</span>
+        </button>
+      </header>
+
+      @if (expanded().basic) {
+        <div class="accordion-content">
+          <div class="key-value-grid grid-4-col">
+            <div class="kv-item">
+              <span class="kv-label">Booking ID :</span>
+              <strong class="kv-value mono">{{ booking().bookingId }}</strong>
+            </div>
+
+            <div class="kv-item">
+              <span class="kv-label">Hotel Confirmation No:</span>
+              <strong class="kv-value mono">{{ booking().hotelConfirmationNo }}</strong>
+            </div>
+
+            <div class="kv-item">
+              <span class="kv-label">Amount :</span>
+              <strong class="kv-value highlight-amount">₹ {{ booking().amount | number }}</strong>
+            </div>
+
+            <div class="kv-item">
+              <span class="kv-label">Booking Status :</span>
+              <div class="kv-value">
+                <lib-status-badge [status]="booking().status" />
+              </div>
+            </div>
+
+            <div class="kv-item">
+              <span class="kv-label">Channel Type :</span>
+              <span class="kv-value">{{ booking().channelType }}</span>
+            </div>
+
+            <div class="kv-item">
+              <span class="kv-label">Created On :</span>
+              <span class="kv-value">{{ booking().createdOn }}</span>
+            </div>
+
+            <div class="kv-item">
+              <span class="kv-label">Booked By :</span>
+              <span class="kv-value">{{ booking().bookedBy }}</span>
+            </div>
+
+            <div class="kv-item">
+              <span class="kv-label">Supplier :</span>
+              <span class="kv-value">{{ booking().supplier }}</span>
+            </div>
+
+            <div class="kv-item">
+              <span class="kv-label">Issue Supplier :</span>
+              <span class="kv-value">{{ booking().issueSupplier || '-' }}</span>
+            </div>
+
+            <div class="kv-item">
+              <span class="kv-label">Last Cancellation Date :</span>
+              <strong class="kv-value highlight-cancellation">{{ booking().lastCancellationDate }}</strong>
+            </div>
+
+            <div class="kv-item">
+              <span class="kv-label">Assign User Name :</span>
+              <span class="kv-value">{{ booking().assignUserName || '-' }}</span>
+            </div>
+
+            <div class="kv-item">
+              <span class="kv-label">Booking Source :</span>
+              <span class="kv-value">{{ booking().bookingSource }}</span>
+            </div>
+
+            <div class="kv-item col-span-full">
+              <a href="javascript:void(0)" class="theme-link" (click)="openBookingSummary()">
+                Booking Summary
+              </a>
+            </div>
+          </div>
+        </div>
+      }
+    </section>
+
+    <!-- 2. SECTION: Booking User Information -->
+    <section class="accordion-card">
+      <header class="accordion-header" (click)="toggleSection('user')">
+        <div class="accordion-title-wrap">
+          <span class="icon header-icon">person</span>
+          <h2 class="accordion-title">Booking User Information :</h2>
+        </div>
+        <button type="button" class="accordion-toggle-btn" aria-label="Toggle Booking User Information">
+          <span class="icon">{{ expanded().user ? 'expand_less' : 'expand_more' }}</span>
+        </button>
+      </header>
+
+      @if (expanded().user) {
+        <div class="accordion-content">
+          <div class="key-value-grid grid-3-col">
+            <div class="kv-item">
+              <span class="kv-label">Name :</span>
+              <strong class="kv-value">{{ booking().bookingUserInfo.name }}</strong>
+            </div>
+
+            <div class="kv-item">
+              <span class="kv-label">Email :</span>
+              <span class="kv-value mono">{{ booking().bookingUserInfo.email }}</span>
+            </div>
+
+            <div class="kv-item">
+              <span class="kv-label">Contact No :</span>
+              <span class="kv-value mono">{{ booking().bookingUserInfo.contactNo }}</span>
+            </div>
+          </div>
+        </div>
+      }
+    </section>
+
+    <!-- 4. SECTION: Amendments -->
+    <section class="accordion-card">
+      <header class="accordion-header" (click)="toggleSection('amendments')">
+        <div class="accordion-title-wrap">
+          <span class="icon header-icon">history</span>
+          <h2 class="accordion-title">Amendments</h2>
+        </div>
+        <button type="button" class="accordion-toggle-btn" aria-label="Toggle Amendments">
+          <span class="icon">{{ expanded().amendments ? 'expand_less' : 'expand_more' }}</span>
+        </button>
+      </header>
+
+      @if (expanded().amendments) {
+        <div class="accordion-content">
+          @if (booking().amendments && booking().amendments.length > 0) {
+            <div class="table-responsive">
+              <table class="theme-table">
+                <thead>
+                  <tr>
+                    <th>Amendment ID</th>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Requested By</th>
+                    <th>Status</th>
+                    <th>Details</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (amendment of booking().amendments; track amendment.id) {
+                    <tr>
+                      <td class="mono font-semibold">{{ amendment.id }}</td>
+                      <td>{{ amendment.date }}</td>
+                      <td>{{ amendment.type }}</td>
+                      <td>{{ amendment.requestedBy }}</td>
+                      <td><lib-status-badge [status]="amendment.status" /></td>
+                      <td>{{ amendment.details }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else {
+            <div class="empty-state-notice">
+              <span class="icon">history_toggle_off</span>
+              <span>No amendments recorded for this booking.</span>
+            </div>
+          }
+        </div>
+      }
+    </section>
+
+    <!-- 5. SECTION: Hotel Details -->
+    <section class="accordion-card">
+      <header class="accordion-header" (click)="toggleSection('hotel')">
+        <div class="accordion-title-wrap">
+          <span class="icon header-icon">hotel</span>
+          <h2 class="accordion-title">Hotel Details</h2>
+        </div>
+        <button type="button" class="accordion-toggle-btn" aria-label="Toggle Hotel Details">
+          <span class="icon">{{ expanded().hotel ? 'expand_less' : 'expand_more' }}</span>
+        </button>
+      </header>
+
+      @if (expanded().hotel) {
+        <div class="accordion-content">
+          <div class="hotel-details-box">
+            <!-- Title & Star Rating -->
+            <div class="hotel-title-strip">
+              <h3 class="hotel-name">{{ booking().hotelName }}</h3>
+              <div class="star-rating" [attr.aria-label]="booking().starRating + ' stars'">
+                @for (isFilled of stars(); track $index) {
+                  <span class="icon star-icon">star</span>
+                }
+              </div>
+            </div>
+
+            <!-- Address line with pin -->
+            <div class="hotel-address-line">
+              <span class="icon pin-icon">location_on</span>
+              <span class="address-label">Address:</span>
+              <span class="address-text">{{ booking().address }}</span>
+            </div>
+
+            <!-- Stay Calendar Grid (Check-in / Nights / Check-out) -->
+            <div class="stay-timeline-container">
+              <div class="stay-cell check-in">
+                <span class="stay-label">Check-in</span>
+                <strong class="stay-date-main">{{ booking().checkInMonthYear }}</strong>
+                <span class="stay-date-sub">{{ booking().checkInDayDate }}</span>
+              </div>
+
+              <div class="stay-cell nights-center">
+                <span class="stay-label">Nights</span>
+                <strong class="nights-count">{{ booking().nights }}</strong>
+              </div>
+
+              <div class="stay-cell check-out">
+                <span class="stay-label">Check-out</span>
+                <strong class="stay-date-main">{{ booking().checkOutMonthYear }}</strong>
+                <span class="stay-date-sub">{{ booking().checkOutDayDate }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+    </section>
+
+    <!-- 6. SECTION: Room 1 -->
+    <section class="accordion-card">
+      <header class="accordion-header" (click)="toggleSection('room')">
+        <div class="accordion-title-wrap">
+          <span class="icon header-icon">meeting_room</span>
+          <h2 class="accordion-title">Room 1</h2>
+        </div>
+        <button type="button" class="accordion-toggle-btn" aria-label="Toggle Room 1">
+          <span class="icon">{{ expanded().room ? 'expand_less' : 'expand_more' }}</span>
+        </button>
+      </header>
+
+      @if (expanded().room) {
+        <div class="accordion-content">
+          <!-- Room Subheader Info -->
+          <div class="room-spec-row">
+            <div class="spec-col">
+              <span class="spec-label">Room Type</span>
+              <strong class="spec-val">{{ booking().rooms[0]?.roomType || 'Standard-EP' }}</strong>
+            </div>
+
+            <div class="spec-col">
+              <span class="spec-label">Amenities</span>
+              <span class="spec-val">{{ booking().rooms[0]?.amenities?.[0] || '-' }}</span>
+            </div>
+
+            <div class="spec-col text-right">
+              <span class="spec-label">Guests</span>
+              <div class="guests-line">
+                @for (guest of booking().rooms[0]?.guests; track guest.name) {
+                  <span class="guest-item">
+                    <strong>{{ guest.type }}:</strong> {{ guest.title }} {{ guest.name }}
+                  </span>
+                }
+              </div>
+            </div>
+          </div>
+
+          <!-- Cancellation Policy Table -->
+          <div class="cancellation-policy-block">
+            <h4 class="sub-block-title">Cancellation Policy</h4>
+            <div class="table-responsive">
+              <table class="theme-table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Cancelled on or After</th>
+                    <th>Cancelled on or Before</th>
+                    <th>Cancelled on or Charges</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (tier of booking().cancellationTiers; track tier.after) {
+                    <tr>
+                      <td>{{ tier.after }}</td>
+                      <td>{{ tier.before }}</td>
+                      <td class="font-medium">{{ tier.charges }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Price Summary Strip -->
+          <div class="price-summary-strip">
+            <div class="price-cell">
+              <span class="price-label">Published Price</span>
+              <strong class="price-val">₹ {{ booking().publishedPrice | number }}</strong>
+            </div>
+
+            <div class="price-cell">
+              <span class="price-label">Agent Commission</span>
+              <strong class="price-val">₹ {{ booking().agentCommission | number }}</strong>
+            </div>
+
+            <div class="price-cell">
+              <span class="price-label">Discount</span>
+              <strong class="price-val">₹ {{ booking().discount | number }}</strong>
+            </div>
+
+            <div class="price-cell">
+              <span class="price-label">GST Amount</span>
+              <strong class="price-val">₹ {{ booking().gstAmount | number }}</strong>
+            </div>
+
+            <div class="price-cell">
+              <span class="price-label">TDS</span>
+              <strong class="price-val">₹ {{ booking().tds | number }}</strong>
+            </div>
+
+            <div class="price-cell price-total">
+              <span class="price-label">Total Amount</span>
+              <strong class="price-val highlight-total">₹ {{ booking().totalAmount | number }}</strong>
+            </div>
+          </div>
+        </div>
+      }
+    </section>
+
+    <!-- 7. SECTION: Payment Process (1) -->
+    <section class="accordion-card">
+      <header class="accordion-header" (click)="toggleSection('payment')">
+        <div class="accordion-title-wrap">
+          <span class="icon header-icon">account_balance_wallet</span>
+          <h2 class="accordion-title">
+            Payment Process
+            <span class="badge-count-circle">1</span>
+          </h2>
+        </div>
+        <button type="button" class="accordion-toggle-btn" aria-label="Toggle Payment Process">
+          <span class="icon">{{ expanded().payment ? 'expand_less' : 'expand_more' }}</span>
+        </button>
+      </header>
+
+      @if (expanded().payment) {
+        <div class="accordion-content">
+          <div class="table-responsive">
+            <table class="theme-table table-ledger">
+              <thead>
+                <tr>
+                  <th>Sl.No.</th>
+                  <th>Booking Ref. No.</th>
+                  <th>Invoice No.</th>
+                  <th>Credit Note No.</th>
+                  <th>Date</th>
+                  <th>Payments Type/Transaction id</th>
+                  <th class="text-right">Debit</th>
+                  <th class="text-right">Credit</th>
+                  <th class="text-right">Balance</th>
+                  <th class="text-center">Remark</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (entry of booking().paymentLedger; track entry.slNo) {
+                  <tr>
+                    <td>{{ entry.slNo }}</td>
+                    <td class="mono font-semibold">
+                      <span class="theme-link">{{ entry.bookingRefNo }}</span>
+                    </td>
+                    <td class="mono">{{ entry.invoiceNo }}</td>
+                    <td>{{ entry.creditNoteNo }}</td>
+                    <td>{{ entry.date }}</td>
+                    <td>{{ entry.paymentType }}</td>
+                    <td class="text-right font-semibold">₹ {{ entry.debit | number }}</td>
+                    <td class="text-right">₹ {{ entry.credit | number }}</td>
+                    <td class="text-right font-semibold" [class.text-danger]="entry.balance < 0">
+                      ₹ {{ entry.balance | number:'1.2-2' }}
+                    </td>
+                    <td class="text-center">
+                      <a href="javascript:void(0)" class="theme-link" (click)="openRemarkModal(entry)">
+                        View
+                      </a>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      }
+    </section>
+
+    <!-- 8. SECTION: Fare Breakup -->
+    <section class="accordion-card">
+      <header class="accordion-header" (click)="toggleSection('fare')">
+        <div class="accordion-title-wrap">
+          <span class="icon header-icon">receipt</span>
+          <h2 class="accordion-title">Fare Breakup :</h2>
+        </div>
+        <button type="button" class="accordion-toggle-btn" aria-label="Toggle Fare Breakup">
+          <span class="icon">{{ expanded().fare ? 'expand_less' : 'expand_more' }}</span>
+        </button>
+      </header>
+
+      @if (expanded().fare) {
+        <div class="accordion-content">
+          <!-- Fare breakdown rows -->
+          <div class="fare-rows-block">
+            <div class="fare-line-row">
+              <span class="fare-lbl">Apply Mark Up :</span>
+              <span class="fare-val">₹ {{ booking().fareBreakup.markup | number }}</span>
+            </div>
+
+            <div class="fare-line-row">
+              <span class="fare-lbl">Apply Discount :</span>
+              <span class="fare-val">₹ {{ booking().fareBreakup.discount | number }}</span>
+            </div>
+
+            <div class="fare-line-row divider-above">
+              <span class="fare-lbl">Published Price:</span>
+              <span class="fare-val font-semibold">₹ {{ booking().fareBreakup.publishedPrice | number }}</span>
+            </div>
+
+            <div class="fare-line-row">
+              <span class="fare-lbl">Comm Earned (-):</span>
+              <span class="fare-val">₹ {{ booking().fareBreakup.commEarned | number }}</span>
+            </div>
+
+            <div class="fare-line-row">
+              <span class="fare-lbl">TDS (+):</span>
+              <span class="fare-val">₹ {{ booking().fareBreakup.tds | number }}</span>
+            </div>
+
+            <div class="fare-line-row">
+              <span class="fare-lbl">Convenience fee (+):</span>
+              <span class="fare-val">₹ {{ booking().fareBreakup.convenienceFee | number }}</span>
+            </div>
+
+            <div class="fare-line-row fare-grand-total">
+              <span class="fare-lbl">Total Amount :</span>
+              <strong class="fare-val">₹ {{ booking().fareBreakup.totalAmount | number }}</strong>
+            </div>
+          </div>
+
+          <!-- GST Table -->
+          <div class="gst-breakup-block">
+            <div class="table-responsive">
+              <table class="theme-table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Service Description</th>
+                    <th class="text-right">Taxable Value</th>
+                    <th class="text-right">CGST@ 0 %</th>
+                    <th class="text-right">SGST@ 0 %</th>
+                    <th class="text-right">IGST@18 %</th>
+                    <th class="text-right">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (gst of booking().fareBreakup.gstTable; track gst.serviceDescription) {
+                    <tr>
+                      <td class="font-medium">{{ gst.serviceDescription }}</td>
+                      <td class="text-right">{{ gst.taxableValue }}</td>
+                      <td class="text-right">{{ gst.cgst }}</td>
+                      <td class="text-right">{{ gst.sgst }}</td>
+                      <td class="text-right">{{ gst.igst }}</td>
+                      <td class="text-right font-semibold">{{ gst.total }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      }
+    </section>
+
+    <!-- 9. SECTION: EDIT HOTEL BOOKING CONTROLS (Screenshot 4) -->
+    <section id="edit-booking-form-card" class="accordion-card edit-card">
+      <header class="accordion-header edit-card-header" (click)="toggleSection('edit')">
+        <div class="accordion-title-wrap">
+          <span class="icon header-icon edit-icon">tune</span>
+          <h2 class="accordion-title">Edit Hotel Booking Controls</h2>
+          <span class="edit-pill">Active Mode</span>
+        </div>
+        <button type="button" class="accordion-toggle-btn" aria-label="Toggle Edit Hotel Booking Controls">
+          <span class="icon">{{ expanded().edit ? 'expand_less' : 'expand_more' }}</span>
+        </button>
+      </header>
+
+      @if (expanded().edit) {
+        <div class="accordion-content">
+          <form [formGroup]="editForm" (ngSubmit)="onUpdateBooking()" class="edit-booking-form">
+
+            <!-- Form Row: Issue Supplier, Booking Status, Payment Status, Confirmation Number, Checkboxes -->
+            <div class="form-grid-controls">
+              <lib-select-field
+                label="Issue Supplier"
+                formControlName="issueSupplier"
+                [options]="supplierOptions"
+                placeholder="Select supplier"
+                [filter]="true"
+                [required]="true"
+                />
+
+              <lib-select-field
+                label="Booking Status"
+                formControlName="bookingStatus"
+                [options]="bookingStatusOptions"
+                placeholder="Select booking status"
+                [required]="true"
+                />
+
+              <lib-select-field
+                label="Payment Status"
+                formControlName="paymentStatus"
+                [options]="paymentStatusOptions"
+                placeholder="Select payment status"
+                [required]="true"
+                />
+
+              <lib-text-field
+                label="Confirmation Number"
+                formControlName="confirmationNumber"
+                placeholder="e.g. 6424674325436"
+                [required]="true"
+                />
+
+              <div class="form-checkboxes-col">
+                <lib-checkbox-field label="Refund Booking Amount" formControlName="refundBookingAmount" />
+                <lib-checkbox-field label="Deduct Booking Amount" formControlName="deductBookingAmount" />
+              </div>
+            </div>
+
+            <lib-textarea-field
+              label="Note"
+              formControlName="note"
+              [rows]="3"
+              [optional]="true"
+              placeholder="Enter internal notes, reason for status modification, or supplier remarks..." />
+
+            <!-- Previous notes history if present -->
+            @if (booking().notes && booking().notes.length > 0) {
+              <div class="notes-history-block">
+                <span class="history-label">Previous Notes & Remarks:</span>
+                <ul class="notes-list">
+                  @for (n of booking().notes; track n) {
+                    <li class="note-item">
+                      <span class="bullet">•</span>
+                      <span>{{ n }}</span>
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
+
+            <!-- Form Actions Row: Update Booking / Cancel -->
+            <div class="form-actions-row">
+              <lib-button
+                variant="primary"
+                icon="save"
+                type="submit"
+                [loading]="isSaving()">
+                Update Booking
+              </lib-button>
+
+              <lib-button
+                variant="outline"
+                icon="close"
+                type="button"
+                (btnClick)="onCancelEdit()">
+                Cancel
+              </lib-button>
+            </div>
+
+          </form>
+        </div>
+      }
+    </section>
+
+  </div>
+
+  <!-- MODAL: Booking Summary Modal -->
+  <lib-modal
+    [(visible)]="showSummaryModal"
+    [title]="'Hotel Booking Summary (#' + booking().bookingId + ')'"
+    subtitle="Reservation overview and guest details"
+    icon="description"
+    width="38rem">
+
+    <div class="summary-card-inner">
+      <div class="summary-hero">
+        <div class="summary-prop-name">{{ booking().hotelName }}</div>
+        <div class="summary-prop-address">{{ booking().address }}</div>
+        <div class="summary-ref-badges">
+          <span class="mono-badge">Booking ID: {{ booking().bookingId }}</span>
+          <span class="mono-badge">Confirmation: {{ booking().hotelConfirmationNo }}</span>
+          <lib-status-badge [status]="booking().status" />
+        </div>
+      </div>
+
+      <div class="summary-dates-grid">
+        <div class="summary-date-box">
+          <span class="lbl">Check-In</span>
+          <strong>{{ booking().checkInMonthYear }} {{ booking().checkInDayDate }}</strong>
+        </div>
+        <div class="summary-date-box">
+          <span class="lbl">Stay Duration</span>
+          <strong>{{ booking().nights }} Nights</strong>
+        </div>
+        <div class="summary-date-box">
+          <span class="lbl">Check-Out</span>
+          <strong>{{ booking().checkOutMonthYear }} {{ booking().checkOutDayDate }}</strong>
+        </div>
+      </div>
+
+      <div class="summary-kv-list">
+        <div class="row">
+          <span>Guest Name:</span>
+          <strong>{{ booking().bookingUserInfo.name }}</strong>
+        </div>
+        <div class="row">
+          <span>Contact:</span>
+          <span>{{ booking().bookingUserInfo.email }} • {{ booking().bookingUserInfo.contactNo }}</span>
+        </div>
+        <div class="row">
+          <span>Supplier / Issue:</span>
+          <span>{{ booking().supplier }} / {{ booking().issueSupplier || 'CRS' }}</span>
+        </div>
+        <div class="row total-row">
+          <span>Total Amount:</span>
+          <strong class="highlight">₹ {{ booking().amount | number }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div modal-footer class="modal-footer-actions">
+      <lib-button variant="outline" (btnClick)="closeBookingSummary()">Close</lib-button>
+      <lib-button variant="primary" icon="visibility" (btnClick)="viewConfirmation()">View Full Voucher</lib-button>
+    </div>
+  </lib-modal>
+
+  <!-- MODAL: Transaction Remark Modal -->
+  <lib-modal
+    [(visible)]="showRemarkModal"
+    title="Transaction Remark Details"
+    subtitle="Payment ledger and audit note"
+    icon="receipt"
+    width="34rem"
+    (closed)="closeRemarkModal()">
+
+    @if (activeRemark(); as item) {
+      <div class="remark-details-box">
+        <div class="remark-row">
+          <span class="lbl">Booking Ref No:</span>
+          <strong class="mono">{{ item.bookingRefNo }}</strong>
+        </div>
+        <div class="remark-row">
+          <span class="lbl">Invoice Number:</span>
+          <strong class="mono">{{ item.invoiceNo }}</strong>
+        </div>
+        <div class="remark-row">
+          <span class="lbl">Payment Type:</span>
+          <span>{{ item.paymentType }}</span>
+        </div>
+        <div class="remark-row">
+          <span class="lbl">Debit Amount:</span>
+          <strong class="text-danger">₹ {{ item.debit | number }}</strong>
+        </div>
+        <div class="remark-row">
+          <span class="lbl">Current Balance:</span>
+          <strong class="mono">₹ {{ item.balance | number:'1.2-2' }}</strong>
+        </div>
+        <div class="remark-row">
+          <span class="lbl">Audit Remark:</span>
+          <p class="remark-text">{{ item.remark }}</p>
+        </div>
+      </div>
+    }
+
+    <div modal-footer class="modal-footer-actions">
+      <lib-button variant="primary" (btnClick)="closeRemarkModal()">Close</lib-button>
+    </div>
+  </lib-modal>
+
+</lib-page-container>

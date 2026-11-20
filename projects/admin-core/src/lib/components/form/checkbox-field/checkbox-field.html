@@ -1,0 +1,29 @@
+<div class="checkbox-field" [class.is-disabled]="disabled()" [class.has-error]="!!errorMessage">
+  <div class="checkbox-control-wrapper">
+    <p-checkbox
+      [inputId]="inputId()"
+      [binary]="true"
+      [disabled]="disabled()"
+      [ngModel]="value()"
+      (ngModelChange)="onCheckboxChange($event)" />
+  </div>
+
+  <div class="checkbox-content">
+    <label [attr.for]="inputId()" class="checkbox-label">
+      {{ label() }}
+      @if (required()) {
+        <span class="required-indicator">*</span>
+      }
+    </label>
+    @if (description()) {
+      <span class="checkbox-desc">{{ description() }}</span>
+    }
+  </div>
+</div>
+
+@if (errorMessage) {
+  <span class="form-field-error" role="alert">
+    <span class="icon error-icon">error</span>
+    <span class="error-text">{{ errorMessage }}</span>
+  </span>
+}

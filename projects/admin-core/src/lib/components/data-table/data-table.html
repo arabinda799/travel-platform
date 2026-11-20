@@ -1,0 +1,182 @@
+@if (loading() && value().length === 0) {
+  <lib-skeleton variant="table" [rows]="rows()" [columns]="skeletonColumns()" />
+} @else {
+  <!-- Top Bar: Transitions to Selection Bar when rows are selected -->
+  @if (selection().length > 0) {
+    <div class="table-selection-bar">
+      <div class="selection-bar-header">
+        <span class="selection-count">{{ selection().length }} {{ selection().length === 1 ? 'record' : 'records' }} selected</span>
+        <button type="button" class="btn-clear-selection" (click)="clearSelection()">Clear selection</button>
+      </div>
+      <div class="selection-bar-actions">
+        <ng-content select="[selection-actions]" />
+      </div>
+    </div>
+  } @else {
+    <div class="table-top-bar">
+      @if (searchable()) {
+        <div class="table-search-bar">
+          <span class="icon search-icon">search</span>
+          <input
+            type="text"
+            class="table-search-input"
+            aria-label="Search records"
+            [placeholder]="effectiveSearchPlaceholder()"
+            [ngModel]="searchValue()"
+            (ngModelChange)="onSearchInput($event)" />
+          @if (searchValue()) {
+            <button type="button" class="search-clear-btn" aria-label="Clear search" (click)="onClearSearch()">
+              <span class="icon">close</span>
+            </button>
+          }
+        </div>
+      }
+      <div class="table-actions">
+        <ng-content select="[table-actions]" />
+      </div>
+    </div>
+  }
+  <div class="table-wrapper" [style.--table-scroll-height]="effectiveScrollHeight()">
+    <p-table
+      [value]="value()"
+      [lazy]="true"
+      [paginator]="paginator()"
+      [rows]="rows()"
+      [rowsPerPageOptions]="rowsPerPageOptions()"
+      [totalRecords]="totalRecords()"
+      [first]="first()"
+      [showCurrentPageReport]="showCurrentPageReport()"
+      [currentPageReportTemplate]="currentPageReportTemplate()"
+      paginatorDropdownAppendTo="body"
+      [loading]="loading()"
+      [sortField]="sortField()"
+      [sortOrder]="sortOrder()"
+      [selectionMode]="effectiveSelectionMode()"
+      [(selection)]="selection"
+      [dataKey]="trackByField()"
+      [scrollable]="true"
+      [scrollHeight]="effectiveScrollHeight()"
+      (onLazyLoad)="onLazyLoad($event)"
+      (onRowSelect)="onRowSelect($event)"
+      styleClass="data-table">
+
+      <!-- Caption / Toolbar -->
+      @if (captionTemplate()) {
+        <ng-template #caption>
+          <ng-container *ngTemplateOutlet="captionTemplate()!" />
+        </ng-template>
+      }
+
+      <!-- Column Headers -->
+      <ng-template #headerCell let-col="col">
+        <div class="header-cell-content" [style.justify-content]="col.align === 'center' ? 'center' : col.align === 'right' ? 'flex-end' : 'flex-start'">
+          <span class="header-cell-title">{{ col.header }}</span>
+          @if (col.sortable) {
+            <p-sort-icon [field]="col.field" />
+          }
+        </div>
+      </ng-template>
+
+      <ng-template #header>
+        <tr>
+          @if (checkbox()) {
+            <th class="checkbox-col" pFrozenColumn [style.width]="'3rem'" [style.min-width]="'3rem'" [style.max-width]="'3rem'">
+              <p-tableheadercheckbox />
+            </th>
+          }
+          @for (col of columns(); track col.field) {
+            @if (col.frozen) {
+              <th
+                [pSortableColumn]="col.sortable ? col.field : ''"
+                [style.width]="col.width || 'auto'"
+                [style.min-width]="col.width || 'auto'"
+                [style.text-align]="col.align || 'left'"
+                pFrozenColumn
+                [alignFrozen]="col.frozenAlign || 'left'">
+                <ng-container *ngTemplateOutlet="headerCell; context: { col }" />
+              </th>
+            } @else {
+              <th
+                [pSortableColumn]="col.sortable ? col.field : ''"
+                [style.width]="col.width || 'auto'"
+                [style.min-width]="col.width || 'auto'"
+                [style.text-align]="col.align || 'left'">
+                <ng-container *ngTemplateOutlet="headerCell; context: { col }" />
+              </th>
+            }
+          }
+        </tr>
+      </ng-template>
+
+      <!-- Row Body -->
+      <ng-template #bodyCell let-col="col" let-row="row" let-ri="ri">
+        @if (col.bodyTemplate) {
+          <ng-container *ngTemplateOutlet="col.bodyTemplate; context: { $implicit: row, rowIndex: ri, field: col.field }" />
+        } @else {
+          @if (shouldTruncate(row[col.field], textTruncateLimit())) {
+            <span
+              class="cell-truncated"
+              [pTooltip]="getTruncateTooltip(row[col.field])"
+              tooltipPosition="top"
+              [showDelay]="150"
+              tooltipStyleClass="app-table-tooltip">
+              {{ truncateText(row[col.field], textTruncateLimit()) }}
+            </span>
+          } @else {
+            {{ row[col.field] ?? '' }}
+          }
+        }
+      </ng-template>
+
+      <ng-template #body let-row let-ri="rowIndex">
+        <tr>
+          @if (checkbox()) {
+            <td class="checkbox-col" pFrozenColumn [style.width]="'3rem'" [style.min-width]="'3rem'" [style.max-width]="'3rem'">
+              <p-tablecheckbox [value]="row" />
+            </td>
+          }
+          @for (col of columns(); track col.field) {
+            @if (col.frozen) {
+              <td
+                [style.width]="col.width || 'auto'"
+                [style.min-width]="col.width || 'auto'"
+                [style.text-align]="col.align || 'left'"
+                pFrozenColumn
+                [alignFrozen]="col.frozenAlign || 'left'">
+                <ng-container *ngTemplateOutlet="bodyCell; context: { col, row, ri }" />
+              </td>
+            } @else {
+              <td
+                [style.width]="col.width || 'auto'"
+                [style.min-width]="col.width || 'auto'"
+                [style.text-align]="col.align || 'left'">
+                <ng-container *ngTemplateOutlet="bodyCell; context: { col, row, ri }" />
+              </td>
+            }
+          }
+        </tr>
+      </ng-template>
+
+      <!-- Empty State -->
+      <ng-template #emptymessage>
+        @if (emptyTemplate()) {
+          <ng-container *ngTemplateOutlet="emptyTemplate()!" />
+        } @else {
+          <tr>
+            <td [attr.colspan]="columns().length + (checkbox() ? 1 : 0)" class="empty-state">
+              <div class="empty-state-content">
+                <span class="icon empty-icon">search_off</span>
+                <p class="empty-text">No records found</p>
+                <p class="empty-subtext">No matching records were found for your current search or filters.</p>
+                <lib-button variant="outline" size="sm" icon="refresh" (click)="onRefreshTable()">
+                  Refresh Table
+                </lib-button>
+              </div>
+            </td>
+          </tr>
+        }
+      </ng-template>
+
+    </p-table>
+  </div>
+}

@@ -1,0 +1,209 @@
+<lib-page-container
+  title="Payment Gateway List"
+  subtitle="Manage payment gateway providers, enabled checkout payment modes, and credentials"
+  icon="credit_card"
+  [breadcrumbs]="breadcrumbs">
+
+  <!-- Top Page Actions -->
+  <div page-actions class="page-top-actions">
+    <lib-button
+      variant="outline"
+      icon="payments"
+      (btnClick)="goToConvenienceFees()">
+      Convenience Fees
+    </lib-button>
+
+    <lib-button
+      variant="primary"
+      icon="add"
+      (btnClick)="openAddModal()">
+      Add Payment Gateway
+    </lib-button>
+  </div>
+
+  <!-- Data Table -->
+  <lib-data-table
+    [value]="filteredGateways()"
+    [columns]="columns()"
+    [totalRecords]="filteredGateways().length"
+    [loading]="isLoading()"
+    [checkbox]="true"
+    [(selection)]="selectedGateways"
+    [searchable]="true"
+    searchPlaceholder="Search gateways by name, mode, remarks..."
+    (lazyLoad)="onLazyLoad($event)"
+    (search)="onSearch($event)">
+
+    <!-- Selection Actions: Only Status Change (NO DELETE) -->
+    <div selection-actions class="selection-actions-group">
+      <lib-button
+        variant="outline-warning"
+        icon="sync"
+        (click)="statusModalVisible.set(true)">
+        Change Status
+      </lib-button>
+    </div>
+
+    <!-- 1. Logo Column -->
+    <ng-template #imageTpl let-row>
+      <div class="gateway-logo-cell">
+        <lib-thumb-image [src]="row.image" [alt]="row.name" fallbackIcon="account_balance_wallet" />
+      </div>
+    </ng-template>
+
+    <!-- 2. Modes Column (Pills / Badges) -->
+    <ng-template #modeTpl let-row>
+      <div class="modes-pill-list">
+        @for (mode of row.paymentModes.slice(0, 3); track mode) {
+          <span class="mode-tag">{{ mode }}</span>
+        }
+        @if (row.paymentModes.length > 3) {
+          <span class="mode-tag more-tag">+{{ row.paymentModes.length - 3 }} more</span>
+        }
+      </div>
+    </ng-template>
+
+    <!-- 3. Status Column -->
+    <ng-template #statusTpl let-row>
+      <lib-status-badge [status]="row.status" />
+    </ng-template>
+
+    <!-- 4. Created Date Column (12-hour format) -->
+    <ng-template #dateTpl let-row>
+      <span class="date-cell mono">{{ row.createdDate | date:'dd MMM yyyy, hh:mm a' }}</span>
+    </ng-template>
+
+    <!-- 5. Action Column: UPDATE ONLY (NO DELETE) -->
+    <ng-template #actionsTpl let-row>
+      <div class="table-row-actions">
+        <lib-table-action action="edit" tooltip="Update Gateway" (clicked)="openEditModal(row)" />
+      </div>
+    </ng-template>
+
+  </lib-data-table>
+
+  <!-- Status Change Modal -->
+  <lib-status-modal
+    [(visible)]="statusModalVisible"
+    title="Change Gateway Status"
+    [count]="selectedGateways.length"
+    [options]="statusModalOptions"
+    (confirmed)="onStatusChangeSubmit($event)" />
+
+  <!-- Add / Edit Payment Gateway Modal Form -->
+  <lib-form-modal
+    [(visible)]="isModalVisible"
+    [title]="modalTitle"
+    [subtitle]="modalSubtitle"
+    icon="credit_card"
+    width="44rem"
+    submitLabel="Save Gateway"
+    submitIcon="check"
+    [loading]="isSaving()"
+    (submitted)="onSubmitGateway()"
+    (cancelled)="closeModal()">
+
+    <form [formGroup]="gatewayForm" class="gateway-modal-form">
+
+      <!-- Row 1: Name and Image URL -->
+      <div class="form-row-2col">
+        <lib-text-field
+          label="Gateway Name"
+          formControlName="name"
+          placeholder="e.g. PayU, Razorpay, Cashfree"
+          [required]="true"
+          prefixIcon="badge" />
+
+        <lib-text-field
+          label="Logo Image URL"
+          formControlName="image"
+          placeholder="https://.../logo.png"
+          [optional]="true"
+          prefixIcon="image" />
+      </div>
+
+      <!-- Row 2: Payment Mode Multi-Select Dropdown (Image 1) -->
+      <div class="form-field-wrapper">
+        <label class="field-label">
+          Payment Mode <span class="required-star">*</span>
+        </label>
+
+        <div class="multi-select-container">
+          <button
+            type="button"
+            class="multi-select-trigger"
+            (click)="toggleModeDropdown()"
+            [attr.aria-expanded]="isModeDropdownOpen()">
+            <span class="trigger-text">
+              {{ gatewayForm.get('paymentModes')?.value?.length || 0 }} selected
+            </span>
+            <span class="icon trigger-icon">{{ isModeDropdownOpen() ? 'expand_less' : 'expand_more' }}</span>
+          </button>
+
+          @if (isModeDropdownOpen()) {
+            <div class="multi-select-dropdown">
+              <div class="dropdown-header-bar">
+                <span class="header-caption">Select Supported Modes</span>
+                <div class="header-actions">
+                  <button type="button" class="link-btn" (click)="selectAllModes()">Select All</button>
+                  <span class="sep">•</span>
+                  <button type="button" class="link-btn" (click)="clearAllModes()">Clear</button>
+                </div>
+              </div>
+
+              <div class="modes-checkbox-list">
+                @for (mode of allPaymentModes; track mode) {
+                  <label class="mode-checkbox-item">
+                    <input
+                      type="checkbox"
+                      [checked]="isModeSelected(mode)"
+                      (change)="togglePaymentMode(mode)" />
+                    <span class="mode-name">{{ mode }}</span>
+                  </label>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Row 3: Status -->
+      <div class="form-row-2col">
+        <lib-select-field
+          label="Gateway Status"
+          formControlName="status"
+          [options]="[
+            { label: 'Active', value: 'Active' },
+            { label: 'Inactive', value: 'Inactive' }
+          ]"
+          [required]="true" />
+      </div>
+
+      <!-- Row 4: Credentials JSON -->
+      <div class="form-field-wrapper">
+        <label class="field-label">
+          Credentials JSON <span class="required-star">*</span>
+        </label>
+        <lib-textarea-field
+          formControlName="credentialsJson"
+          [rows]="5"
+          placeholder='{\n  "key": "your_key",\n  "salt": "your_salt",\n  "merchantId": "your_id"\n}'
+          hint="Valid JSON format containing merchant ID, API keys, secrets, and environment."
+          [required]="true" />
+      </div>
+
+      <!-- Row 5: Remark -->
+      <div class="form-field-wrapper">
+        <lib-textarea-field
+          label="Remark"
+          formControlName="remark"
+          [rows]="2"
+          [optional]="true"
+          placeholder="Internal notes about settlement schedule, routing rules, or contact person..." />
+      </div>
+
+    </form>
+
+  </lib-form-modal>
+
+</lib-page-container>

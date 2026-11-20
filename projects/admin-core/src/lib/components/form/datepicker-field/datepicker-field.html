@@ -1,0 +1,26 @@
+<lib-form-field
+  [label]="label()"
+  [forId]="inputId()"
+  [required]="required()"
+  [optional]="optional()"
+  [hint]="hint()"
+  [error]="error()"
+  [control]="effectiveControl"
+  [value]="effectiveValue"
+  [touched]="effectiveTouched"
+  [disabled]="disabled()">
+
+  <p-datepicker
+    [inputId]="inputId()"
+    [selectionMode]="selectionMode()"
+    [dateFormat]="dateFormat()"
+    [placeholder]="placeholder()"
+    [showIcon]="showIcon()"
+    [showButtonBar]="showButtonBar()"
+    [disabled]="disabled()"
+    [appendTo]="appendTo()"
+    [ngModel]="value()"
+    (ngModelChange)="onDateChange($event)"
+    (onBlur)="onBlur()"
+    styleClass="app-datepicker-control" />
+</lib-form-field>

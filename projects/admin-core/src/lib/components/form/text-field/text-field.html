@@ -1,0 +1,40 @@
+<lib-form-field
+  [label]="label()"
+  [forId]="inputId()"
+  [required]="required()"
+  [optional]="optional()"
+  [hint]="hint()"
+  [error]="error()"
+  [control]="effectiveControl"
+  [value]="effectiveValue"
+  [touched]="effectiveTouched"
+  [disabled]="disabled()">
+
+  <div class="input-wrapper" [class.has-prefix]="prefixIcon()" [class.has-suffix]="suffixIcon() || clearable()">
+    @if (prefixIcon()) {
+      <span class="icon input-prefix-icon">{{ prefixIcon() }}</span>
+    }
+
+    <input
+      pInputText
+      [id]="inputId()"
+      [type]="type()"
+      [placeholder]="placeholder()"
+      [disabled]="disabled()"
+      [readonly]="readonly()"
+      [attr.autocomplete]="autocomplete()"
+      [attr.maxlength]="maxlength() || null"
+      [value]="value()"
+      (input)="onInput($event)"
+      (blur)="onBlur()"
+      class="app-text-input" />
+
+    @if (clearable() && value()) {
+      <button type="button" class="input-clear-btn" aria-label="Clear input" (click)="onClear()">
+        <span class="icon">close</span>
+      </button>
+    } @else if (suffixIcon()) {
+      <span class="icon input-suffix-icon">{{ suffixIcon() }}</span>
+    }
+  </div>
+</lib-form-field>

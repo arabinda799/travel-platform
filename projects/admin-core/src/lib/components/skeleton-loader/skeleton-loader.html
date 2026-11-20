@@ -1,0 +1,49 @@
+<div class="skeleton-container" [class]="'skeleton-' + variant()">
+
+  @switch (variant()) {
+
+    @case ('table') {
+      <!-- Table header row -->
+      <div class="skeleton-table-header">
+        @for (col of colArray; track $index) {
+          <div class="skeleton-bar header-bar"></div>
+        }
+      </div>
+      <!-- Table body rows -->
+      @for (row of rowArray; track $index) {
+        <div class="skeleton-table-row">
+          @for (col of colArray; track $index) {
+            <div class="skeleton-bar cell-bar"></div>
+          }
+        </div>
+      }
+    }
+
+    @case ('form') {
+      @for (row of rowArray; track $index) {
+        <div class="skeleton-form-group">
+          <div class="skeleton-bar label-bar"></div>
+          <div class="skeleton-bar input-bar"></div>
+        </div>
+      }
+    }
+
+    @case ('card') {
+      @for (row of rowArray; track $index) {
+        <div class="skeleton-card">
+          <div class="skeleton-bar title-bar"></div>
+          <div class="skeleton-bar text-bar"></div>
+          <div class="skeleton-bar text-bar short"></div>
+        </div>
+      }
+    }
+
+    @case ('line') {
+      @for (row of rowArray; track $index) {
+        <div class="skeleton-bar line-bar" [style.width.%]="60 + ($index * 7) % 35"></div>
+      }
+    }
+
+  }
+
+</div>

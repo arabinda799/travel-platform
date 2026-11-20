@@ -1,0 +1,132 @@
+<div class="date-range-picker-container" [class.disabled]="disabled()">
+  <!-- Main Selector Trigger (30.59px / 2.125rem unified height) -->
+  <button
+    type="button"
+    class="date-range-trigger"
+    [class.active]="isOpen()"
+    [class.has-value]="!!value()"
+    [disabled]="disabled()"
+    (click)="onTriggerClick($event)">
+
+    @if (showIcon()) {
+      <span class="icon trigger-icon">calendar_month</span>
+    }
+
+    <div class="trigger-label">
+      @if (value()) {
+        @if (activePresetLabel()) {
+          <span class="preset-badge">{{ activePresetLabel() }}</span>
+        }
+        <span class="dates-text">{{ formattedRangeText() }}</span>
+      } @else {
+        <span class="placeholder-text">{{ placeholder() }}</span>
+      }
+    </div>
+
+    <div class="trigger-right-actions">
+      @if (value() && clearable() && !disabled()) {
+        <span
+          class="icon clear-btn"
+          role="button"
+          title="Clear date range"
+          (click)="onClearClick($event)">
+          close
+        </span>
+      }
+
+      <span class="icon chevron-icon" [class.rotated]="isOpen()">
+        expand_more
+      </span>
+    </div>
+  </button>
+
+  <!-- Dropdown / Popover -->
+  <p-popover #op [appendTo]="appendTo()" (onShow)="onPopoverShow()" (onHide)="onPopoverHide()" styleClass="app-date-range-popover">
+    <!-- View A: Clean, Compact 8 Presets List (Calendar NOT opened automatically) -->
+    @if (!isCustomMode()) {
+      <div class="popover-presets-panel">
+        <div class="panel-header">
+          <span class="panel-title">Date Range Presets</span>
+        </div>
+
+        <div class="presets-list">
+          @for (preset of presets; track preset.id) {
+            <button
+              type="button"
+              class="preset-btn"
+              [class.active]="activePresetId() === preset.id"
+              [class.is-custom]="preset.id === 'custom'"
+              (click)="onSelectPreset(preset)">
+              
+              <div class="preset-left">
+                @if (preset.icon) {
+                  <span class="icon preset-icon">{{ preset.icon }}</span>
+                }
+                <span class="preset-name">{{ preset.label }}</span>
+              </div>
+
+              <div class="preset-right">
+                <span class="preset-preview">{{ preset.getPreview() }}</span>
+
+                @if (activePresetId() === preset.id) {
+                  <span class="icon check-icon">check</span>
+                } @else if (preset.id === 'custom') {
+                  <span class="icon forward-icon">chevron_right</span>
+                }
+              </div>
+            </button>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- View B: Custom Range View (ONLY appears when Custom Range is clicked) -->
+    @if (isCustomMode()) {
+      <div class="popover-custom-panel">
+        <div class="custom-header">
+          <button type="button" class="back-btn" (click)="onBackToPresets()">
+            <span class="icon">arrow_back</span>
+            <span>Presets</span>
+          </button>
+          <span class="custom-title">Custom Date Range</span>
+        </div>
+
+        <!-- 2 Calendars Side by Side on Desktop -->
+        <div class="custom-calendar-body">
+          <p-datepicker
+            [inline]="true"
+            selectionMode="range"
+            [numberOfMonths]="2"
+            [ngModel]="customRangeDates()"
+            (ngModelChange)="customRangeDates.set($event)" />
+        </div>
+
+        <!-- Custom Selection Footer -->
+        <div class="custom-footer">
+          <div class="custom-preview-box">
+            <span class="icon preview-icon">date_range</span>
+            <span class="preview-text">{{ customSelectedPreview() }}</span>
+          </div>
+
+          <div class="custom-actions">
+            <lib-button
+              variant="outline"
+              size="sm"
+              (click)="onCancelCustom()">
+              Cancel
+            </lib-button>
+
+            <lib-button
+              variant="primary"
+              size="sm"
+              icon="check"
+              [disabled]="!isCustomRangeValid()"
+              (click)="onApplyCustom()">
+              Apply Range
+            </lib-button>
+          </div>
+        </div>
+      </div>
+    }
+  </p-popover>
+</div>

@@ -1,0 +1,26 @@
+<div class="switch-field" [class.is-disabled]="disabled()" [class.has-error]="!!errorMessage">
+  <div class="switch-info">
+    <label [attr.for]="inputId()" class="switch-label">
+      {{ label() }}
+      @if (required()) {
+        <span class="required-indicator">*</span>
+      }
+    </label>
+    @if (description()) {
+      <span class="switch-desc">{{ description() }}</span>
+    }
+  </div>
+
+  <p-toggleswitch
+    [inputId]="inputId()"
+    [disabled]="disabled()"
+    [ngModel]="value()"
+    (ngModelChange)="onSwitchChange($event)" />
+</div>
+
+@if (errorMessage) {
+  <span class="form-field-error" role="alert">
+    <span class="icon error-icon">error</span>
+    <span class="error-text">{{ errorMessage }}</span>
+  </span>
+}

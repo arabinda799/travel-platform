@@ -1,0 +1,43 @@
+<p-dialog
+  [(visible)]="visible"
+  [modal]="modal()"
+  [closable]="closable()"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: width(), maxWidth: '95vw', maxHeight: '90vh' }"
+  styleClass="app-modal app-form-modal"
+  appendTo="body"
+  (onHide)="onHide()">
+
+  <ng-template #header>
+    <lib-modal-header [icon]="icon()" [title]="title()" [subtitle]="subtitle()" />
+  </ng-template>
+
+  <form class="form-modal-body" (submit)="onSubmit($event)">
+    <div class="form-modal-content">
+      <ng-content></ng-content>
+    </div>
+
+    <div class="form-modal-footer">
+      @if (showCancel()) {
+        <lib-button
+          type="button"
+          variant="outline"
+          (btnClick)="onCancel()">
+          {{ cancelLabel() }}
+        </lib-button>
+      }
+      <lib-button
+        type="submit"
+        [variant]="submitVariant()"
+        [icon]="submitIcon()"
+        [loading]="loading()"
+        [disabled]="submitDisabled()"
+        (btnClick)="onSubmit($event)">
+        {{ submitLabel() }}
+      </lib-button>
+      <ng-content select="[form-modal-extra-actions]"></ng-content>
+    </div>
+  </form>
+
+</p-dialog>

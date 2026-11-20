@@ -1,0 +1,47 @@
+<div class="page-container" [class]="'variant-' + variant()">
+
+  <!-- Breadcrumb -->
+  @if (breadcrumbs().length > 0) {
+    <nav class="page-breadcrumb" aria-label="Breadcrumb">
+      @for (crumb of breadcrumbs(); track crumb.label; let last = $last) {
+        @if (!last && crumb.route) {
+          <a class="breadcrumb-link" [routerLink]="crumb.route">{{ crumb.label }}</a>
+          <span class="breadcrumb-sep icon">chevron_right</span>
+        } @else {
+          <span class="breadcrumb-current">{{ crumb.label }}</span>
+        }
+      }
+    </nav>
+  }
+
+  <!-- Page Header Row -->
+  <div class="page-header">
+    <div class="page-header-left">
+      @if (icon()) {
+        <span class="icon page-icon">{{ icon() }}</span>
+      }
+      <div class="page-title-group">
+        <h1 class="page-title">{{ title() }}</h1>
+        @if (subtitle()) {
+          <p class="page-subtitle">{{ subtitle() }}</p>
+        }
+      </div>
+    </div>
+    <div class="page-header-right">
+      <ng-content select="[page-actions]"></ng-content>
+    </div>
+  </div>
+
+  <!-- Content Body -->
+  <div class="page-body" [class.flush]="flush() || variant() === 'list'">
+    @if (loading()) {
+      <lib-skeleton
+        [variant]="variant() === 'form' ? 'form' : 'table'"
+        [rows]="skeletonRows()"
+        [columns]="skeletonColumns()" />
+    } @else {
+      <ng-content></ng-content>
+    }
+  </div>
+
+</div>

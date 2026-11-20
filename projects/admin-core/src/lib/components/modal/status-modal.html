@@ -1,0 +1,51 @@
+<p-dialog
+  [(visible)]="visible"
+  [modal]="true"
+  [closable]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '27rem', maxWidth: '95vw' }"
+  styleClass="app-modal status-modal"
+  appendTo="body">
+
+  <ng-template #header>
+    <div class="modal-header-content">
+      <div class="modal-icon-badge badge-warning">
+        <span class="icon">sync</span>
+      </div>
+      <div class="modal-title-group">
+        <h3 class="modal-title">{{ title() }}</h3>
+        @if (count() > 0) {
+          <span class="modal-subtitle">Applying to {{ count() }} selected {{ count() === 1 ? 'record' : 'records' }}</span>
+        }
+      </div>
+    </div>
+  </ng-template>
+
+  <div class="status-modal-body">
+    <label class="status-field-desc">{{ description() }}</label>
+    <div class="status-dropdown-wrapper">
+      <p-select
+        [(ngModel)]="selectedStatus"
+        [options]="options()"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Select status..."
+        [filter]="options().length > 4"
+        filterPlaceholder="Search status..."
+        appendTo="body"
+        styleClass="w-full status-dropdown" />
+    </div>
+  </div>
+
+  <ng-template #footer>
+    <div class="modal-footer-actions">
+      <lib-button variant="outline" (click)="onCancel()">
+        Cancel
+      </lib-button>
+      <lib-button variant="warning" icon="check" (click)="onConfirm()">
+        Update Status
+      </lib-button>
+    </div>
+  </ng-template>
+</p-dialog>

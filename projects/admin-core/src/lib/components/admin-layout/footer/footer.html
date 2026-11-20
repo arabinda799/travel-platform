@@ -1,0 +1,13 @@
+<footer class="app-footer">
+  <div class="footer-left">
+    <ng-content select="[footer-left]"></ng-content>
+    <span class="footer-copyright">&copy; {{ currentYear }} {{ companyName() }}. All rights reserved.</span>
+  </div>
+  <div class="footer-center">
+    <ng-content select="[footer-center]"></ng-content>
+  </div>
+  <div class="footer-right">
+    <ng-content select="[footer-right]"></ng-content>
+    <span class="version-badge">{{ appVersion() }}</span>
+  </div>
+</footer>

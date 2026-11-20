@@ -1,0 +1,28 @@
+<button
+  [type]="type()"
+  [disabled]="disabled() || loading()"
+  [class]="buttonClasses()"
+  [title]="title()"
+  (click)="handleClick($event)">
+  @if (loading()) {
+    <span class="icon spin">progress_activity</span>
+  } @else if (icon() && iconPos() === 'left') {
+    <span class="icon">{{ icon() }}</span>
+  }
+
+  <span class="btn-label">
+    <ng-content />
+  </span>
+
+  @if (!loading() && icon() && iconPos() === 'right') {
+    <span class="icon">{{ icon() }}</span>
+  }
+
+  @if (dropdown()) {
+    <span class="icon dropdown-icon">expand_more</span>
+  }
+
+  @if (badge() !== '' && badge() !== undefined && badge() !== null) {
+    <span class="btn-badge">{{ badge() }}</span>
+  }
+</button>

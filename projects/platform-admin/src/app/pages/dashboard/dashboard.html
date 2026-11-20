@@ -1,0 +1,265 @@
+<lib-page-container
+  title="Dashboard"
+  subtitle="Platform overview and analytics"
+  icon="dashboard"
+  [breadcrumbs]="breadcrumbs">
+
+  <div page-actions>
+    <lib-date-range-picker
+      [(value)]="dashboardDateRange"
+      (rangeChange)="onDashboardDateRangeChange($event)" />
+  </div>
+
+  <!-- Stat Cards Grid -->
+  <div class="stat-grid">
+    @for (stat of stats; track stat.label) {
+      <div class="stat-card">
+        <div class="stat-icon" [class]="'stat-icon stat-icon--' + stat.colorVar">
+          <span class="icon">{{ stat.icon }}</span>
+        </div>
+        <span class="stat-label">{{ stat.label }}</span>
+        <span class="stat-value">{{ stat.value }}</span>
+        <span class="stat-change" [class.up]="stat.changeDir === 'up'" [class.down]="stat.changeDir === 'down'">
+          <span class="icon">{{ stat.changeDir === 'up' ? 'arrow_upward' : 'arrow_downward' }}</span>
+          {{ stat.change }}
+        </span>
+      </div>
+    }
+  </div>
+
+  <!-- Charts Row (Each graph with its own separate datepicker) -->
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title-group">
+          <h3>Booking Trend</h3>
+          <span class="chart-subtitle">Platform bookings volume</span>
+        </div>
+        <lib-date-range-picker
+          [(value)]="bookingTrendDateRange"
+          (rangeChange)="onBookingTrendDateChange($event)" />
+      </div>
+      <svg viewBox="0 0 400 160" class="chart-svg">
+        <defs>
+          <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.3"/>
+            <stop offset="100%" stop-color="var(--accent)" stop-opacity="0.02"/>
+          </linearGradient>
+        </defs>
+        <g transform="translate(30,5)">
+          <line x1="0" y1="130" x2="360" y2="130" class="grid-line"/>
+          <line x1="0" y1="97" x2="360" y2="97" class="grid-line dashed"/>
+          <line x1="0" y1="65" x2="360" y2="65" class="grid-line dashed"/>
+          <line x1="0" y1="32" x2="360" y2="32" class="grid-line dashed"/>
+          <text x="-5" y="133" class="axis-text" text-anchor="end">0</text>
+          <text x="-5" y="100" class="axis-text" text-anchor="end">200</text>
+          <text x="-5" y="68" class="axis-text" text-anchor="end">400</text>
+          <text x="-5" y="35" class="axis-text" text-anchor="end">600</text>
+          <path d="M0,130 L0,85 L60,72 L120,90 L180,55 L240,42 L300,30 L360,18 L360,130 Z" fill="url(#areaGrad)"/>
+          <polyline points="0,85 60,72 120,90 180,55 240,42 300,30 360,18" fill="none" class="chart-line" stroke-width="2" stroke-linejoin="round"/>
+          <circle cx="0" cy="85" r="3" class="chart-dot"/><circle cx="60" cy="72" r="3" class="chart-dot"/>
+          <circle cx="120" cy="90" r="3" class="chart-dot"/><circle cx="180" cy="55" r="3" class="chart-dot"/>
+          <circle cx="240" cy="42" r="3" class="chart-dot"/><circle cx="300" cy="30" r="3" class="chart-dot"/>
+          <circle cx="360" cy="18" r="3" class="chart-dot"/>
+          <text x="0" y="145" class="axis-text" text-anchor="middle">Jun</text>
+          <text x="60" y="145" class="axis-text" text-anchor="middle">Jul</text>
+          <text x="120" y="145" class="axis-text" text-anchor="middle">Aug</text>
+          <text x="180" y="145" class="axis-text" text-anchor="middle">Sep</text>
+          <text x="240" y="145" class="axis-text" text-anchor="middle">Oct</text>
+          <text x="300" y="145" class="axis-text" text-anchor="middle">Nov</text>
+          <text x="360" y="145" class="axis-text" text-anchor="middle">Dec</text>
+        </g>
+      </svg>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title-group">
+          <h3>Revenue by Month</h3>
+          <span class="chart-subtitle">Gross platform revenue</span>
+        </div>
+        <lib-date-range-picker
+          [(value)]="revenueDateRange"
+          (rangeChange)="onRevenueDateChange($event)" />
+      </div>
+      <svg viewBox="0 0 400 160" class="chart-svg">
+        <defs>
+          <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="var(--accent)"/>
+            <stop offset="100%" stop-color="var(--accent-purple, #7B1FA2)"/>
+          </linearGradient>
+        </defs>
+        <g transform="translate(30,5)">
+          <line x1="0" y1="130" x2="360" y2="130" class="grid-line"/>
+          <line x1="0" y1="97" x2="360" y2="97" class="grid-line dashed"/>
+          <line x1="0" y1="65" x2="360" y2="65" class="grid-line dashed"/>
+          <line x1="0" y1="32" x2="360" y2="32" class="grid-line dashed"/>
+          <text x="-5" y="133" class="axis-text" text-anchor="end">₹0</text>
+          <text x="-5" y="100" class="axis-text" text-anchor="end">₹90L</text>
+          <text x="-5" y="68" class="axis-text" text-anchor="end">₹1.8Cr</text>
+          <text x="-5" y="35" class="axis-text" text-anchor="end">₹2.7Cr</text>
+          <rect x="3" y="80" width="36" height="50" rx="3" fill="url(#barGrad)" opacity="0.7"/>
+          <rect x="55" y="68" width="36" height="62" rx="3" fill="url(#barGrad)" opacity="0.7"/>
+          <rect x="107" y="88" width="36" height="42" rx="3" fill="url(#barGrad)" opacity="0.8"/>
+          <rect x="159" y="55" width="36" height="75" rx="3" fill="url(#barGrad)" opacity="0.85"/>
+          <rect x="211" y="45" width="36" height="85" rx="3" fill="url(#barGrad)" opacity="0.9"/>
+          <rect x="263" y="38" width="36" height="92" rx="3" fill="url(#barGrad)" opacity="0.95"/>
+          <rect x="315" y="22" width="36" height="108" rx="3" fill="url(#barGrad)"/>
+          <text x="21" y="145" class="axis-text" text-anchor="middle">Jun</text>
+          <text x="73" y="145" class="axis-text" text-anchor="middle">Jul</text>
+          <text x="125" y="145" class="axis-text" text-anchor="middle">Aug</text>
+          <text x="177" y="145" class="axis-text" text-anchor="middle">Sep</text>
+          <text x="229" y="145" class="axis-text" text-anchor="middle">Oct</text>
+          <text x="281" y="145" class="axis-text" text-anchor="middle">Nov</text>
+          <text x="333" y="145" class="axis-text" text-anchor="middle">Dec</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Recent Bookings Table -->
+  <div class="recent-bookings-card">
+    <div class="card-header-row">
+      <div class="card-header-title">
+        <h3>Recent Bookings</h3>
+        <span class="card-subtitle">Live bookings feed across all services</span>
+      </div>
+      <div class="card-header-actions">
+        <!-- Service Filter Dropdown (All, Flight, Hotel) -->
+        <p-select
+          [options]="serviceOptions"
+          [ngModel]="selectedService()"
+          (ngModelChange)="onServiceChange($event)"
+          optionLabel="label"
+          optionValue="value"
+          styleClass="service-filter-select" />
+
+        <!-- Date Range Picker -->
+        <lib-date-range-picker
+          [(value)]="recentBookingsDateRange"
+          (rangeChange)="onRecentBookingsDateChange($event)" />
+
+        <!-- View All link (Only shown when a specific service is selected, NOT in 'all') -->
+        @if (selectedService() !== 'all') {
+          <a [routerLink]="viewAllRoute()" class="btn-view-all">
+            View All
+          </a>
+        }
+      </div>
+    </div>
+
+    <div class="table-wrapper">
+      <table>
+        <!-- Table Header: Dynamic according to selected service -->
+        <thead>
+          @if (selectedService() === 'all') {
+            <tr>
+              <th>Booking ID</th>
+              <th>Pax / Guest</th>
+              <th>Service</th>
+              <th class="text-right">Amount</th>
+              <th class="text-center">Status</th>
+              <th class="text-center">Actions</th>
+            </tr>
+          } @else if (selectedService() === 'hotel') {
+            <tr>
+              <th>Booking ID</th>
+              <th>Guest</th>
+              <th class="text-center">Guest Count</th>
+              <th class="text-center">Room Count</th>
+              <th>Hotel</th>
+              <th>Check-in</th>
+              <th class="text-center">No. of Nights</th>
+              <th class="text-right">Amount</th>
+              <th class="text-center">Status</th>
+              <th class="text-center">Actions</th>
+            </tr>
+          } @else if (selectedService() === 'flight') {
+            <tr>
+              <th>Booking ID</th>
+              <th>Passenger</th>
+              <th class="text-center">Pax Count</th>
+              <th>Airline & Flight</th>
+              <th>Route / Sector</th>
+              <th>Travel Date</th>
+              <th>Class</th>
+              <th class="text-right">Amount</th>
+              <th class="text-center">Status</th>
+              <th class="text-center">Actions</th>
+            </tr>
+          }
+        </thead>
+
+        <!-- Table Body: Dynamic according to selected service -->
+        <tbody>
+          @for (booking of paginatedBookings(); track booking.id) {
+            <tr>
+              <!-- Booking ID (Shared) -->
+              <td><a class="link-accent" [routerLink]="['/hotel/bookings', booking.id]">{{ booking.id }}</a></td>
+
+              <!-- Guest / Passenger (Shared) -->
+              <td>{{ booking.guest }}</td>
+
+              <!-- Dynamic middle columns based on service -->
+              @if (selectedService() === 'all') {
+                <td>
+                  <span class="badge-service" [class.badge-service--hotel]="booking.service === 'hotel'" [class.badge-service--flight]="booking.service === 'flight'">
+                    <span class="icon">{{ booking.service === 'hotel' ? 'hotel' : 'flight' }}</span>
+                    {{ booking.service === 'hotel' ? 'Hotel' : 'Flight' }}
+                  </span>
+                </td>
+              } @else if (selectedService() === 'hotel') {
+                <td class="text-center">{{ booking.paxCount }} {{ booking.paxCount === 1 ? 'Guest' : 'Guests' }}</td>
+                <td class="text-center">{{ booking.roomCount || 1 }} {{ (booking.roomCount || 1) === 1 ? 'Room' : 'Rooms' }}</td>
+                <td>{{ booking.hotel }}</td>
+                <td>{{ booking.checkIn }}</td>
+                <td class="text-center">{{ booking.nights }} {{ booking.nights === 1 ? 'Night' : 'Nights' }}</td>
+              } @else if (selectedService() === 'flight') {
+                <td class="text-center">{{ booking.paxCount }} {{ booking.paxCount === 1 ? 'Pax' : 'Pax' }}</td>
+                <td>
+                  <div class="flight-cell-airline">
+                    <span class="airline-name">{{ booking.airline }}</span>
+                    <span class="flight-no">{{ booking.flightNo }}</span>
+                  </div>
+                </td>
+                <td><span class="route-badge">{{ booking.route }}</span></td>
+                <td>{{ booking.travelDate }}</td>
+                <td><span class="cabin-badge">{{ booking.cabinClass }}</span></td>
+              }
+
+              <!-- Amount (Shared) -->
+              <td class="text-right amount-cell">{{ booking.amount }}</td>
+
+              <!-- Status (Shared) -->
+              <td class="text-center">
+                <lib-status-badge [status]="booking.status" />
+              </td>
+
+              <!-- Actions (Shared) adhering to Standard Action Convention -->
+              <td class="text-center">
+                <div class="table-row-actions">
+                  <lib-table-action action="view" tooltip="View Confirmation" ariaLabel="View Confirmation" (clicked)="viewBooking(booking)" />
+                  <lib-table-action action="edit" tooltip="Edit Booking" ariaLabel="Edit Booking" (clicked)="editBooking(booking)" />
+                  <lib-table-action action="download" icon="description" tooltip="Voucher" ariaLabel="Download Voucher" />
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginator -->
+    <div class="card-pagination">
+      <p-paginator
+        [rows]="rows()"
+        [totalRecords]="totalRecords()"
+        [rowsPerPageOptions]="rowsPerPageOptions"
+        [first]="first()"
+        (onPageChange)="onPageChange($event)"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries" />
+    </div>
+  </div>
+
+</lib-page-container>

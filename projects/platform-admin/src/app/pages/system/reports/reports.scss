@@ -1,0 +1,130 @@
+:host {
+  display: block;
+}
+
+.coming-soon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1rem;
+}
+
+.coming-soon-card {
+  max-width: 48rem;
+  width: 100%;
+  background: var(--bg-card);
+  border: 0.0625rem solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 3rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+
+.coming-soon-icon-ring {
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg-card));
+  border: 0.0625rem solid color-mix(in srgb, var(--accent) 30%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+
+  .cs-icon {
+    font-size: 2.25rem;
+    color: var(--accent);
+  }
+}
+
+.cs-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg-card));
+  border: 0.0625rem solid color-mix(in srgb, var(--accent) 25%, transparent);
+  border-radius: var(--radius-full);
+  margin-bottom: 0.875rem;
+}
+
+.cs-title {
+  margin: 0 0 0.875rem;
+  font-size: var(--fs-3xl);
+  font-weight: 800;
+  color: var(--fg);
+}
+
+.cs-description {
+  margin: 0 0 2rem;
+  max-width: 38rem;
+  font-size: var(--fs-lg);
+  line-height: 1.6;
+  color: var(--fg-muted);
+}
+
+.features-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  width: 100%;
+  text-align: left;
+  margin-bottom: 2rem;
+  padding-top: 1.25rem;
+  border-top: 0.0625rem solid var(--border);
+}
+
+.feature-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+  padding: 1rem;
+  background: color-mix(in srgb, var(--fg) 3%, var(--bg-card));
+  border: 0.0625rem solid var(--border);
+  border-radius: var(--radius);
+
+  .feat-icon {
+    font-size: var(--fs-2xl);
+    color: var(--accent);
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+  }
+
+  .feat-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+
+    strong {
+      font-size: var(--fs-md);
+      color: var(--fg);
+      font-weight: 600;
+    }
+
+    span {
+      font-size: var(--fs-sm);
+      color: var(--fg-muted);
+      line-height: 1.4;
+    }
+  }
+}
+
+.cs-actions {
+  display: flex;
+  justify-content: center;
+}
+
+@media (max-width: 640px) {
+  .coming-soon-card {
+    padding: 2rem 1.25rem;
+  }
+
+  .features-preview-grid {
+    grid-template-columns: 1fr;
+  }
+}

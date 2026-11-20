@@ -1,0 +1,151 @@
+<div class="sidebar-backdrop" [class.show]="isMobileOpen" (click)="closeMobile()" aria-hidden="true">
+</div>
+
+<aside class="app-sidebar" [class.is-collapsed]="isCollapsed" [class.mobile-open]="isMobileOpen">
+    <div class="sidebar-brand">
+        <ng-content select="[sidebar-brand]"></ng-content>
+    </div>
+    <div class="sidebar-body">
+        <ng-content select="[sidebar-nav], [sidebar-content]"></ng-content>
+
+        @if (items().length > 0) {
+        <nav class="sidebar-nav-container" aria-label="Sidebar Navigation">
+            <ul class="nav-list">
+                @for (item of items(); track item.label) {
+                @if (item.isSection) {
+                <li class="nav-section-header">
+                    <span class="nav-section-title nav-label">{{ item.label }}</span>
+                    <div class="nav-section-divider sidebar-hide-on-collapse"></div>
+                </li>
+                } @else {
+                <li class="nav-item-wrapper" [class.has-children]="item.children && item.children.length > 0">
+                    @if (!item.children || item.children.length === 0) {
+                    <a class="nav-link" [routerLink]="item.route" routerLinkActive="active"
+                        [routerLinkActiveOptions]="{ exact: item.route === '/' }"
+                        [pTooltip]="isCollapsed ? item.label : ''"
+                        [tooltipDisabled]="!isCollapsed"
+                        tooltipPosition="right"
+                        [showDelay]="150"
+                        tooltipStyleClass="app-table-tooltip"
+                        (click)="onLinkClick()">
+                        @if (item.icon) {
+                        <span class="icon nav-icon">{{ item.icon }}</span>
+                        }
+                        @if (!isCollapsed) {
+                        <span class="nav-label">{{ item.label }}</span>
+                        @if (item.badge) {
+                        <p-badge class="nav-badge sidebar-hide-on-collapse" [value]="item.badge"
+                            [severity]="item.badgeSeverity || 'info'" />
+                        }
+                        }
+                    </a>
+                    }
+
+                    @if (item.children && item.children.length > 0) {
+                    <button type="button" class="nav-link nav-parent-btn" [class.expanded]="item.expanded"
+                        [pTooltip]="isCollapsed ? item.label : ''"
+                        [tooltipDisabled]="!isCollapsed"
+                        tooltipPosition="right"
+                        [showDelay]="150"
+                        tooltipStyleClass="app-table-tooltip"
+                        (click)="toggleSubmenu(item)">
+                        @if (item.icon) {
+                        <span class="icon nav-icon">{{ item.icon }}</span>
+                        }
+                        @if (!isCollapsed) {
+                        <span class="nav-label">{{ item.label }}</span>
+                        <span class="icon arrow-icon sidebar-hide-on-collapse">{{ item.expanded ? 'expand_less' : 'expand_more' }}</span>
+                        }
+                    </button>
+
+                    @if (item.expanded && !isCollapsed) {
+                    <ul class="sub-nav-list">
+                        @for (child of item.children; track child.label) {
+                        <li class="sub-nav-item" [class.has-children]="child.children && child.children.length > 0">
+                            @if (!child.children || child.children.length === 0) {
+                            <a class="sub-nav-link" [routerLink]="child.route" routerLinkActive="active"
+                                [routerLinkActiveOptions]="{ exact: true }"
+                                [pTooltip]="child.label"
+                                tooltipPosition="top"
+                                [showDelay]="150"
+                                tooltipStyleClass="app-table-tooltip"
+                                (click)="onLinkClick()">
+                                @if (child.icon) {
+                                <span class="icon sub-nav-icon">{{ child.icon }}</span>
+                                }
+                                <span class="sub-nav-label">{{ child.label }}</span>
+                                @if (child.badge) {
+                                <p-badge class="nav-badge sidebar-hide-on-collapse" [value]="child.badge"
+                                    [severity]="child.badgeSeverity || 'info'" />
+                                }
+                            </a>
+                            }
+
+                            @if (child.children && child.children.length > 0) {
+                            <button type="button" class="sub-nav-link sub-nav-parent-btn"
+                                [class.expanded]="child.expanded"
+                                [pTooltip]="child.label"
+                                tooltipPosition="top"
+                                [showDelay]="150"
+                                tooltipStyleClass="app-table-tooltip"
+                                (click)="toggleSubmenu(child)">
+                                @if (child.icon) {
+                                <span class="icon sub-nav-icon">{{ child.icon }}</span>
+                                }
+                                <span class="sub-nav-label">{{ child.label }}</span>
+                                <span class="icon arrow-icon sub-arrow-icon sidebar-hide-on-collapse">{{ child.expanded ? 'expand_less' :
+                                    'expand_more' }}</span>
+                            </button>
+
+                            @if (child.expanded && !isCollapsed) {
+                            <ul class="nested-sub-nav-list">
+                                @for (grandchild of child.children; track grandchild.label) {
+                                <li class="nested-sub-nav-item">
+                                    <a class="nested-sub-nav-link" [routerLink]="grandchild.route"
+                                        routerLinkActive="active"
+                                        [routerLinkActiveOptions]="{ exact: true }"
+                                        [pTooltip]="grandchild.label"
+                                        tooltipPosition="top"
+                                        [showDelay]="150"
+                                        tooltipStyleClass="app-table-tooltip"
+                                        (click)="onLinkClick()">
+                                        @if (grandchild.icon) {
+                                        <span class="icon nested-sub-nav-icon">{{ grandchild.icon }}</span>
+                                        }
+                                        <span class="nested-sub-nav-label">{{ grandchild.label }}</span>
+                                        @if (grandchild.badge) {
+                                        <p-badge class="nav-badge sidebar-hide-on-collapse" [value]="grandchild.badge"
+                                            [severity]="grandchild.badgeSeverity || 'info'" />
+                                        }
+                                    </a>
+                                </li>
+                                }
+                            </ul>
+                            }
+                            }
+                        </li>
+                        }
+                    </ul>
+                    }
+                    }
+                </li>
+                }
+                }
+            </ul>
+        </nav>
+        }
+
+        <ng-content></ng-content>
+    </div>
+    <div class="sidebar-footer">
+        <ng-content select="[sidebar-footer]"></ng-content>
+
+        <button type="button" class="sidebar-logout-btn" (click)="onLogout()"
+            aria-label="Logout" [pTooltip]="isCollapsed ? 'Logout' : ''" [tooltipDisabled]="!isCollapsed" tooltipPosition="right">
+            <span class="icon logout-icon">logout</span>
+            @if (!isCollapsed) {
+            <span class="logout-label nav-label">Logout</span>
+            }
+        </button>
+    </div>
+</aside>

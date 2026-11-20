@@ -1,0 +1,163 @@
+<lib-page-container
+  title="Amendment List"
+  subtitle="Manage hotel booking amendment requests, date changes, and upgrades"
+  [breadcrumbs]="breadcrumbs">
+
+  <lib-data-table
+    [value]="tableData()"
+    [columns]="columns()"
+    [totalRecords]="totalRecords()"
+    [loading]="isLoading()"
+    [checkbox]="true"
+    [(selection)]="selectedAmendments"
+    [searchable]="true"
+    searchPlaceholder="Search amendments by ref, booking ref, guest, hotel..."
+    (lazyLoad)="onLazyLoad($event)"
+    (search)="onSearch($event)">
+
+    <div table-actions class="table-actions-group">
+      <lib-button
+        variant="outline"
+        icon="tune"
+        [badge]="activeFilterCount() ? activeFilterCount() : ''"
+        (click)="filterVisible.set(true)">
+        Filters
+      </lib-button>
+
+      <lib-button
+        variant="outline"
+        icon="download"
+        (click)="exportMenu.toggle($event)">
+        Export
+      </lib-button>
+      <p-menu #exportMenu [model]="exportMenuItems" [popup]="true" />
+    </div>
+
+    <div selection-actions class="selection-actions-group">
+      <lib-button
+        variant="outline-warning"
+        icon="sync"
+        (click)="statusModalVisible.set(true)">
+        Change Status
+      </lib-button>
+      <lib-button
+        variant="danger"
+        icon="delete"
+        (click)="onBulkDelete()">
+        Delete Selected
+      </lib-button>
+    </div>
+
+    <ng-template #amountTpl let-row>
+      <span class="amount-cell">₹{{ row.bookingAmount | number }}</span>
+    </ng-template>
+
+    <ng-template #amendmentStatusTpl let-row>
+      <lib-status-badge [status]="row.amendmentStatus" />
+    </ng-template>
+
+    <ng-template #bookingStatusTpl let-row>
+      <lib-status-badge [status]="row.bookingStatus" />
+    </ng-template>
+
+    <ng-template #actionsTpl let-row>
+      <div class="table-row-actions">
+        <lib-table-action action="view" tooltip="View Amendment" (clicked)="viewAmendment(row)" />
+      </div>
+    </ng-template>
+
+    <ng-template #createdDateTpl let-row>
+      <span class="mono">{{ row.createdDate | date:'dd MMM yyyy, hh:mm a' }}</span>
+    </ng-template>
+
+  </lib-data-table>
+
+</lib-page-container>
+
+<lib-filter-sidebar
+  [(visible)]="filterVisible"
+  (apply)="onApplyFilters()"
+  (reset)="onResetFilters()">
+
+  <div class="filter-group">
+    <lib-select-field
+      label="Amendment Type"
+      [options]="typeOptions"
+      [value]="selectedType()"
+      (valueChange)="selectedType.set($event)"
+      placeholder="All Amendment Types"
+      [clearable]="true" />
+  </div>
+
+  <div class="filter-group">
+    <lib-select-field
+      label="Amendment Status"
+      [options]="statusOptions"
+      [value]="selectedStatus()"
+      (valueChange)="selectedStatus.set($event)"
+      placeholder="All Amendment Statuses"
+      [clearable]="true" />
+  </div>
+
+  <div class="filter-group">
+    <lib-select-field
+      label="Booking Status"
+      [options]="bookingStatusOptions"
+      [value]="selectedBookingStatus()"
+      (valueChange)="selectedBookingStatus.set($event)"
+      placeholder="All Booking Statuses"
+      [clearable]="true" />
+  </div>
+
+  <div class="filter-group">
+    <lib-datepicker-field
+      label="Amendment Date"
+      selectionMode="range"
+      dateFormat="dd/mm/yy"
+      placeholder="Select start and end date"
+      [value]="selectedAmendmentDateRange()"
+      (valueChange)="selectedAmendmentDateRange.set($event)" />
+  </div>
+
+  <div class="filter-group">
+    <lib-datepicker-field
+      label="Booking Date"
+      selectionMode="range"
+      dateFormat="dd/mm/yy"
+      placeholder="Select start and end date"
+      [value]="selectedBookingDateRange()"
+      (valueChange)="selectedBookingDateRange.set($event)" />
+  </div>
+
+</lib-filter-sidebar>
+
+<lib-confirm-dialog
+  [(visible)]="deleteConfirmVisible"
+  title="Delete Amendments"
+  [message]="'Are you sure you want to delete ' + selectedAmendments.length + ' selected amendment(s)? This action cannot be undone.'"
+  confirmLabel="Delete"
+  severity="danger"
+  (confirmed)="confirmBulkDelete()" />
+
+<lib-status-modal
+  [(visible)]="statusModalVisible"
+  [count]="selectedAmendments.length"
+  [options]="statusModalOptions"
+  (confirmed)="onStatusModalConfirm($event)" />
+
+<lib-modal
+  [(visible)]="exportDateRangeVisible"
+  title="Export Amendments"
+  subtitle="Select date range for export"
+  icon="download"
+  width="32rem">
+  <div class="export-modal-body">
+    <lib-date-range-picker
+      label="Requested Date Range"
+      [(value)]="exportDateRange" />
+  </div>
+  <div modal-footer class="export-modal-footer">
+    <lib-button variant="outline" (click)="exportDateRangeVisible.set(false)">Cancel</lib-button>
+    <lib-button variant="primary" icon="download" (click)="onExport('csv')">Download</lib-button>
+  </div>
+</lib-modal>

@@ -1,0 +1,177 @@
+<lib-page-container
+  title="Trending Destinations"
+  subtitle="Manage hotel trending destinations displayed on the booking homepage"
+  [breadcrumbs]="breadcrumbs">
+
+  <div page-actions>
+    <lib-button variant="primary" icon="add" (click)="openAddModal()">
+      Add Destination
+    </lib-button>
+  </div>
+
+  <lib-data-table
+    [value]="filteredDestinations()"
+    [columns]="columns()"
+    [totalRecords]="filteredDestinations().length"
+    [loading]="loading()"
+    [checkbox]="true"
+    [(selection)]="selectedItems"
+    [searchable]="true"
+    searchPlaceholder="Search by destination name, subtitle, region ID..."
+    (search)="onSearch($event)">
+
+    <div table-actions class="table-actions-group">
+      <lib-button
+        variant="outline"
+        icon="tune"
+        [badge]="activeFilterCount() ? activeFilterCount() : ''"
+        (click)="filterVisible.set(true)">
+        Filters
+      </lib-button>
+    </div>
+
+    <div selection-actions class="selection-actions-group">
+      <lib-button variant="outline-warning" icon="sync" (click)="openBulkStatusModal()">
+        Change Status
+      </lib-button>
+      <lib-button variant="danger" icon="delete" (click)="confirmBulkDelete()">
+        Delete Selected ({{ selectedItems().length }})
+      </lib-button>
+    </div>
+
+    <!-- Destination thumbnail -->
+    <ng-template #imageTpl let-row>
+      <div class="dest-thumb-wrapper">
+        <lib-thumb-image [src]="row.imageUrl" [alt]="row.name" fallbackIcon="landscape" />
+      </div>
+    </ng-template>
+
+    <!-- Name + subtitle -->
+    <ng-template #nameTpl let-row>
+      <div class="dest-name-cell">
+        <strong class="dest-name">{{ row.name }}</strong>
+        @if (row.subtitle) {
+          <span class="dest-subtitle">{{ row.subtitle }}</span>
+        }
+      </div>
+    </ng-template>
+
+    <!-- Status badge -->
+    <ng-template #statusTpl let-row>
+      <lib-status-badge [status]="row.isActive ? 'Active' : 'Inactive'" />
+    </ng-template>
+
+    <!-- Row actions -->
+    <ng-template #actionsTpl let-row>
+      <div class="table-row-actions">
+        <lib-table-action action="edit" tooltip="Edit Destination" (clicked)="openEditModal(row)" />
+        <lib-table-action action="delete" tooltip="Delete Destination" (clicked)="confirmDeleteSingle(row)" />
+      </div>
+    </ng-template>
+
+  </lib-data-table>
+
+</lib-page-container>
+
+<!-- ─── Filter Sidebar ─── -->
+<lib-filter-sidebar
+  [(visible)]="filterVisible"
+  (apply)="onApplyFilters()"
+  (reset)="onResetFilters()">
+
+  <div class="filter-group">
+    <lib-select-field
+      label="Status"
+      [options]="statusOptions"
+      [value]="selectedStatusFilter()"
+      (valueChange)="selectedStatusFilter.set($event)"
+      placeholder="All Statuses"
+      [clearable]="true" />
+  </div>
+
+</lib-filter-sidebar>
+
+<!-- ─── Add / Edit Modal ─── -->
+<lib-form-modal
+  [(visible)]="modalVisible"
+  [title]="isEditing() ? 'Edit Destination' : 'Add Trending Destination'"
+  [subtitle]="isEditing() ? 'Update destination details and display settings' : 'Add a new destination to the trending section on the booking homepage'"
+  [icon]="isEditing() ? 'edit' : 'add_location_alt'"
+  width="48rem"
+  submitLabel="Save"
+  submitIcon="save"
+  (submitted)="onSave()">
+
+  <div class="dest-form-grid">
+
+    <!-- Name -->
+    <div class="form-row">
+      <lib-text-field
+        label="Destination Name"
+        placeholder="e.g. Dubai, Bali, Paris"
+        [formControl]="form.controls.name"
+        [required]="true"
+        hint="Max 100 characters" />
+    </div>
+
+    <!-- Subtitle -->
+    <div class="form-row">
+      <lib-text-field
+        label="Subtitle"
+        placeholder="e.g. 1,240 properties"
+        [formControl]="form.controls.subtitle"
+        hint="Short descriptor shown below the destination name (max 200 characters)" />
+    </div>
+
+    <!-- Image -->
+    <div class="form-row">
+      <lib-file-upload-field
+        label="Destination Image"
+        accept="image/*"
+        [formControl]="form.controls.imageUrl"
+        [fileName]="formImageFileName()"
+        (fileNameChange)="formImageFileName.set($event)"
+        hint="Recommended: 4:3 or 16:9 landscape image" />
+    </div>
+
+    <!-- Sort Order + Status -->
+    <div class="form-row two-cols">
+      <lib-text-field
+        label="Sort Order"
+        type="number"
+        placeholder="1"
+        [formControl]="form.controls.sortOrder"
+        [required]="true"
+        hint="Lower number = displayed first on homepage" />
+
+      @if (isEditing()) {
+        <lib-select-field
+          label="Status"
+          [options]="statusOptions"
+          [formControl]="form.controls.status"
+          [required]="true" />
+      }
+    </div>
+
+  </div>
+
+</lib-form-modal>
+
+<!-- ─── Bulk Status Modal ─── -->
+<lib-status-modal
+  [(visible)]="statusModalVisible"
+  [count]="selectedItems().length"
+  [options]="[
+    { label: 'Active', value: 'Active', description: 'Show destination on homepage trending section' },
+    { label: 'Inactive', value: 'Inactive', description: 'Hide destination from public view' }
+  ]"
+  (confirmed)="onBulkStatusConfirm($event)" />
+
+<!-- ─── Confirm Delete ─── -->
+<lib-confirm-dialog
+  [(visible)]="confirmDeleteVisible"
+  [title]="itemToDelete() ? 'Delete Destination' : 'Delete Selected Destinations'"
+  [message]="itemToDelete() ? 'Are you sure you want to delete &quot;' + itemToDelete()!.name + '&quot;? This action cannot be undone.' : 'Are you sure you want to delete the ' + selectedItems().length + ' selected destinations? This action cannot be undone.'"
+  confirmLabel="Delete"
+  severity="danger"
+  (confirmed)="executeDelete()" />

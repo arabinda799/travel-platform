@@ -1,0 +1,13 @@
+<div class="modal-header-content">
+  @if (icon()) {
+    <div class="modal-icon-badge">
+      <span class="icon">{{ icon() }}</span>
+    </div>
+  }
+  <div class="modal-title-group">
+    <h3 class="modal-title">{{ title() }}</h3>
+    @if (subtitle()) {
+      <span class="modal-subtitle">{{ subtitle() }}</span>
+    }
+  </div>
+</div>

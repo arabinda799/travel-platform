@@ -1,0 +1,12 @@
+<button
+  type="button"
+  class="table-action-btn action-{{ computedColor() }} action-type-{{ action() }} size-{{ size() }}"
+  [disabled]="disabled()"
+  [attr.aria-label]="tooltip() || defaultTooltip()"
+  [pTooltip]="tooltip() || defaultTooltip()"
+  tooltipPosition="top"
+  [showDelay]="150"
+  tooltipStyleClass="app-table-tooltip"
+  (click)="handleClick($event)">
+  <span class="icon">{{ effectiveIcon() }}</span>
+</button>

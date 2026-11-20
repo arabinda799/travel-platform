@@ -1,0 +1,17 @@
+@if (src() && state() !== 'error') {
+  <div class="thumb-spinner" [class.hidden]="state() === 'loaded'">
+    <span class="icon spin-icon">progress_activity</span>
+  </div>
+  <img
+    [src]="src()!"
+    [alt]="alt()"
+    loading="lazy"
+    class="thumb-img"
+    [class.is-loaded]="state() === 'loaded'"
+    (load)="onLoad()"
+    (error)="onError()" />
+} @else {
+  <div class="thumb-fallback">
+    <span class="icon">{{ fallbackIcon() }}</span>
+  </div>
+}

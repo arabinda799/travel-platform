@@ -1,0 +1,139 @@
+:host {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
+
+.table-action-btn {
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border, #e2e8f0);
+  cursor: pointer;
+  padding: 0;
+  border-radius: var(--radius-sm, 6px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: all 0.15s ease-in-out;
+  user-select: none;
+  box-sizing: border-box;
+
+  .icon {
+    font-size: var(--fs-xl);
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.1s ease;
+  }
+
+  &:hover:not(:disabled) {
+    .icon {
+      transform: scale(1.08);
+    }
+  }
+
+  &:active:not(:disabled) {
+    .icon {
+      transform: scale(0.95);
+    }
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  /* Sizes */
+  &.size-sm {
+    width: 1.75rem;
+    height: 1.75rem;
+    min-width: 1.75rem;
+    min-height: 1.75rem;
+    border-radius: var(--radius-sm, 4px);
+
+    .icon {
+      font-size: var(--fs-lg);
+    }
+  }
+
+  &.size-md {
+    width: 2rem;
+    height: 2rem;
+    min-width: 2rem;
+    min-height: 2rem;
+    border-radius: var(--radius-sm, 6px);
+
+    .icon {
+      font-size: var(--fs-xl);
+    }
+  }
+
+  &.size-lg {
+    width: 2.25rem;
+    height: 2.25rem;
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+    border-radius: var(--radius, 8px);
+
+    .icon {
+      font-size: 1.35rem;
+    }
+  }
+
+  /* Bordered Outline Action Colors */
+  /* 1. Neutral / Grey: View, Edit, Download, Duplicate, Change Status, Custom/Resend */
+  &.action-neutral {
+    color: var(--fg-muted, #64748b);
+    border: 1px solid var(--border, #e2e8f0);
+    background: var(--bg-card, #ffffff);
+
+    &:hover:not(:disabled) {
+      color: var(--accent);
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+  }
+
+  /* Edit specific outline accent */
+  &.action-type-edit {
+    &:hover:not(:disabled) {
+      color: var(--accent);
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+  }
+
+  /* 2. Red: Delete, Cancel Booking, Reject */
+  &.action-red,
+  &.action-danger,
+  &.action-type-delete,
+  &.action-type-cancel,
+  &.action-type-reject {
+    color: var(--danger, #ef4444);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    background: rgba(239, 68, 68, 0.04);
+
+    &:hover:not(:disabled) {
+      color: #ffffff;
+      border-color: var(--danger, #ef4444);
+      background: var(--danger, #ef4444);
+    }
+  }
+
+  /* 3. Green: Approve */
+  &.action-green,
+  &.action-success,
+  &.action-type-approve {
+    color: var(--success, #22c55e);
+    border: 1px solid rgba(34, 197, 94, 0.35);
+    background: rgba(34, 197, 94, 0.04);
+
+    &:hover:not(:disabled) {
+      color: #ffffff;
+      border-color: var(--success, #22c55e);
+      background: var(--success, #22c55e);
+    }
+  }
+}

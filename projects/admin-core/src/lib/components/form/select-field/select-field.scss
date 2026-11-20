@@ -1,0 +1,10 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+:host ::ng-deep .app-select-control,
+:host ::ng-deep .p-select {
+  width: 100% !important;
+  display: flex !important;
+}

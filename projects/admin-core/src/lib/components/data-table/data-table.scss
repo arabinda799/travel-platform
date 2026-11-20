@@ -1,0 +1,584 @@
+@use '../../styles/mixins' as *;
+
+:host {
+  display: block;
+  width: 100%;
+}
+
+/* Top Action Bar (Search + Actions) */
+.table-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-card);
+  border: 0.0625rem solid var(--border);
+  border-bottom: none;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  flex-wrap: wrap;
+
+  .table-search-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 22rem;
+    max-width: 100%;
+    position: relative;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+
+    .search-icon {
+      position: absolute;
+      left: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: var(--fs-lg);
+      color: var(--fg-muted);
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .table-search-input {
+      width: 100%;
+      height: 2.125rem !important;
+      min-height: 2.125rem !important;
+      max-height: 2.125rem !important;
+      box-sizing: border-box !important;
+      background: var(--bg-input, var(--bg));
+      border: 0.0625rem solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.4375rem 2rem 0.4375rem 2.25rem !important;
+      color: var(--fg);
+      font-size: var(--fs-sm);
+      font-family: inherit;
+      line-height: 1.25 !important;
+      outline: none;
+      transition: all 0.15s;
+
+      &::placeholder {
+        color: var(--fg-muted);
+        opacity: 0.8;
+      }
+
+      &:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 0.125rem rgba(255, 87, 34, 0.15);
+      }
+    }
+
+    .search-clear-btn {
+      position: absolute;
+      right: 0.5rem;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--fg-muted);
+      padding: 0.25rem;
+      border-radius: var(--radius);
+
+      &:hover {
+        color: var(--accent);
+      }
+    }
+  }
+
+  .table-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    margin-left: auto;
+
+    ::ng-deep > * {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.625rem;
+    }
+  }
+}
+
+/* Selection / Bulk Actions Toolbar */
+.table-selection-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-card);
+  border: 0.0625rem solid var(--border);
+  border-bottom: none;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  animation: fadeIn 0.15s ease-out;
+
+  .selection-bar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    .selection-count {
+      font-size: var(--fs-base);
+      font-weight: 700;
+      color: var(--fg);
+    }
+
+    .btn-clear-selection {
+      background: none;
+      border: none;
+      font-size: var(--fs-sm);
+      color: var(--fg-muted);
+      cursor: pointer;
+      font-family: inherit;
+      padding: 0;
+
+      &:hover {
+        color: var(--fg);
+        text-decoration: underline;
+      }
+    }
+  }
+
+  .selection-bar-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    flex-wrap: wrap;
+
+    ::ng-deep > * {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.625rem;
+    }
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-0.25rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.table-top-bar + .table-wrapper,
+.table-selection-bar + .table-wrapper {
+  border-top-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
+  border-top: 0.0625rem solid var(--border) !important;
+}
+
+.table-search-bar + .table-wrapper {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.table-wrapper {
+  border: 0.0625rem solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--bg-card);
+  position: relative;
+}
+
+:host-context(.flush) .table-wrapper {
+  border: none !important;
+  border-radius: 0 !important;
+}
+
+::ng-deep .data-table {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background: var(--bg-card);
+
+  .p-datatable-table {
+    font-size: var(--fs-sm);
+    border-collapse: separate !important;
+    border-spacing: 0;
+    table-layout: fixed !important;
+    width: max-content !important;
+    min-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    border-top: none !important;
+  }
+
+  /* Inner container: both horizontal and vertical scrolling responsive */
+  .p-datatable-table-container,
+  .p-datatable-wrapper,
+  .p-datatable-scrollable-body,
+  .p-datatable-body-wrapper {
+    overflow: auto !important;
+    overflow-x: auto !important;
+    overflow-y: auto !important;
+    max-height: var(--table-scroll-height, calc(100vh - 16rem)) !important;
+    position: relative;
+    background: var(--bg-card) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+
+    @include slim-scrollbar(transparent, rgba(163, 150, 188, 0.35));
+    scrollbar-width: thin;
+    scrollbar-color: rgba(163, 150, 188, 0.35) transparent;
+  }
+
+  /* Header row zero margins / no borders */
+  .p-datatable-thead,
+  .p-datatable-thead > tr {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    border-top: none !important;
+  }
+
+  /* Header words NEVER break — strictly one line for all header descendants */
+  .p-datatable-thead,
+  .p-datatable-thead tr,
+  .p-datatable-thead th,
+  .p-datatable-thead th * {
+    white-space: nowrap !important;
+    word-break: keep-all !important;
+    overflow-wrap: normal !important;
+    text-overflow: clip !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+  }
+
+  /* Column header — FIXED STICKY, NEVER BREAKS, GENEROUS HEIGHT & CRISP ALIGNMENT */
+  .p-datatable-thead > tr > th {
+    background: var(--bg-table-header, #160D27) !important;
+    color: var(--fg-table-header, #E0D6F0) !important;
+    font-size: var(--fs-sm) !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    padding: 0.9375rem 1rem !important;
+    height: 3.5rem !important;
+    min-height: 3.5rem !important;
+    box-sizing: border-box !important;
+    line-height: 1.3 !important;
+    border-top: none !important;
+    border-bottom: 0.125rem solid var(--accent) !important;
+    border-right: 0.0625rem solid rgba(255, 255, 255, 0.06);
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 10 !important;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.15);
+
+    &:last-child {
+      border-right: none;
+    }
+
+    &.p-sortable-column {
+      cursor: pointer;
+      transition: all 0.15s;
+
+      &:hover {
+        background: rgba(255, 87, 34, 0.15) !important;
+        color: var(--accent) !important;
+      }
+
+      &.p-datatable-column-sorted {
+        color: var(--accent) !important;
+        background: rgba(255, 87, 34, 0.1) !important;
+      }
+    }
+  }
+
+  /* Keep header text + sort icon on strictly one single line — never wrap, tight comfortable gap */
+  .header-cell-content,
+  .p-datatable-column-header-content {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.3125rem !important; /* 5px - close to text */
+    white-space: nowrap !important;
+    flex-wrap: nowrap !important;
+    word-break: keep-all !important;
+    overflow-wrap: normal !important;
+    width: 100% !important;
+  }
+
+  .header-cell-title,
+  .p-datatable-column-title {
+    white-space: nowrap !important;
+    word-break: keep-all !important;
+    overflow-wrap: normal !important;
+    display: inline-block !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Sort icon: inline, non-shrinking, directly beside title */
+  p-sort-icon,
+  .p-sort-icon,
+  .p-datatable-sort-icon {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+    color: var(--fg-muted) !important;
+    vertical-align: middle !important;
+    margin-left: 0 !important;
+  }
+
+  .p-datatable-thead .p-sort-icon {
+    color: var(--fg-muted) !important;
+    flex-shrink: 0 !important;
+  }
+
+  .p-datatable-thead .p-datatable-column-sorted .p-sort-icon {
+    color: var(--accent) !important;
+  }
+
+  /* Body Rows — no-wrap, horizontal scroll */
+  .p-datatable-tbody {
+    background: var(--bg-card) !important;
+  }
+
+  .p-datatable-tbody > tr {
+    background: var(--bg-card) !important;
+    transition: background 0.12s;
+
+    > td {
+      padding: 0.4375rem 0.625rem !important;
+      border-bottom: 0.0625rem solid var(--border-light, rgba(255, 255, 255, 0.04)) !important;
+      color: var(--fg) !important;
+      font-size: var(--fs-sm) !important;
+      vertical-align: middle;
+      white-space: nowrap !important;
+      word-break: keep-all !important;
+      line-height: 1.25 !important;
+    }
+
+    &:hover > td {
+      background: var(--accent-soft, rgba(255, 87, 34, 0.06)) !important;
+    }
+
+    &:last-child > td {
+      border-bottom: none !important;
+    }
+
+    &.p-datatable-row-selected > td {
+      background: rgba(255, 87, 34, 0.08) !important;
+    }
+  }
+
+  /* Truncated cell with beautiful tooltip */
+  .cell-truncated {
+    display: inline-block;
+    max-width: 100%;
+    vertical-align: middle;
+    cursor: help;
+    text-decoration: underline dotted rgba(163, 150, 188, 0.45);
+    text-underline-offset: 0.2rem;
+    transition: all 0.15s ease-in-out;
+
+    &:hover {
+      color: var(--accent, #FF5722) !important;
+      text-decoration-color: var(--accent, #FF5722) !important;
+    }
+  }
+
+  /* Checkbox column — frozen left, strictly 3rem wide (no expanding) */
+  .checkbox-col,
+  th.checkbox-col,
+  td.checkbox-col {
+    width: 3rem !important;
+    min-width: 3rem !important;
+    max-width: 3rem !important;
+    inline-size: 3rem !important;
+    flex: 0 0 3rem !important;
+    box-sizing: border-box !important;
+    text-align: center !important;
+    padding: 0.5rem !important;
+    white-space: nowrap !important;
+  }
+
+  th.checkbox-col {
+    height: 3.5rem !important;
+    min-height: 3.5rem !important;
+    position: sticky !important;
+    top: 0 !important;
+    left: 0 !important;
+    z-index: 25 !important;
+    background: var(--bg-table-header, #160D27) !important;
+    border-top: none !important;
+  }
+
+  td.checkbox-col {
+    position: sticky !important;
+    left: 0 !important;
+    z-index: 15 !important;
+    background: var(--bg-card) !important;
+  }
+
+  tr:hover > td.checkbox-col {
+    background: var(--accent-soft, rgba(255, 87, 34, 0.06)) !important;
+  }
+
+  /* Frozen column styling */
+  .p-datatable-frozen-column,
+  .p-datatable-column-frozen {
+    background: inherit;
+    z-index: 1;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 0.375rem;
+      pointer-events: none;
+    }
+  }
+
+  th.p-datatable-frozen-column,
+  th.p-datatable-column-frozen {
+    background: var(--bg-table-header, #160D27) !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 20 !important;
+
+    &[style*="right"],
+    &[alignfrozen="right"] {
+      border-left: 0.0625rem solid var(--border) !important;
+      box-shadow: -0.25rem 0 0.5rem rgba(0, 0, 0, 0.2);
+    }
+  }
+
+  td.p-datatable-frozen-column,
+  td.p-datatable-column-frozen {
+    background: var(--bg-card) !important;
+    position: sticky !important;
+    z-index: 10 !important;
+
+    &[style*="right"],
+    &[alignfrozen="right"] {
+      border-left: 0.0625rem solid var(--border) !important;
+      box-shadow: -0.25rem 0 0.5rem rgba(0, 0, 0, 0.2);
+    }
+  }
+
+  tr:hover > td.p-datatable-frozen-column,
+  tr:hover > td.p-datatable-column-frozen {
+    background: var(--accent-soft, rgba(255, 87, 34, 0.06)) !important;
+  }
+
+  /* Loading overlay */
+  .p-datatable-loading-overlay {
+    background: rgba(0, 0, 0, 0.2) !important;
+    backdrop-filter: blur(2px);
+  }
+}
+
+/* Empty state */
+.empty-state {
+  text-align: center !important;
+  padding: 3.5rem 1rem !important;
+
+  .empty-state-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.625rem;
+
+    .empty-icon {
+      font-size: 2.75rem;
+      color: var(--fg-muted);
+      opacity: 0.4;
+      line-height: 1;
+    }
+
+    .empty-text {
+      font-size: var(--fs-lg);
+      font-weight: 700;
+      color: var(--fg);
+      margin: 0;
+    }
+
+    .empty-subtext {
+      font-size: var(--fs-sm);
+      color: var(--fg-muted);
+      margin: 0 0 0.5rem 0;
+      max-width: 22rem;
+      line-height: 1.4;
+    }
+  }
+}
+
+/* Responsive — reduce font sizes on smaller screens */
+@media (max-width: 1024px) {
+  ::ng-deep .data-table {
+    .p-datatable-table {
+      min-width: 50rem !important;
+    }
+
+    .p-datatable-thead > tr > th {
+      font-size: var(--fs-2xs);
+      padding: 0.75rem 0.75rem !important;
+    }
+
+    .p-datatable-tbody > tr > td {
+      font-size: var(--fs-sm);
+      padding: 0.5rem 0.75rem !important;
+    }
+
+    .p-paginator {
+      font-size: var(--fs-xs);
+      padding: 0.375rem 0.75rem !important;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  ::ng-deep .data-table {
+    .p-datatable-table {
+      min-width: 45rem !important;
+    }
+
+    .p-datatable-thead > tr > th {
+      font-size: 0.5625rem;
+      padding: 0.625rem 0.5rem !important;
+      letter-spacing: 0.03em;
+    }
+
+    .p-datatable-tbody > tr > td {
+      font-size: var(--fs-xs);
+      padding: 0.4375rem 0.5rem !important;
+    }
+
+    .checkbox-col {
+      width: 2.5rem !important;
+      padding-left: 0.5rem !important;
+    }
+
+    .p-paginator {
+      font-size: var(--fs-2xs);
+
+      .p-paginator-page,
+      .p-paginator-first,
+      .p-paginator-prev,
+      .p-paginator-next,
+      .p-paginator-last {
+        min-width: 1.75rem !important;
+        height: 1.75rem !important;
+      }
+    }
+  }
+
+  .table-search-bar {
+    padding: 0.5rem 0.75rem;
+
+    .table-search-input {
+      font-size: var(--fs-sm);
+      padding: 0.375rem 0.625rem;
+    }
+  }
+}

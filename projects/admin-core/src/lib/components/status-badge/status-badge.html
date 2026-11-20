@@ -1,0 +1,9 @@
+<span class="lib-status-badge badge-custom badge-{{ computedVariant() }} badge-{{ size() }}" [class.has-dot]="dot()">
+  @if (dot()) {
+    <span class="status-dot" aria-hidden="true"></span>
+  }
+  @if (icon()) {
+    <span class="icon badge-icon" aria-hidden="true">{{ icon() }}</span>
+  }
+  <span class="badge-label">{{ displayLabel() }}</span>
+</span>

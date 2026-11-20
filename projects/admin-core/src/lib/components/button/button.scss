@@ -1,0 +1,212 @@
+:host {
+  display: inline-flex;
+  vertical-align: middle;
+
+  &[disabled],
+  &:has(button:disabled) {
+    pointer-events: none;
+    opacity: 0.55;
+  }
+}
+
+:host + :host {
+  margin-left: 0.625rem;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4375rem;
+  border-radius: var(--radius, 0.5rem);
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  line-height: 1.25;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 0.0625rem solid transparent;
+  outline: none;
+  user-select: none;
+
+  &:focus-visible {
+    box-shadow: 0 0 0 0.125rem var(--bg), 0 0 0 0.25rem var(--accent);
+  }
+
+  /* Sizes */
+  &.btn-sm {
+    padding: 0.3125rem 0.625rem;
+    font-size: var(--fs-xs);
+    height: 1.875rem;
+
+    .icon {
+      font-size: var(--fs-lg);
+    }
+  }
+
+  &.btn-md {
+    padding: 0.4375rem 0.875rem;
+    font-size: var(--fs-sm);
+    height: 2.125rem;
+
+    .icon {
+      font-size: var(--fs-lg);
+    }
+  }
+
+  &.btn-lg {
+    padding: 0.625rem 1.125rem;
+    font-size: var(--fs-md);
+    height: 2.5rem;
+
+    .icon {
+      font-size: var(--fs-xl);
+    }
+  }
+
+  /* Primary (Accent) */
+  &.btn-primary {
+    background: var(--accent, #FF5722);
+    color: #FFFFFF;
+    border-color: var(--accent, #FF5722);
+
+    &:hover:not(:disabled) {
+      background: var(--accent-hover, #F4511E);
+      border-color: var(--accent-hover, #F4511E);
+      box-shadow: 0 0.125rem 0.375rem rgba(255, 87, 34, 0.35);
+    }
+  }
+
+  /* Info */
+  &.btn-info {
+    background: var(--info);
+    color: #FFFFFF;
+    border-color: var(--info);
+
+    &:hover:not(:disabled) {
+      background: var(--info-hover);
+      border-color: var(--info-hover);
+      box-shadow: 0 0.125rem 0.375rem rgba(2, 136, 209, 0.35);
+    }
+  }
+
+  &.btn-outline-info {
+    background: transparent;
+    color: var(--info);
+    border-color: var(--info);
+
+    &:hover:not(:disabled) {
+      background: var(--info-soft, rgba(2, 136, 209, 0.12));
+    }
+  }
+
+  /* Warning Outlined */
+  &.btn-warning {
+    background: var(--warning);
+    color: #170E29;
+    border-color: var(--warning);
+
+    &:hover:not(:disabled) {
+      background: var(--warning-hover);
+      border-color: var(--warning-hover);
+    }
+  }
+
+  &.btn-outline-warning {
+    background: var(--warning-soft, rgba(245, 158, 11, 0.08));
+    color: var(--warning);
+    border-color: var(--warning);
+
+    &:hover:not(:disabled) {
+      background: rgba(245, 158, 11, 0.18);
+      color: var(--warning);
+    }
+  }
+
+  /* Danger */
+  &.btn-danger {
+    background: var(--danger);
+    color: #FFFFFF;
+    border-color: var(--danger);
+
+    &:hover:not(:disabled) {
+      background: var(--danger-hover);
+      border-color: var(--danger-hover);
+      box-shadow: 0 0.125rem 0.375rem rgba(239, 68, 68, 0.35);
+    }
+  }
+
+  &.btn-outline-danger {
+    background: transparent;
+    color: var(--danger);
+    border-color: var(--danger);
+
+    &:hover:not(:disabled) {
+      background: var(--danger-soft, rgba(239, 68, 68, 0.12));
+    }
+  }
+
+  /* Outline / Secondary */
+  &.btn-outline,
+  &.btn-secondary,
+  &.btn-outline-secondary {
+    background: var(--bg-card);
+    color: var(--fg);
+    border-color: var(--border);
+
+    &:hover:not(:disabled) {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-soft);
+    }
+  }
+
+  /* Ghost */
+  &.btn-ghost {
+    background: transparent;
+    color: var(--fg-muted);
+    border-color: transparent;
+
+    &:hover:not(:disabled) {
+      color: var(--fg);
+      background: rgba(255, 255, 255, 0.05);
+    }
+  }
+
+  .icon {
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .dropdown-icon {
+    font-size: var(--fs-xl);
+    margin-left: -0.125rem;
+    opacity: 0.8;
+  }
+
+  .btn-badge {
+    background: var(--accent);
+    color: #FFFFFF;
+    font-size: var(--fs-2xs);
+    font-weight: 700;
+    min-width: 1.125rem;
+    height: 1.125rem;
+    padding: 0 0.25rem;
+    border-radius: 0.5625rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+
+  .spin {
+    animation: spin 1s linear infinite;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

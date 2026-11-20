@@ -1,0 +1,152 @@
+@if (role()) {
+  <lib-page-container
+    [title]="role()!.name + ' — Permissions'"
+    subtitle="Select which permissions are available for this role"
+    [breadcrumbs]="breadcrumbs()">
+
+    <div page-actions>
+      <lib-button variant="outline" icon="arrow_back" (click)="goBack()">Back</lib-button>
+      <lib-button variant="primary" icon="save" (click)="save()">Save Permissions</lib-button>
+    </div>
+
+    <!-- Summary bar -->
+    <div class="perm-summary-bar">
+      <div class="perm-summary-info">
+        <span class="role-type-chip" [class.chip--system]="role()!.type === 'SYSTEM'" [class.chip--custom]="role()!.type === 'CUSTOM'">
+          {{ role()!.type === 'SYSTEM' ? 'System' : 'Custom' }}
+        </span>
+        <span class="role-scope-chip">{{ role()!.scope }}</span>
+        <span class="perm-summary-count">
+          <strong>{{ selectedPermCount() }}</strong> of {{ totalPermCount }} permissions selected
+        </span>
+      </div>
+      <div class="perm-summary-actions">
+        <button type="button" class="perm-action-btn" (click)="expandAll()">
+          <span class="icon">unfold_more</span> Expand All
+        </button>
+        <button type="button" class="perm-action-btn" (click)="collapseAll()">
+          <span class="icon">unfold_less</span> Collapse All
+        </button>
+        <div class="perm-divider"></div>
+        <button type="button" class="perm-action-btn" (click)="selectAll()">
+          <span class="icon">check_box</span> Select All
+        </button>
+        <button type="button" class="perm-action-btn perm-action-btn--danger" (click)="clearAll()">
+          <span class="icon">check_box_outline_blank</span> Clear All
+        </button>
+      </div>
+    </div>
+
+    <!-- Permission accordion groups -->
+    <div class="perm-groups">
+      @for (group of permissionGroups; track group.key) {
+        <div class="perm-group" [class.perm-group--expanded]="isExpanded(group.key)">
+
+          <!-- Accordion header -->
+          <div class="perm-group-header" (click)="toggleExpand(group.key)">
+            <div class="perm-group-left">
+              <span class="perm-group-chevron icon">
+                {{ isExpanded(group.key) ? 'expand_more' : 'chevron_right' }}
+              </span>
+              <label class="perm-group-toggle" (click)="$event.stopPropagation()">
+                <input
+                  type="checkbox"
+                  class="perm-group-check"
+                  [checked]="isGroupAllSelected(group)"
+                  [indeterminate]="isGroupPartialSelected(group)"
+                  (change)="toggleGroupAll(group)" />
+              </label>
+              <span class="perm-group-title">{{ group.label }}</span>
+              @if (isGroupAllSelected(group)) {
+                <span class="perm-group-badge perm-group-badge--full">All</span>
+              } @else if (isGroupPartialSelected(group)) {
+                <span class="perm-group-badge perm-group-badge--partial">Partial</span>
+              }
+            </div>
+            <div class="perm-group-right" (click)="$event.stopPropagation()">
+              <span class="perm-group-count">
+                {{ group.allPermIds.length }} permissions
+              </span>
+            </div>
+          </div>
+
+          <!-- Accordion content -->
+          @if (isExpanded(group.key)) {
+            <div class="perm-group-content">
+
+              <!-- Section access (parent-level VIEW) -->
+              @if (group.parentViewPermId) {
+                <div class="perm-section-access">
+                  <label class="perm-section-row">
+                    <input
+                      type="checkbox"
+                      class="perm-check"
+                      [checked]="isPermSelected(group.parentViewPermId)"
+                      (change)="togglePermission(group.parentViewPermId)" />
+                    <span class="icon perm-section-icon">visibility</span>
+                    <span class="perm-section-text">Section Access — View <strong>{{ group.label }}</strong> in navigation</span>
+                  </label>
+                </div>
+              }
+
+              <!-- Permission table -->
+              <div class="perm-table-wrap">
+                <table class="perm-table">
+                  <thead>
+                    <tr>
+                      <th class="perm-th-module">Module</th>
+                      @for (col of group.columns; track col.key) {
+                        <th class="perm-th-action">{{ col.label }}</th>
+                      }
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (row of group.rows; track row.key) {
+                      <tr class="perm-row">
+                        <td class="perm-td-module">{{ row.label }}</td>
+                        @for (col of group.columns; track col.key) {
+                          <td class="perm-td-action">
+                            @if (row.permMap[col.key]) {
+                              <label class="perm-cell-label" [title]="row.label + ' → ' + col.label">
+                                <input
+                                  type="checkbox"
+                                  class="perm-check"
+                                  [checked]="isPermSelected(row.permMap[col.key])"
+                                  (change)="togglePermission(row.permMap[col.key])" />
+                              </label>
+                            } @else {
+                              <span class="perm-na">—</span>
+                            }
+                          </td>
+                        }
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
+
+        </div>
+      }
+    </div>
+
+    <!-- Bottom save bar -->
+    <div class="perm-bottom-bar">
+      <span class="perm-bottom-count"><strong>{{ selectedPermCount() }}</strong> of {{ totalPermCount }} permissions selected</span>
+      <div class="perm-bottom-actions">
+        <lib-button variant="outline" (click)="goBack()">Cancel</lib-button>
+        <lib-button variant="primary" icon="save" (click)="save()">Save Permissions</lib-button>
+      </div>
+    </div>
+
+  </lib-page-container>
+} @else {
+  <lib-page-container title="Role Not Found" [breadcrumbs]="[{ label: 'Roles & Permissions', route: '/users/roles' }]">
+    <div class="not-found-msg">
+      <span class="icon">error_outline</span>
+      <p>The requested role could not be found.</p>
+      <lib-button variant="outline" icon="arrow_back" (click)="goBack()">Back to Roles</lib-button>
+    </div>
+  </lib-page-container>
+}

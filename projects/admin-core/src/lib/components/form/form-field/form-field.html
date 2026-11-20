@@ -1,0 +1,30 @@
+<div class="app-form-field" [class.has-error]="hasError()" [class.is-disabled]="disabled()">
+  @if (label()) {
+    <div class="form-field-header">
+      <label [attr.for]="forId() || null" class="form-field-label">
+        {{ label() }}
+        @if (isRequired()) {
+          <span class="required-indicator" aria-hidden="true">*</span>
+        }
+      </label>
+      @if (optional()) {
+        <span class="optional-indicator">Optional</span>
+      }
+    </div>
+  }
+
+  <div class="form-field-control">
+    <ng-content></ng-content>
+  </div>
+
+  @if (hasError() && errorMessage()) {
+    <div class="form-field-error" role="alert">
+      <span class="icon error-icon">error</span>
+      <span class="error-text">{{ errorMessage() }}</span>
+    </div>
+  } @else if (hint()) {
+    <div class="form-field-hint">
+      {{ hint() }}
+    </div>
+  }
+</div>

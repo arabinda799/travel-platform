@@ -1,0 +1,291 @@
+@if (company()) {
+  <lib-page-container
+    [title]="company()!.companyName + ' — Settings'"
+    subtitle="Configure whitelabel branding, SMTP and integration settings"
+    icon="tune"
+    [breadcrumbs]="breadcrumbs()">
+
+    <div page-actions>
+      <lib-button variant="outline" icon="arrow_back" (click)="goBack()">Back</lib-button>
+      <lib-button variant="primary" icon="save" [loading]="saving()" (click)="save()">Save Changes</lib-button>
+    </div>
+
+    <!-- Tab Bar -->
+    <div class="settings-tabs">
+      @for (tab of tabs; track tab.key) {
+        <button
+          type="button"
+          class="settings-tab"
+          [class.active]="activeTab() === tab.key"
+          (click)="setTab(tab.key)">
+          <span class="icon">{{ tab.icon }}</span>
+          <span class="tab-label">{{ tab.label }}</span>
+        </button>
+      }
+    </div>
+
+    <!-- Overview Tab -->
+    @if (activeTab() === 'overview') {
+      <div class="settings-section">
+        <div class="section-header">
+          <span class="icon section-icon">info</span>
+          <div>
+            <h3>Company Overview</h3>
+            <p>Basic tenant information. Edit core fields in the company list.</p>
+          </div>
+        </div>
+        <div class="overview-grid">
+          <div class="overview-item">
+            <span class="overview-label">Company Name</span>
+            <span class="overview-value">{{ company()!.companyName }}</span>
+          </div>
+          <div class="overview-item">
+            <span class="overview-label">Company Code</span>
+            <span class="overview-value overview-code">{{ company()!.companyCode }}</span>
+          </div>
+          <div class="overview-item">
+            <span class="overview-label">Domain</span>
+            <span class="overview-value">{{ company()!.domain }}</span>
+          </div>
+          <div class="overview-item">
+            <span class="overview-label">Firm Type</span>
+            <span class="overview-value">{{ company()!.firmType }}</span>
+          </div>
+          <div class="overview-item">
+            <span class="overview-label">PG Owner</span>
+            <span class="overview-value">{{ company()!.pgOwner }}</span>
+          </div>
+          <div class="overview-item">
+            <span class="overview-label">Status</span>
+            <span class="overview-value">{{ company()!.status }}</span>
+          </div>
+          @if (company()!.legalName) {
+            <div class="overview-item">
+              <span class="overview-label">Legal Name</span>
+              <span class="overview-value">{{ company()!.legalName }}</span>
+            </div>
+          }
+          @if (company()!.gstNumber) {
+            <div class="overview-item">
+              <span class="overview-label">GST Number</span>
+              <span class="overview-value overview-code">{{ company()!.gstNumber }}</span>
+            </div>
+          }
+          <div class="overview-item">
+            <span class="overview-label">Created At</span>
+            <span class="overview-value">{{ company()!.createdAt }}</span>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Web Branding Tab -->
+    @if (activeTab() === 'web') {
+      <div class="settings-section">
+        <div class="section-header">
+          <span class="icon section-icon">image</span>
+          <div>
+            <h3>Web Logos</h3>
+            <p>Logo URLs for the web platform (dark background, light background, favicon, login page).</p>
+          </div>
+        </div>
+        <div class="form-grid">
+          <lib-text-field label="Logo — Dark Background" placeholder="https://cdn.example.com/logo-dark.svg" prefixIcon="dark_mode" hint="Used in dark-themed navbar/sidebar" [formControl]="webForm.controls.logoDark" />
+          <lib-text-field label="Logo — Light Background" placeholder="https://cdn.example.com/logo-light.svg" prefixIcon="light_mode" hint="Used in light-themed navbar/sidebar" [formControl]="webForm.controls.logoLight" />
+          <lib-text-field label="Favicon" placeholder="https://cdn.example.com/favicon.ico" prefixIcon="tab" hint="Browser tab icon (16×16 or 32×32 ICO/PNG)" [formControl]="webForm.controls.favicon" />
+          <lib-text-field label="Login Background" placeholder="https://cdn.example.com/login-bg.jpg" prefixIcon="wallpaper" hint="Full-size image for login page background" [formControl]="webForm.controls.loginBg" />
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="section-header">
+          <span class="icon section-icon">palette</span>
+          <div>
+            <h3>Web Color Palette</h3>
+            <p>Brand colors for the web platform. Use hex codes (e.g. #3B82F6).</p>
+          </div>
+        </div>
+        <div class="form-grid form-grid--colors">
+          <div class="color-field">
+            <lib-text-field label="Primary" placeholder="#8323A1" [formControl]="webForm.controls.primary" />
+            <div class="color-swatch" [style.background]="webForm.controls.primary.value || '#8323A1'"></div>
+          </div>
+          <div class="color-field">
+            <lib-text-field label="Secondary" placeholder="#F56822" [formControl]="webForm.controls.secondary" />
+            <div class="color-swatch" [style.background]="webForm.controls.secondary.value || '#F56822'"></div>
+          </div>
+          <div class="color-field">
+            <lib-text-field label="Accent" placeholder="#D03D4E" [formControl]="webForm.controls.accent" />
+            <div class="color-swatch" [style.background]="webForm.controls.accent.value || '#D03D4E'"></div>
+          </div>
+          <div class="color-field">
+            <lib-text-field label="Background" placeholder="#F8F9FA" [formControl]="webForm.controls.background" />
+            <div class="color-swatch color-swatch--border" [style.background]="webForm.controls.background.value || '#F8F9FA'"></div>
+          </div>
+          <div class="color-field">
+            <lib-text-field label="Card Background" placeholder="#FFFFFF" [formControl]="webForm.controls.backgroundSecondary" />
+            <div class="color-swatch color-swatch--border" [style.background]="webForm.controls.backgroundSecondary.value || '#FFFFFF'"></div>
+          </div>
+          <div class="color-field">
+            <lib-text-field label="Text Color" placeholder="#212529" [formControl]="webForm.controls.text" />
+            <div class="color-swatch" [style.background]="webForm.controls.text.value || '#212529'"></div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- App Branding Tab -->
+    @if (activeTab() === 'app') {
+      <div class="settings-section">
+        <div class="section-header">
+          <span class="icon section-icon">phone_android</span>
+          <div>
+            <h3>App Logos</h3>
+            <p>Logo and splash screen URLs for mobile applications.</p>
+          </div>
+        </div>
+        <div class="form-grid">
+          <lib-text-field label="App Logo — Dark" placeholder="https://cdn.example.com/app-logo-dark.png" prefixIcon="dark_mode" [formControl]="appForm.controls.logoDark" />
+          <lib-text-field label="App Logo — Light" placeholder="https://cdn.example.com/app-logo-light.png" prefixIcon="light_mode" [formControl]="appForm.controls.logoLight" />
+          <lib-text-field label="Splash Screen" placeholder="https://cdn.example.com/splash.png" prefixIcon="screen_rotation_up" hint="Full-screen image shown on app launch" [formControl]="appForm.controls.splash" />
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="section-header">
+          <span class="icon section-icon">palette</span>
+          <div>
+            <h3>App Color Palette</h3>
+            <p>Brand colors for the mobile app.</p>
+          </div>
+        </div>
+        <div class="form-grid form-grid--colors">
+          <div class="color-field">
+            <lib-text-field label="Primary" placeholder="#8323A1" [formControl]="appForm.controls.primary" />
+            <div class="color-swatch" [style.background]="appForm.controls.primary.value || '#8323A1'"></div>
+          </div>
+          <div class="color-field">
+            <lib-text-field label="Secondary" placeholder="#F56822" [formControl]="appForm.controls.secondary" />
+            <div class="color-swatch" [style.background]="appForm.controls.secondary.value || '#F56822'"></div>
+          </div>
+          <div class="color-field">
+            <lib-text-field label="Accent" placeholder="#D03D4E" [formControl]="appForm.controls.accent" />
+            <div class="color-swatch" [style.background]="appForm.controls.accent.value || '#D03D4E'"></div>
+          </div>
+          <div class="color-field">
+            <lib-text-field label="Background" placeholder="#F8F9FA" [formControl]="appForm.controls.background" />
+            <div class="color-swatch color-swatch--border" [style.background]="appForm.controls.background.value || '#F8F9FA'"></div>
+          </div>
+          <div class="color-field">
+            <lib-text-field label="Card Background" placeholder="#FFFFFF" [formControl]="appForm.controls.backgroundSecondary" />
+            <div class="color-swatch color-swatch--border" [style.background]="appForm.controls.backgroundSecondary.value || '#FFFFFF'"></div>
+          </div>
+          <div class="color-field">
+            <lib-text-field label="Text Color" placeholder="#212529" [formControl]="appForm.controls.text" />
+            <div class="color-swatch" [style.background]="appForm.controls.text.value || '#212529'"></div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Contact & Footer Tab -->
+    @if (activeTab() === 'contact') {
+      <div class="settings-section">
+        <div class="section-header">
+          <span class="icon section-icon">support_agent</span>
+          <div>
+            <h3>Support Contacts</h3>
+            <p>Contact details shown to end users on the platform.</p>
+          </div>
+        </div>
+        <div class="form-grid">
+          <lib-text-field label="Support Email" placeholder="support@tenant.com" prefixIcon="mail" [formControl]="contactForm.controls.email" />
+          <lib-text-field label="Support Phone" placeholder="+91 98765 43210" prefixIcon="phone" [formControl]="contactForm.controls.phone" />
+          <lib-text-field label="WhatsApp Number" placeholder="+91 98765 43210" prefixIcon="chat" [formControl]="contactForm.controls.whatsapp" />
+          <lib-text-field label="Toll-Free Number" placeholder="1800-000-0000" prefixIcon="call" [formControl]="contactForm.controls.tollfree" />
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="section-header">
+          <span class="icon section-icon">article</span>
+          <div>
+            <h3>Footer Text</h3>
+            <p>Copyright text displayed in the platform footer.</p>
+          </div>
+        </div>
+        <lib-text-field label="Footer Text" placeholder="© 2026 Company Name. All rights reserved." [formControl]="contactForm.controls.footer" />
+      </div>
+    }
+
+    <!-- Social & SEO Tab -->
+    @if (activeTab() === 'social') {
+      <div class="settings-section">
+        <div class="section-header">
+          <span class="icon section-icon">share</span>
+          <div>
+            <h3>Social Media Links</h3>
+            <p>Social profiles displayed in the footer and contact pages.</p>
+          </div>
+        </div>
+        <div class="form-grid">
+          <lib-text-field label="Facebook" placeholder="https://facebook.com/page" prefixIcon="facebook" [formControl]="socialForm.controls.facebook" />
+          <lib-text-field label="Twitter / X" placeholder="https://twitter.com/handle" prefixIcon="alternate_email" [formControl]="socialForm.controls.twitter" />
+          <lib-text-field label="Instagram" placeholder="https://instagram.com/handle" prefixIcon="photo_camera" [formControl]="socialForm.controls.instagram" />
+          <lib-text-field label="LinkedIn" placeholder="https://linkedin.com/company/page" prefixIcon="business" [formControl]="socialForm.controls.linkedin" />
+          <lib-text-field label="YouTube" placeholder="https://youtube.com/channel" prefixIcon="play_circle" [formControl]="socialForm.controls.youtube" />
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="section-header">
+          <span class="icon section-icon">travel_explore</span>
+          <div>
+            <h3>SEO & Meta Tags</h3>
+            <p>Search engine metadata for the tenant's web platform.</p>
+          </div>
+        </div>
+        <div class="form-grid">
+          <lib-text-field label="Site Title" placeholder="e.g. Nexus Travels — Book Hotels & Flights" [formControl]="socialForm.controls.metaTitle" />
+          <lib-text-field label="Robots" placeholder="index, follow" hint="e.g. index, follow or noindex, nofollow" [formControl]="socialForm.controls.robots" />
+          <lib-text-field label="Keywords" placeholder="travel, hotel booking, flight booking" hint="Comma-separated keywords" [formControl]="socialForm.controls.metaKeywords" />
+          <lib-text-field label="Description" placeholder="Advanced travel booking platform" [formControl]="socialForm.controls.metaDescription" />
+        </div>
+      </div>
+    }
+
+    <!-- SMTP Tab -->
+    @if (activeTab() === 'smtp') {
+      <div class="settings-section">
+        <div class="section-header">
+          <span class="icon section-icon">mail</span>
+          <div>
+            <h3>SMTP Configuration</h3>
+            <p>Email server settings for transactional and notification emails.</p>
+          </div>
+        </div>
+        <div class="form-grid">
+          <lib-text-field label="SMTP Host" placeholder="smtp.example.com" prefixIcon="dns" [formControl]="smtpForm.controls.host" />
+          <lib-text-field label="SMTP Port" placeholder="465" hint="Common: 465 (SSL), 587 (TLS), 25 (plain)" [formControl]="smtpForm.controls.port" />
+          <lib-text-field label="Username" placeholder="admin@example.com" prefixIcon="person" [formControl]="smtpForm.controls.username" />
+          <lib-text-field label="Password" placeholder="••••••••" prefixIcon="lock" [formControl]="smtpForm.controls.password" />
+          <lib-text-field label="From Email" placeholder="noreply@tenant.com" prefixIcon="outgoing_mail" [formControl]="smtpForm.controls.fromEmail" />
+          <lib-text-field label="From Name" placeholder="Tenant Name" [formControl]="smtpForm.controls.fromName" />
+          <lib-text-field label="Reply-To Email" placeholder="support@tenant.com" [formControl]="smtpForm.controls.replyToEmail" />
+          <div class="smtp-secure-field">
+            <lib-switch-field label="Use SSL/TLS" hint="Enable for port 465; disable for 587 with STARTTLS" [formControl]="smtpForm.controls.secure" />
+          </div>
+        </div>
+      </div>
+    }
+
+  </lib-page-container>
+} @else {
+  <lib-page-container title="Company Not Found" [breadcrumbs]="[{ label: 'Companies', route: '/tenants/companies' }]">
+    <div class="not-found-msg">
+      <span class="icon">error_outline</span>
+      <p>The requested company could not be found.</p>
+      <lib-button variant="outline" icon="arrow_back" (click)="goBack()">Back to Companies</lib-button>
+    </div>
+  </lib-page-container>
+}

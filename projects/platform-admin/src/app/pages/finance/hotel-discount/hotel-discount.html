@@ -1,0 +1,203 @@
+<lib-page-container
+  title="Hotel Discount Management"
+  subtitle="Configure promotional hotel discounts, agent B2B incentives, and ceiling limits"
+  icon="local_offer"
+  [breadcrumbs]="breadcrumbs">
+
+  <!-- Top Page Action: Add Hotel Discount -->
+  <div page-actions class="page-top-actions">
+    <lib-button
+      variant="primary"
+      icon="add"
+      (btnClick)="openAddModal()">
+      Add Hotel Discount
+    </lib-button>
+  </div>
+
+  <!-- Data Table -->
+  <lib-data-table
+    [value]="filteredDiscounts()"
+    [columns]="columns()"
+    [totalRecords]="filteredDiscounts().length"
+    [loading]="isLoading()"
+    [checkbox]="true"
+    [(selection)]="selectedDiscounts"
+    [searchable]="true"
+    searchPlaceholder="Search discounts by target, region..."
+    (lazyLoad)="onLazyLoad($event)"
+    (search)="onSearch($event)">
+
+    <!-- Bulk Selection Actions -->
+    <div selection-actions class="selection-actions-group">
+      <lib-button
+        variant="outline-warning"
+        icon="sync"
+        (click)="isStatusModalVisible.set(true)">
+        Change Status
+      </lib-button>
+    </div>
+
+    <!-- Region Types Column (Tags) -->
+    <ng-template #regionTpl let-row>
+      <div class="region-tags-wrap">
+        @for (reg of row.regionTypes; track reg) {
+          <span class="region-pill">{{ reg }}</span>
+        }
+      </div>
+    </ng-template>
+
+    <!-- Value Column (Formatted) -->
+    <ng-template #valueTpl let-row>
+      <strong class="value-text mono text-success">
+        {{ row.value }}%
+      </strong>
+    </ng-template>
+
+    <!-- Max Limit Column -->
+    <ng-template #limitTpl let-row>
+      <span class="mono limit-text">
+        @if (row.maxLimit) {
+          ₹ {{ row.maxLimit | number }}
+        } @else {
+          <span class="text-muted">No Cap</span>
+        }
+      </span>
+    </ng-template>
+
+    <!-- Status Column -->
+    <ng-template #statusTpl let-row>
+      <lib-status-badge [status]="row.status" />
+    </ng-template>
+
+    <!-- Created Date Column (12-hour format) -->
+    <ng-template #dateTpl let-row>
+      <span class="mono date-cell">{{ row.createdDate | date:'dd MMM yyyy, hh:mm a' }}</span>
+    </ng-template>
+
+    <!-- Row Actions: Edit & Delete -->
+    <ng-template #actionsTpl let-row>
+      <div class="table-row-actions">
+        <lib-table-action action="edit" tooltip="Edit Discount" (clicked)="openEditModal(row)" />
+        <lib-table-action action="delete" tooltip="Delete Discount" (clicked)="openDeleteModal(row)" />
+      </div>
+    </ng-template>
+
+  </lib-data-table>
+
+  <!-- ADD / EDIT HOTEL DISCOUNT MODAL (MATCHES SCREENSHOT 2) -->
+  <lib-form-modal
+    [(visible)]="isModalVisible"
+    [title]="modalTitle"
+    icon="local_offer"
+    width="50rem"
+    submitLabel="SAVE"
+    submitIcon="check"
+    [loading]="isSaving()"
+    (submitted)="onSubmitDiscount()"
+    (cancelled)="closeModal()">
+
+    <form [formGroup]="discountForm" class="discount-modal-form">
+
+      <!-- Row 1: Markup For *, Region Type *, Value * (Matches Image 2) -->
+      <div class="form-grid-3col">
+
+        <!-- 1. Markup For * -->
+        <lib-select-field
+          label="Markup For"
+          formControlName="markupFor"
+          [options]="markupForOptions"
+          placeholder="Please Select"
+          [required]="true" />
+
+        <!-- 2. Region Type * (Multi-select dropdown with "1 selected" header) -->
+        <div class="form-field-wrapper">
+          <label class="field-label">
+            Region Type <span class="required-star">*</span>
+          </label>
+
+          <div class="multi-select-container">
+            <button
+              type="button"
+              class="multi-select-trigger"
+              (click)="toggleRegionDropdown()"
+              [attr.aria-expanded]="isRegionDropdownOpen()">
+              <span class="trigger-text">
+                {{ discountForm.get('regionTypes')?.value?.length || 0 }} selected
+              </span>
+              <span class="icon trigger-icon">{{ isRegionDropdownOpen() ? 'expand_less' : 'expand_more' }}</span>
+            </button>
+
+            @if (isRegionDropdownOpen()) {
+              <div class="multi-select-dropdown">
+                <div class="dropdown-header-bar">
+                  <span class="header-caption">Select Regions</span>
+                </div>
+
+                <div class="checkbox-options-list">
+                  @for (region of allRegions; track region) {
+                    <label class="checkbox-option-item">
+                      <input
+                        type="checkbox"
+                        [checked]="isRegionSelected(region)"
+                        (change)="toggleRegion(region)" />
+                      <span class="option-label">{{ region }}</span>
+                    </label>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- 3. Value * -->
+        <lib-text-field
+          label="Value"
+          type="number"
+          formControlName="value"
+          placeholder="Value"
+          [required]="true" />
+
+      </div>
+
+      <!-- Row 2: Max Limit, Status * (Matches Image 2) -->
+      <div class="form-grid-2col">
+
+        <!-- 4. Max Limit -->
+        <lib-text-field
+          label="Max Limit"
+          type="number"
+          formControlName="maxLimit"
+          placeholder="Max Limit"
+          [optional]="true" />
+
+        <!-- 5. Status * -->
+        <lib-select-field
+          label="Status"
+          formControlName="status"
+          [options]="statusOptions"
+          [required]="true" />
+
+      </div>
+
+    </form>
+
+  </lib-form-modal>
+
+  <!-- Status Change Modal -->
+  <lib-status-modal
+    [(visible)]="isStatusModalVisible"
+    title="Change Discount Status"
+    [count]="selectedDiscounts.length"
+    [options]="statusOptions"
+    (confirmed)="onStatusChangeSubmit($event)" />
+
+  <!-- Delete Confirm Dialog -->
+  <lib-confirm-dialog
+    [(visible)]="isDeleteModalVisible"
+    title="Delete Hotel Discount Rule"
+    [message]="'Are you sure you want to delete this discount rule? This action cannot be undone.'"
+    confirmLabel="Delete"
+    confirmVariant="danger"
+    (confirmed)="confirmDelete()" />
+
+</lib-page-container>

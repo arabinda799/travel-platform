@@ -1,0 +1,283 @@
+<lib-page-container
+  title="Hotel Query List"
+  subtitle="Track and manage guest inquiries, complaints, and special requests"
+  [breadcrumbs]="breadcrumbs">
+
+  <lib-data-table
+    [value]="tableData()"
+    [columns]="columns()"
+    [totalRecords]="totalRecords()"
+    [loading]="isLoading()"
+    [checkbox]="true"
+    [(selection)]="selectedQueries"
+    [searchable]="true"
+    searchPlaceholder="Search by query ID, guest, hotel, message..."
+    (lazyLoad)="onLazyLoad($event)"
+    (search)="onSearch($event)">
+
+    <div table-actions class="table-actions-group">
+      <lib-button
+        variant="outline"
+        icon="tune"
+        [badge]="activeFilterCount() ? activeFilterCount() : ''"
+        (click)="filterVisible.set(true)">
+        Filters
+      </lib-button>
+
+      <lib-button
+        variant="outline"
+        icon="download"
+        (click)="exportMenu.toggle($event)">
+        Export
+      </lib-button>
+      <p-menu #exportMenu [model]="exportMenuItems" [popup]="true" />
+    </div>
+
+    <div selection-actions class="selection-actions-group">
+      <lib-button
+        variant="outline-warning"
+        icon="sync"
+        (click)="statusModalVisible.set(true)">
+        Change Status
+      </lib-button>
+      <lib-button
+        variant="danger"
+        icon="delete"
+        (click)="onBulkDelete()">
+        Delete Selected
+      </lib-button>
+    </div>
+
+    <!-- Status badge cell -->
+    <ng-template #queryStatusTpl let-row>
+      <lib-status-badge [status]="row.queryStatus" />
+    </ng-template>
+
+    <!-- Truncated message cell -->
+    <ng-template #messageTpl let-row>
+      <span class="message-preview">{{ row.message }}</span>
+    </ng-template>
+
+    <!-- Row actions -->
+    <ng-template #actionsTpl let-row>
+      <div class="table-row-actions">
+        <lib-table-action action="view" tooltip="View Query" (clicked)="viewQuery(row)" />
+      </div>
+    </ng-template>
+
+  </lib-data-table>
+
+</lib-page-container>
+
+<!-- ─── Filter Sidebar ─── -->
+<lib-filter-sidebar
+  [(visible)]="filterVisible"
+  (apply)="onApplyFilters()"
+  (reset)="onResetFilters()">
+
+  <div class="filter-group">
+    <lib-select-field
+      label="Query Type"
+      [options]="typeOptions"
+      [value]="selectedType()"
+      (valueChange)="selectedType.set($event)"
+      placeholder="All Query Types"
+      [clearable]="true" />
+  </div>
+
+  <div class="filter-group">
+    <lib-select-field
+      label="Status"
+      [options]="statusOptions"
+      [value]="selectedStatus()"
+      (valueChange)="selectedStatus.set($event)"
+      placeholder="All Statuses"
+      [clearable]="true" />
+  </div>
+
+  <div class="filter-group">
+    <lib-select-field
+      label="Source"
+      [options]="sourceOptions"
+      [value]="selectedSource()"
+      (valueChange)="selectedSource.set($event)"
+      placeholder="All Sources"
+      [clearable]="true" />
+  </div>
+
+  <div class="filter-group">
+    <lib-datepicker-field
+      label="Created Date"
+      selectionMode="range"
+      dateFormat="dd/mm/yy"
+      placeholder="Select start and end date"
+      [value]="selectedDateRange()"
+      (valueChange)="selectedDateRange.set($event)" />
+  </div>
+
+</lib-filter-sidebar>
+
+<!-- ─── Query Detail Modal ─── -->
+@if (activeQuery()) {
+  <lib-view-modal
+    [(visible)]="detailVisible"
+    title="Query Details"
+    [subtitle]="activeQuery()!.queryId + ' • ' + activeQuery()!.queryType"
+    icon="support_agent"
+    width="52rem">
+
+    <div class="query-detail-body">
+
+      <!-- KPI strip -->
+      <div class="qd-kpi-strip">
+        <div class="qd-kpi">
+          <span class="qd-kpi-label">Query ID</span>
+          <strong class="qd-kpi-value mono">{{ activeQuery()!.queryId }}</strong>
+        </div>
+        <div class="qd-kpi">
+          <span class="qd-kpi-label">Status</span>
+          <lib-status-badge [status]="activeQuery()!.queryStatus" />
+        </div>
+        <div class="qd-kpi">
+          <span class="qd-kpi-label">Source</span>
+          <strong class="qd-kpi-value">{{ activeQuery()!.source }}</strong>
+        </div>
+        <div class="qd-kpi">
+          <span class="qd-kpi-label">Created</span>
+          <strong class="qd-kpi-value">{{ activeQuery()!.createdDate }}</strong>
+        </div>
+      </div>
+
+      <!-- Two-column info grid -->
+      <div class="qd-grid">
+
+        <!-- Guest Information -->
+        <section class="qd-section">
+          <header class="qd-section-header">
+            <span class="icon">person</span>
+            <h4>Guest Information</h4>
+          </header>
+          <div class="qd-info-grid">
+            <div class="qd-info-row">
+              <span class="qd-info-label">Guest Name</span>
+              <span class="qd-info-value">{{ activeQuery()!.guestName }}</span>
+            </div>
+            <div class="qd-info-row">
+              <span class="qd-info-label">Email</span>
+              <span class="qd-info-value">{{ activeQuery()!.guestEmail }}</span>
+            </div>
+            <div class="qd-info-row">
+              <span class="qd-info-label">Phone</span>
+              <span class="qd-info-value">{{ activeQuery()!.guestPhone }}</span>
+            </div>
+            <div class="qd-info-row">
+              <span class="qd-info-label">Pax</span>
+              <span class="qd-info-value">{{ activeQuery()!.pax }}</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Stay Details -->
+        <section class="qd-section">
+          <header class="qd-section-header">
+            <span class="icon">hotel</span>
+            <h4>Stay Details</h4>
+          </header>
+          <div class="qd-info-grid">
+            <div class="qd-info-row">
+              <span class="qd-info-label">Hotel</span>
+              <span class="qd-info-value">{{ activeQuery()!.hotel }}</span>
+            </div>
+            <div class="qd-info-row">
+              <span class="qd-info-label">City</span>
+              <span class="qd-info-value">{{ activeQuery()!.city }}</span>
+            </div>
+            <div class="qd-info-row">
+              <span class="qd-info-label">Check In</span>
+              <span class="qd-info-value">{{ activeQuery()!.checkIn }}</span>
+            </div>
+            <div class="qd-info-row">
+              <span class="qd-info-label">Check Out</span>
+              <span class="qd-info-value">{{ activeQuery()!.checkOut }}</span>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- Query Message -->
+      <section class="qd-section qd-section--full">
+        <header class="qd-section-header">
+          <span class="icon">chat</span>
+          <h4>Guest Message / Request</h4>
+        </header>
+        <div class="qd-message-box">
+          {{ activeQuery()!.message }}
+        </div>
+      </section>
+
+      <!-- Response / Notes -->
+      <section class="qd-section qd-section--full">
+        <header class="qd-section-header">
+          <span class="icon">reply</span>
+          <h4>Response / Internal Notes</h4>
+        </header>
+        @if (activeQuery()!.response) {
+          <div class="qd-response-box">
+            {{ activeQuery()!.response }}
+          </div>
+        } @else {
+          <div class="qd-no-response">No response recorded yet.</div>
+        }
+      </section>
+
+      <!-- Assignment footer -->
+      <div class="qd-footer-meta">
+        <span class="qd-meta-item">
+          <span class="icon">assignment_ind</span>
+          Assigned to <strong>{{ activeQuery()!.assignedStaff }}</strong>
+        </span>
+        <span class="qd-meta-item">
+          <span class="icon">update</span>
+          Last updated <strong>{{ activeQuery()!.updatedDate }}</strong>
+        </span>
+      </div>
+
+    </div>
+
+  </lib-view-modal>
+}
+
+<!-- ─── Bulk Delete Confirm ─── -->
+<lib-confirm-dialog
+  [(visible)]="deleteConfirmVisible"
+  title="Delete Queries"
+  [message]="'Are you sure you want to delete ' + selectedQueries.length + ' selected quer' + (selectedQueries.length === 1 ? 'y' : 'ies') + '? This action cannot be undone.'"
+  confirmLabel="Delete"
+  severity="danger"
+  (confirmed)="confirmBulkDelete()" />
+
+<!-- ─── Status Modal ─── -->
+<lib-status-modal
+  [(visible)]="statusModalVisible"
+  [count]="selectedQueries.length"
+  [options]="statusModalOptions"
+  (confirmed)="onStatusModalConfirm($event)" />
+
+<!-- ─── Export Modal ─── -->
+<lib-modal
+  [(visible)]="exportDateRangeVisible"
+  title="Export Queries"
+  subtitle="Select date range for export"
+  icon="download"
+  width="32rem">
+  <div class="export-modal-body">
+    <lib-date-range-picker
+      label="Created Date Range"
+      [(value)]="exportDateRange" />
+  </div>
+  <div modal-footer class="export-modal-footer">
+    <lib-button variant="outline" (click)="exportDateRangeVisible.set(false)">Cancel</lib-button>
+    <lib-button variant="primary" icon="download" (click)="onExport('csv')">Download</lib-button>
+  </div>
+</lib-modal>

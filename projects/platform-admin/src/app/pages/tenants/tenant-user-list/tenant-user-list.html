@@ -1,0 +1,218 @@
+<lib-page-container
+  title="Tenant Users"
+  subtitle="Manage users across all tenant companies with role-based permissions"
+  icon="people"
+  [breadcrumbs]="[
+    { label: 'Dashboard', route: '/dashboard' },
+    { label: 'Tenant Management' },
+    { label: 'Users' }
+  ]">
+
+  <div page-actions>
+    <lib-button variant="primary" icon="person_add" (click)="openAddModal()">
+      Add User
+    </lib-button>
+  </div>
+
+  <lib-data-table
+    [value]="filteredUsers()"
+    [columns]="columns()"
+    [totalRecords]="filteredUsers().length"
+    [loading]="loading()"
+    [checkbox]="true"
+    [(selection)]="selectedUsers"
+    [searchable]="true"
+    searchPlaceholder="Search by name, email, phone..."
+    (search)="onSearch($event)">
+
+    <div table-actions class="table-actions-group">
+      <lib-button
+        variant="outline"
+        icon="tune"
+        [badge]="activeFilterCount() ? activeFilterCount() : ''"
+        (click)="filterVisible.set(true)">
+        Filters
+      </lib-button>
+    </div>
+
+    <div selection-actions class="selection-actions-group">
+      <lib-button variant="outline-warning" icon="sync" (click)="openBulkStatusModal()">
+        Change Status
+      </lib-button>
+      <lib-button variant="danger" icon="delete" (click)="confirmBulkDelete()">
+        Delete Selected ({{ selectedUsers().length }})
+      </lib-button>
+    </div>
+
+    <!-- User name + email cell -->
+    <ng-template #nameTpl let-row>
+      <div class="user-name-cell">
+        <div class="user-avatar" [class.user-avatar--primary]="row.isPrimary">
+          <span class="icon">{{ row.isPrimary ? 'admin_panel_settings' : 'person' }}</span>
+        </div>
+        <div class="user-info">
+          <span class="user-fullname">
+            {{ row.firstName }} {{ row.lastName }}
+            @if (row.isPrimary) {
+              <span class="primary-badge">Primary</span>
+            }
+          </span>
+          <span class="user-email">{{ row.email }}</span>
+        </div>
+      </div>
+    </ng-template>
+
+    <!-- Tenant cell -->
+    <ng-template #tenantTpl let-row>
+      <div class="tenant-cell">
+        <span class="tenant-name">{{ getTenantName(row.tenantId) }}</span>
+        <span class="tenant-code">{{ getTenantCode(row.tenantId) }}</span>
+      </div>
+    </ng-template>
+
+    <!-- Role + Permissions cell -->
+    <ng-template #permTpl let-row>
+      <div class="perm-cell">
+        <span class="perm-cell-role">{{ getRoleName(row.roleId) }}</span>
+        <span class="perm-cell-count" [class.perm-cell-count--restricted]="getOverrideCount(row) > 0">
+          {{ getEffectivePermCount(row) }} permissions
+          @if (getOverrideCount(row) > 0) {
+            <span class="perm-cell-restricted-dot"></span>
+          }
+        </span>
+      </div>
+    </ng-template>
+
+    <!-- Status badge -->
+    <ng-template #statusTpl let-row>
+      <lib-status-badge [status]="row.status" />
+    </ng-template>
+
+    <!-- Row actions -->
+    <ng-template #actionsTpl let-row>
+      <div class="table-row-actions">
+        <lib-table-action action="custom" icon="shield_person" tooltip="Edit Permissions" (clicked)="openPermissions(row)" />
+        <lib-table-action action="edit" tooltip="Edit User" (clicked)="openEditModal(row)" />
+        <lib-table-action action="delete" tooltip="Delete User" (clicked)="confirmDelete(row)" [disabled]="row.isPrimary" />
+      </div>
+    </ng-template>
+  </lib-data-table>
+
+  <!-- Filter Sidebar -->
+  <lib-filter-sidebar
+    [(visible)]="filterVisible"
+    title="Filter Users"
+    (apply)="applyFilters()"
+    (reset)="resetFilters()">
+    <div class="filter-form-fields">
+      <lib-select-field
+        label="Tenant"
+        placeholder="All Tenants"
+        [options]="tenantFilterOptions()"
+        [clearable]="true"
+        [value]="selectedTenantFilter()"
+        (valueChange)="selectedTenantFilter.set($event)" />
+      <lib-select-field
+        label="Role"
+        placeholder="All Roles"
+        [options]="roleFilterOptions()"
+        [clearable]="true"
+        [value]="selectedRoleFilter()"
+        (valueChange)="selectedRoleFilter.set($event)" />
+      <lib-select-field
+        label="Status"
+        placeholder="All Statuses"
+        [options]="statusOptions"
+        [clearable]="true"
+        [value]="selectedStatusFilter()"
+        (valueChange)="selectedStatusFilter.set($event)" />
+    </div>
+  </lib-filter-sidebar>
+
+  <!-- Bulk Status Modal -->
+  <lib-status-modal
+    [(visible)]="statusModalVisible"
+    [count]="selectedUsers().length"
+    [options]="[
+      { label: 'Active', value: 'ACTIVE', description: 'Allow user to log in' },
+      { label: 'Inactive', value: 'INACTIVE', description: 'Temporarily disable the account' },
+      { label: 'Blocked', value: 'BLOCKED', description: 'Permanently block this account' }
+    ]"
+    (confirmed)="onBulkStatusConfirm($event)" />
+
+  <!-- Add / Edit User Modal -->
+  <lib-form-modal
+    [(visible)]="modalVisible"
+    [title]="isEditing() ? 'Edit Tenant User' : 'Add Tenant User'"
+    width="44rem"
+    [submitLabel]="isEditing() ? 'Update' : 'Save & Set Permissions'"
+    submitIcon="save"
+    (submitted)="saveUser()">
+    <div class="modal-form-grid">
+      <lib-select-field
+        label="Tenant Company"
+        placeholder="Select a tenant"
+        [required]="true"
+        [options]="tenantOptions()"
+        [formControl]="form.controls.tenantId" />
+
+      <div class="form-row-2">
+        <lib-text-field
+          label="First Name"
+          placeholder="First name"
+          [required]="true"
+          [formControl]="form.controls.firstName" />
+        <lib-text-field
+          label="Last Name"
+          placeholder="Last name"
+          [required]="true"
+          [formControl]="form.controls.lastName" />
+      </div>
+
+      <div class="form-row-2">
+        <lib-text-field
+          label="Email Address"
+          placeholder="user@tenant.com"
+          [required]="true"
+          [formControl]="form.controls.email" />
+        <lib-text-field
+          label="Phone Number"
+          placeholder="+91 98765 43210"
+          [required]="true"
+          [formControl]="form.controls.phone" />
+      </div>
+
+      <lib-select-field
+        label="Assign Role"
+        placeholder="Select a role"
+        [required]="true"
+        [options]="roleOptions()"
+        [formControl]="form.controls.roleId" />
+
+      <div class="role-info-note">
+        <span class="icon">info</span>
+        User inherits all permissions from the assigned role. You can restrict specific permissions after saving.
+      </div>
+
+      <lib-select-field
+        label="Status"
+        [required]="true"
+        [options]="statusOptions"
+        [formControl]="form.controls.status" />
+    </div>
+  </lib-form-modal>
+
+  <!-- Delete Confirmation -->
+  <lib-confirm-dialog
+    [(visible)]="confirmDeleteVisible"
+    title="Confirm Delete"
+    [message]="
+      itemToDelete()
+        ? 'Are you sure you want to delete &quot;' + itemToDelete()!.firstName + ' ' + itemToDelete()!.lastName + '&quot;? This cannot be undone.'
+        : 'Are you sure you want to delete ' + selectedUsers().length + ' selected user(s)? This cannot be undone.'
+    "
+    confirmLabel="Delete"
+    severity="danger"
+    (confirmed)="executeDelete()" />
+
+</lib-page-container>

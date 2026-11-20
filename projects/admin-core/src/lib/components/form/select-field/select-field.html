@@ -1,0 +1,29 @@
+<lib-form-field
+  [label]="label()"
+  [forId]="inputId()"
+  [required]="required()"
+  [optional]="optional()"
+  [hint]="hint()"
+  [error]="error()"
+  [control]="effectiveControl"
+  [value]="effectiveValue"
+  [touched]="effectiveTouched"
+  [disabled]="disabled()">
+
+  <p-select
+    [inputId]="inputId()"
+    [options]="options()"
+    [optionLabel]="optionLabel()"
+    [optionValue]="optionValue()"
+    [placeholder]="placeholder()"
+    [filter]="filter()"
+    [filterPlaceholder]="filterPlaceholder()"
+    [showClear]="clearable()"
+    [disabled]="disabled()"
+    [appendTo]="appendTo()"
+    [ngModel]="value()"
+    (ngModelChange)="onSelectionChange($event)"
+    (onHide)="onBlur()"
+    (onBlur)="onBlur()"
+    styleClass="app-select-control" />
+</lib-form-field>

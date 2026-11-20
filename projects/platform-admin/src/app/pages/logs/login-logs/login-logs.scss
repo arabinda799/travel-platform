@@ -1,0 +1,29 @@
+.user-name-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.user-name {
+  font-weight: 600;
+  color: var(--fg);
+  font-size: var(--fs-md);
+}
+
+.user-email-subtext {
+  font-size: var(--fs-xs);
+  color: var(--fg-muted);
+}
+
+// login detail: row is space-between, value aligns right
+.log-detail-row { justify-content: space-between; align-items: center; }
+.log-detail-value {
+  font-weight: 500;
+  text-align: right;
+
+  &.mono {
+    font-family: 'Courier New', monospace;
+    font-size: var(--fs-base);
+    color: var(--accent);
+  }
+}

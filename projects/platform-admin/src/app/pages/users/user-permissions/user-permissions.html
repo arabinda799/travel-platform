@@ -1,0 +1,197 @@
+@if (user() && role()) {
+  <lib-page-container
+    [title]="user()!.firstName + ' ' + user()!.lastName + ' — Permissions'"
+    subtitle="Restrict specific permissions inherited from their role"
+    [breadcrumbs]="breadcrumbs()">
+
+    <div page-actions>
+      <lib-button variant="outline" icon="arrow_back" (click)="goBack()">Back</lib-button>
+      <lib-button variant="primary" icon="save" (click)="save()">Save</lib-button>
+    </div>
+
+    <!-- Summary bar -->
+    <div class="perm-summary-bar">
+      <div class="perm-summary-info">
+        <div class="summary-role-label">
+          <span class="icon summary-icon">manage_accounts</span>
+          Role: <strong>{{ role()!.name }}</strong>
+        </div>
+        <div class="summary-counts">
+          <div class="summary-count-item summary-count-item--active">
+            <span class="icon">lock</span>
+            <strong>{{ effectiveCount() }}</strong> active
+          </div>
+          @if (disabledCount() > 0) {
+            <div class="summary-count-item summary-count-item--restricted">
+              <span class="icon">block</span>
+              <strong>{{ disabledCount() }}</strong> restricted
+            </div>
+          }
+          <div class="summary-count-item summary-count-item--total">
+            <span class="icon">info</span>
+            {{ rolePermCount() }} from role
+          </div>
+        </div>
+      </div>
+      <div class="perm-summary-actions">
+        <button type="button" class="perm-action-btn" (click)="expandAll()">
+          <span class="icon">unfold_more</span> Expand All
+        </button>
+        <button type="button" class="perm-action-btn" (click)="collapseAll()">
+          <span class="icon">unfold_less</span> Collapse All
+        </button>
+        <div class="perm-divider"></div>
+        <button type="button" class="perm-action-btn" (click)="clearAllRestrictions()">
+          <span class="icon">check_circle</span> Allow All
+        </button>
+        <button type="button" class="perm-action-btn perm-action-btn--danger" (click)="restrictAll()">
+          <span class="icon">block</span> Restrict All
+        </button>
+      </div>
+    </div>
+
+    <!-- Hybrid RBAC legend -->
+    <div class="rbac-legend">
+      <div class="legend-item">
+        <span class="legend-dot legend-dot--active"></span> Active (inherited from role)
+      </div>
+      <div class="legend-item">
+        <span class="legend-dot legend-dot--restricted"></span> Restricted (disabled for this user)
+      </div>
+      <div class="legend-item">
+        <span class="legend-dot legend-dot--na"></span> Not in role (not applicable)
+      </div>
+    </div>
+
+    <!-- Permission accordion groups -->
+    <div class="perm-groups">
+      @for (group of permissionGroups; track group.key) {
+        <!-- Skip groups where user's role has no permissions -->
+        @if (groupRoleCount(group) > 0) {
+          <div class="perm-group" [class.perm-group--expanded]="isExpanded(group.key)">
+
+            <div class="perm-group-header" (click)="toggleExpand(group.key)">
+              <div class="perm-group-left">
+                <span class="perm-group-chevron icon">
+                  {{ isExpanded(group.key) ? 'expand_more' : 'chevron_right' }}
+                </span>
+                <span class="perm-group-title">{{ group.label }}</span>
+                @if (groupRestrictedCount(group) > 0) {
+                  <span class="perm-group-badge perm-group-badge--restricted">
+                    {{ groupRestrictedCount(group) }} restricted
+                  </span>
+                }
+              </div>
+              <div class="perm-group-right" (click)="$event.stopPropagation()">
+                <span class="perm-group-count">
+                  {{ groupRoleCount(group) - groupRestrictedCount(group) }} / {{ groupRoleCount(group) }} active
+                </span>
+                <button type="button" class="perm-mini-btn" (click)="allowGroup(group)">Allow All</button>
+                <button type="button" class="perm-mini-btn perm-mini-btn--danger" (click)="restrictGroup(group)">Restrict All</button>
+              </div>
+            </div>
+
+            @if (isExpanded(group.key)) {
+              <div class="perm-group-content">
+
+                <!-- Parent section access -->
+                @if (group.parentViewPermId) {
+                  <div class="perm-section-access">
+                    @if (isInRole(group.parentViewPermId)) {
+                      <label class="perm-section-row" [class.perm-section-row--restricted]="isDisabled(group.parentViewPermId)">
+                        <input
+                          type="checkbox"
+                          class="perm-check"
+                          [checked]="!isDisabled(group.parentViewPermId)"
+                          (change)="toggleRestrict(group.parentViewPermId)" />
+                        <span class="icon perm-section-icon">visibility</span>
+                        <span class="perm-section-text">Section Access — View <strong>{{ group.label }}</strong> in navigation</span>
+                        @if (isDisabled(group.parentViewPermId)) {
+                          <span class="restricted-tag">Restricted</span>
+                        }
+                      </label>
+                    } @else {
+                      <div class="perm-section-row perm-section-row--na">
+                        <span class="icon perm-section-icon">visibility_off</span>
+                        <span class="perm-section-text">Section Access — Not in assigned role</span>
+                      </div>
+                    }
+                  </div>
+                }
+
+                <!-- Permission table -->
+                <div class="perm-table-wrap">
+                  <table class="perm-table">
+                    <thead>
+                      <tr>
+                        <th class="perm-th-module">Module</th>
+                        @for (col of group.columns; track col.key) {
+                          <th class="perm-th-action">{{ col.label }}</th>
+                        }
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (row of group.rows; track row.key) {
+                        <tr class="perm-row">
+                          <td class="perm-td-module">{{ row.label }}</td>
+                          @for (col of group.columns; track col.key) {
+                            <td class="perm-td-action">
+                              @if (row.permMap[col.key]) {
+                                @if (isInRole(row.permMap[col.key])) {
+                                  <!-- Permission IS in role: show toggle to restrict/allow -->
+                                  <label
+                                    class="perm-cell-label"
+                                    [class.perm-cell-label--restricted]="isDisabled(row.permMap[col.key])"
+                                    [title]="(isDisabled(row.permMap[col.key]) ? 'Restricted — click to allow: ' : 'Active — click to restrict: ') + row.label + ' → ' + col.label">
+                                    <input
+                                      type="checkbox"
+                                      class="perm-check"
+                                      [checked]="!isDisabled(row.permMap[col.key])"
+                                      (change)="toggleRestrict(row.permMap[col.key])" />
+                                  </label>
+                                } @else {
+                                  <!-- Permission NOT in role: shown as grey N/A -->
+                                  <span class="perm-not-in-role" title="Not in assigned role">—</span>
+                                }
+                              } @else {
+                                <span class="perm-na">—</span>
+                              }
+                            </td>
+                          }
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      }
+    </div>
+
+    <!-- Bottom save bar -->
+    <div class="perm-bottom-bar">
+      <div class="perm-bottom-counts">
+        <strong>{{ effectiveCount() }}</strong> active
+        @if (disabledCount() > 0) {
+          · <span class="bottom-restricted">{{ disabledCount() }} restricted</span>
+        }
+        <span class="bottom-total">of {{ rolePermCount() }} role permissions</span>
+      </div>
+      <div class="perm-bottom-actions">
+        <lib-button variant="outline" (click)="goBack()">Cancel</lib-button>
+        <lib-button variant="primary" icon="save" (click)="save()">Save</lib-button>
+      </div>
+    </div>
+
+  </lib-page-container>
+} @else {
+  <lib-page-container title="User Not Found" [breadcrumbs]="[{ label: 'Platform Users', route: '/users/platform' }]">
+    <div class="not-found-msg">
+      <span class="icon">error_outline</span>
+      <p>The requested user could not be found.</p>
+      <lib-button variant="outline" icon="arrow_back" (click)="goBack()">Back</lib-button>
+    </div>
+  </lib-page-container>
+}

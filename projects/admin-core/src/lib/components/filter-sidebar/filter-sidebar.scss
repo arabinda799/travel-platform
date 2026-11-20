@@ -1,0 +1,54 @@
+::ng-deep .filter-drawer {
+  .p-drawer {
+    width: 32rem !important;
+    max-width: 95vw !important;
+    background: var(--bg-card) !important;
+    border-left: 0.0625rem solid var(--border) !important;
+    box-shadow: var(--shadow-lg) !important;
+  }
+
+  .p-drawer-content {
+    padding: 0 !important;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+  }
+}
+
+.filter-drawer-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  color: var(--fg);
+
+  .icon {
+    color: var(--accent);
+  }
+}
+
+.filter-drawer-body {
+  flex: 1;
+  padding: 1.25rem 1.5rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.filter-drawer-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.625rem;
+  padding: 1rem 1.25rem;
+  border-top: 0.0625rem solid var(--border);
+}
+
+@media (max-width: 480px) {
+  ::ng-deep .filter-drawer .p-drawer {
+    width: 100% !important;
+  }
+}

@@ -1,0 +1,63 @@
+<lib-page-container
+  title="Reports & Analytics"
+  subtitle="Comprehensive business reporting, booking analytics, and revenue insights"
+  icon="bar_chart"
+  [breadcrumbs]="breadcrumbs">
+
+  <div class="coming-soon-wrapper">
+    <div class="coming-soon-card">
+      <div class="coming-soon-icon-ring">
+        <span class="icon cs-icon">insights</span>
+      </div>
+
+      <span class="cs-badge">COMING SOON</span>
+
+      <h2 class="cs-title">Reports & Business Intelligence</h2>
+
+      <p class="cs-description">
+        We are building powerful visual dashboards, supplier reconciliation reports, booking volume metrics, and automated ledger exports. This feature will be available in the upcoming release.
+      </p>
+
+      <div class="features-preview-grid">
+        <div class="feature-item">
+          <span class="icon feat-icon">hotel</span>
+          <div class="feat-meta">
+            <strong>Hotel Booking Trends</strong>
+            <span>Track daily reservations, cancellation rates, and occupancy KPIs.</span>
+          </div>
+        </div>
+
+        <div class="feature-item">
+          <span class="icon feat-icon">payments</span>
+          <div class="feat-meta">
+            <strong>Revenue & Margin Analytics</strong>
+            <span>Analyze markup, gross margin, agent commissions, and net profit.</span>
+          </div>
+        </div>
+
+        <div class="feature-item">
+          <span class="icon feat-icon">hub</span>
+          <div class="feat-meta">
+            <strong>Supplier Reconciliation</strong>
+            <span>Audit CRS, Hotelbeds, RateHawk, and TBO settlement statements.</span>
+          </div>
+        </div>
+
+        <div class="feature-item">
+          <span class="icon feat-icon">schedule_send</span>
+          <div class="feat-meta">
+            <strong>Scheduled Automated Exports</strong>
+            <span>Receive daily/weekly Excel, CSV, and PDF audit summaries via email.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="cs-actions">
+        <lib-button variant="primary" icon="dashboard" (btnClick)="goToDashboard()">
+          Back to Dashboard
+        </lib-button>
+      </div>
+    </div>
+  </div>
+
+</lib-page-container>

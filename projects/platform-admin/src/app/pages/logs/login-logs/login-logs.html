@@ -1,0 +1,147 @@
+<lib-page-container
+  title="Login Logs"
+  subtitle="Authentication activity — successful logins, failed attempts, and blocked access"
+  [breadcrumbs]="breadcrumbs">
+
+  <lib-data-table
+    [value]="filteredLogs()"
+    [columns]="columns()"
+    [totalRecords]="filteredLogs().length"
+    [loading]="loading()"
+    [checkbox]="true"
+    [(selection)]="selectedItems"
+    [searchable]="true"
+    searchPlaceholder="Search by user, email or IP address..."
+    (search)="onSearch($event)">
+
+    <div table-actions class="table-actions-group">
+      <lib-button
+        variant="outline"
+        icon="tune"
+        [badge]="activeFilterCount() ? activeFilterCount() : ''"
+        (click)="filterVisible.set(true)">
+        Filters
+      </lib-button>
+    </div>
+
+    <div selection-actions class="selection-actions-group">
+      <lib-button variant="outline" icon="download" (click)="exportData(true)">
+        Export Selected ({{ selectedItems().length }})
+      </lib-button>
+      <lib-button variant="danger" icon="delete" (click)="confirmBulkDelete()">
+        Delete Selected ({{ selectedItems().length }})
+      </lib-button>
+    </div>
+
+    <!-- User + Email -->
+    <ng-template #userTpl let-row>
+      <div class="user-name-cell">
+        <span class="user-name">{{ row.userName }}</span>
+        <span class="user-email-subtext">{{ row.email }}</span>
+      </div>
+    </ng-template>
+
+    <!-- Status badge -->
+    <ng-template #statusTpl let-row>
+      <lib-status-badge
+        [status]="row.status === 'Success' ? 'Active' : 'Inactive'"
+        [label]="row.status" />
+    </ng-template>
+
+    <!-- Row actions -->
+    <ng-template #actionsTpl let-row>
+      <div class="table-row-actions">
+        <lib-table-action action="view" tooltip="View Details" (clicked)="openDetail(row)" />
+        <lib-table-action action="delete" tooltip="Remove Entry" (clicked)="confirmDeleteSingle(row)" />
+      </div>
+    </ng-template>
+
+  </lib-data-table>
+
+</lib-page-container>
+
+<!-- ─── Filter Sidebar ─── -->
+<lib-filter-sidebar
+  [(visible)]="filterVisible"
+  (apply)="onApplyFilters()"
+  (reset)="onResetFilters()">
+
+  <div class="filter-group">
+    <lib-select-field
+      label="Status"
+      [options]="statusOptions"
+      [value]="selectedStatusFilter()"
+      (valueChange)="selectedStatusFilter.set($event)"
+      placeholder="All Statuses"
+      [clearable]="true" />
+  </div>
+
+  <div class="filter-group">
+    <lib-select-field
+      label="Role"
+      [options]="roleOptions"
+      [value]="selectedRoleFilter()"
+      (valueChange)="selectedRoleFilter.set($event)"
+      placeholder="All Roles"
+      [clearable]="true" />
+  </div>
+
+</lib-filter-sidebar>
+
+<!-- ─── Detail Modal ─── -->
+<lib-view-modal
+  [(visible)]="detailVisible"
+  title="Login Activity"
+  subtitle="Authentication event details"
+  icon="login"
+  width="40rem">
+
+  @if (activeLog(); as log) {
+    <div class="log-detail">
+      <div class="log-detail-row">
+        <span class="log-detail-label">User</span>
+        <span class="log-detail-value">{{ log.userName }}</span>
+      </div>
+      <div class="log-detail-row">
+        <span class="log-detail-label">Email</span>
+        <span class="log-detail-value">{{ log.email }}</span>
+      </div>
+      <div class="log-detail-row">
+        <span class="log-detail-label">Role</span>
+        <span class="log-detail-value">{{ log.role }}</span>
+      </div>
+      <div class="log-detail-row">
+        <span class="log-detail-label">Status</span>
+        <lib-status-badge
+          [status]="log.status === 'Success' ? 'Active' : 'Inactive'"
+          [label]="log.status" />
+      </div>
+      <div class="log-detail-row">
+        <span class="log-detail-label">IP Address</span>
+        <span class="log-detail-value mono">{{ log.ipAddress }}</span>
+      </div>
+      <div class="log-detail-row">
+        <span class="log-detail-label">Device</span>
+        <span class="log-detail-value">{{ log.device }}</span>
+      </div>
+      <div class="log-detail-row">
+        <span class="log-detail-label">Browser</span>
+        <span class="log-detail-value">{{ log.browser }}</span>
+      </div>
+      <div class="log-detail-row">
+        <span class="log-detail-label">Date &amp; Time</span>
+        <span class="log-detail-value">{{ log.createdAt }}</span>
+      </div>
+    </div>
+  }
+
+</lib-view-modal>
+
+<!-- ─── Confirm Delete ─── -->
+<lib-confirm-dialog
+  [(visible)]="confirmDeleteVisible"
+  [title]="itemToDelete() ? 'Remove Log Entry' : 'Remove Selected Entries'"
+  [message]="itemToDelete() ? 'Are you sure you want to remove this login log entry?' : 'Are you sure you want to remove the ' + selectedItems().length + ' selected entries?'"
+  confirmLabel="Remove"
+  severity="danger"
+  (confirmed)="executeDelete()" />

@@ -1,0 +1,352 @@
+<lib-page-container
+  title="Booking Confirmation"
+  [subtitle]="'Reservation #' + booking().bookingRef + ' • ' + booking().hotelName"
+  icon="hotel"
+  [breadcrumbs]="[
+    { label: 'Dashboard', route: '/dashboard' },
+    { label: 'Bookings', route: '/hotel/bookings' },
+    { label: '#' + booking().bookingRef }
+  ]">
+
+  <!-- Top Action Bar -->
+  <div page-actions class="page-top-actions">
+    <lib-button
+      variant="outline-danger"
+      icon="arrow_back"
+      (btnClick)="goBack()">
+      Back
+    </lib-button>
+
+    <lib-button
+      variant="primary"
+      icon="description"
+      (btnClick)="editBooking()">
+      Booking Detail
+    </lib-button>
+
+    <lib-button
+      variant="outline"
+      icon="description"
+      [dropdown]="true"
+      (btnClick)="actionMenu.toggle($event)">
+      Actions
+    </lib-button>
+    <p-menu #actionMenu [model]="actionMenuItems" [popup]="true" appendTo="body">
+      <ng-template #item let-item>
+        <a class="p-menu-item-link" (click)="item.command ? item.command({ originalEvent: $event, item: item }) : null">
+          <span class="icon p-menu-item-icon">{{ item.icon }}</span>
+          <span class="p-menu-item-label">{{ item.label }}</span>
+        </a>
+      </ng-template>
+    </p-menu>
+  </div>
+
+  <div class="confirmation-wrapper printable-area">
+
+    <!-- CARD 1: Unified Reservation & Property Hero Card -->
+    <section class="booking-hero-card">
+      <!-- Top Row: Property Identity & Booking/Payment Status -->
+      <div class="hero-top-bar">
+        <div class="property-identity">
+          <div class="property-title-row">
+            <h2 class="hotel-name">{{ booking().hotelName }}</h2>
+            <div class="star-rating" [attr.aria-label]="booking().starRating + ' stars'">
+              @for (isFilled of stars(); track $index) {
+                <span class="icon star-icon">{{ isFilled ? 'star' : 'star_border' }}</span>
+              }
+            </div>
+            <span class="supplier-pill">
+              <span class="icon">hub</span>
+              {{ booking().supplier }}
+            </span>
+          </div>
+
+          <div class="property-submeta">
+            <span class="meta-item">
+              <span class="icon">location_on</span>
+              {{ booking().address }}
+            </span>
+            <span class="meta-item">
+              <span class="icon">call</span>
+              {{ booking().phone }}
+            </span>
+            <span class="meta-item">
+              <span class="icon">mail</span>
+              {{ booking().email }}
+            </span>
+          </div>
+        </div>
+
+        <div class="booking-status-badges">
+          <div class="status-group">
+            <span class="status-caption">Booking</span>
+            <lib-status-badge [status]="booking().status" />
+          </div>
+          <div class="status-group">
+            <span class="status-caption">Payment</span>
+            <lib-status-badge [status]="booking().paymentStatus" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Middle Strip: Distinct Reservation Reference Metadata -->
+      <div class="reference-kpi-strip">
+        <div class="kpi-cell">
+          <span class="kpi-label">Booking Ref</span>
+          <strong class="kpi-value mono">{{ booking().bookingRef }}</strong>
+        </div>
+        <div class="kpi-cell">
+          <span class="kpi-label">Hotel Conf. No</span>
+          <strong class="kpi-value mono">{{ booking().hotelConfirmationNo }}</strong>
+        </div>
+        <div class="kpi-cell">
+          <span class="kpi-label">Channel Type</span>
+          <strong class="kpi-value">{{ booking().channelType }}</strong>
+        </div>
+        <div class="kpi-cell">
+          <span class="kpi-label">Booked On</span>
+          <strong class="kpi-value">{{ booking().createdOn }}</strong>
+        </div>
+        <div class="kpi-cell">
+          <span class="kpi-label">Free Cancellation Until</span>
+          <strong class="kpi-value highlight-safe">
+            {{ booking().lastCancellationDate }}
+          </strong>
+        </div>
+      </div>
+
+      <!-- Bottom Strip: Stay Timeline & Occupancy -->
+      <div class="stay-timeline-grid">
+        <div class="timeline-cell">
+          <span class="timeline-label">Check-In</span>
+          <strong class="timeline-date">{{ booking().checkInMonthYear }} {{ booking().checkInDayDate }}</strong>
+          <span class="timeline-sub">From 14:00</span>
+        </div>
+
+        <div class="timeline-duration">
+          <span class="duration-pill">{{ booking().nights }} {{ booking().nights === 1 ? 'Night' : 'Nights' }}</span>
+          <div class="duration-connector">
+            <span class="dot"></span>
+            <span class="line"></span>
+            <span class="icon arrow">east</span>
+          </div>
+        </div>
+
+        <div class="timeline-cell">
+          <span class="timeline-label">Check-Out</span>
+          <strong class="timeline-date">{{ booking().checkOutMonthYear }} {{ booking().checkOutDayDate }}</strong>
+          <span class="timeline-sub">Until 12:00</span>
+        </div>
+
+        <div class="timeline-cell occupancy-cell">
+          <span class="timeline-label">Occupancy</span>
+          <strong class="timeline-date">
+            {{ booking().roomsCount }} {{ booking().roomsCount === 1 ? 'Room' : 'Rooms' }},
+            {{ booking().guestsCount }} {{ booking().guestsCount === 1 ? 'Guest' : 'Guests' }}
+          </strong>
+          <span class="timeline-sub">{{ booking().city }}, {{ booking().country }}</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2-Column Content Grid: Details (Left) + Fare & Audit (Right) -->
+    <div class="booking-main-grid">
+
+      <!-- Left Column -->
+      <div class="main-column">
+
+        <!-- CARD 2: Room & Guest Allocation -->
+        <section class="detail-card">
+          <header class="detail-card-header">
+            <div class="header-left">
+              <span class="icon header-icon">meeting_room</span>
+              <h3>Room & Guest Allocation</h3>
+            </div>
+            <span class="count-chip">{{ booking().rooms.length }} {{ booking().rooms.length === 1 ? 'Room' : 'Rooms' }}</span>
+          </header>
+
+          <div class="table-wrapper">
+            <table class="clean-data-table">
+              <thead>
+                <tr>
+                  <th style="width: 3rem;">#</th>
+                  <th style="width: 14rem;">Room & Meal Plan</th>
+                  <th style="width: 17rem;">Accompanying Guests</th>
+                  <th>Room Inclusions</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (room of booking().rooms; track room.roomIndex) {
+                  <tr>
+                    <td class="cell-index">{{ room.roomIndex }}</td>
+                    <td>
+                      <div class="room-spec">
+                        <strong class="room-name">{{ room.roomType }}</strong>
+                        <span class="room-meta">{{ room.mealPlan }}</span>
+                        <span class="room-meta">{{ room.bedType }}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="guests-stack">
+                        @for (guest of room.guests; track guest.name) {
+                          <div class="guest-row" [class.is-lead]="guest.isLead">
+                            <div class="guest-name-line">
+                              <span class="icon guest-icon">{{ guest.isLead ? 'person' : 'person_outline' }}</span>
+                              <strong>{{ guest.title }} {{ guest.name }}</strong>
+                              @if (guest.isLead) {
+                                <span class="role-badge lead">Lead</span>
+                              } @else {
+                                <span class="role-badge">{{ guest.type }}</span>
+                              }
+                            </div>
+                            @if (guest.isLead) {
+                              <div class="lead-contact-inline">
+                                <span>{{ booking().bookingUserInfo.email }}</span>
+                                <span class="sep">•</span>
+                                <span>{{ booking().bookingUserInfo.contactNo }}</span>
+                              </div>
+                            }
+                          </div>
+                        }
+                      </div>
+                    </td>
+                    <td>
+                      <ul class="inclusions-list">
+                        @for (amenity of room.amenities; track amenity) {
+                          <li>
+                            <span class="icon">check</span>
+                            <span>{{ amenity }}</span>
+                          </li>
+                        }
+                      </ul>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- CARD 3: Cancellation Policy & Property Guidelines -->
+        <section class="detail-card">
+          <header class="detail-card-header">
+            <div class="header-left">
+              <span class="icon header-icon">policy</span>
+              <h3>Cancellation Policy</h3>
+            </div>
+          </header>
+
+          <div class="policy-card-body">
+            <div class="table-wrapper">
+              <table class="clean-data-table">
+                <thead>
+                  <tr>
+                    <th>Cancelled on or After</th>
+                    <th>Cancelled on or Before</th>
+                    <th>Cancellation Charge</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (tier of booking().cancellationTiers; track tier.after) {
+                    <tr>
+                      <td>{{ tier.after }}</td>
+                      <td>{{ tier.before }}</td>
+                      <td class="font-medium">{{ tier.charges }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- Right Column: Fare & Payment Summary -->
+      <aside class="side-column">
+        <section class="detail-card fare-card">
+          <header class="detail-card-header">
+            <div class="header-left">
+              <span class="icon header-icon">payments</span>
+              <h3>Fare & Payment Summary</h3>
+            </div>
+          </header>
+
+          <div class="fare-body">
+            <div class="fare-breakdown">
+              <div class="fare-row">
+                <span class="fare-label">Published Price</span>
+                <span class="fare-amount">₹ {{ booking().publishedPrice | number }}</span>
+              </div>
+              <div class="fare-row">
+                <span class="fare-label">Agent Commission</span>
+                <span class="fare-amount">₹ {{ booking().agentCommission | number }}</span>
+              </div>
+              <div class="fare-row">
+                <span class="fare-label">Discount</span>
+                <span class="fare-amount">₹ {{ booking().discount | number }}</span>
+              </div>
+              <div class="fare-row">
+                <span class="fare-label">TDS</span>
+                <span class="fare-amount">₹ {{ booking().tds | number }}</span>
+              </div>
+              <div class="fare-row fare-total">
+                <span class="fare-label">Total Amount</span>
+                <strong class="fare-amount highlight-total">₹ {{ booking().totalAmount | number }}</strong>
+              </div>
+            </div>
+
+            <div class="transaction-meta-list">
+              <div class="tx-row">
+                <span class="tx-label">Payment Type</span>
+                <span class="tx-value">Wallet</span>
+              </div>
+              <div class="tx-row">
+                <span class="tx-label">Channel</span>
+                <span class="tx-value">{{ booking().channelType }}</span>
+              </div>
+              <div class="tx-row">
+                <span class="tx-label">Assigned Agent</span>
+                <span class="tx-value">{{ booking().assignUserName }}</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      </aside>
+
+    </div>
+
+  </div>
+
+  <!-- Email Voucher Popup Modal -->
+  <lib-form-modal
+    [(visible)]="showEmailModal"
+    title="Email Booking Voucher"
+    [subtitle]="'Send confirmation voucher for booking #' + booking().bookingRef"
+    icon="mail"
+    width="32rem"
+    submitLabel="Send Voucher"
+    submitIcon="send"
+    [loading]="isSendingEmail()"
+    (submitted)="sendEmailVoucher()"
+    (cancelled)="closeEmailModal()">
+
+    <div class="email-voucher-form">
+      <p class="modal-instruction">
+        Enter the recipient email address. The official booking confirmation voucher with reservation details, hotel policies, and check-in instructions will be sent immediately.
+      </p>
+
+      <lib-text-field
+        label="Recipient Email Address"
+        type="email"
+        placeholder="e.g. guest@example.com"
+        prefixIcon="mail"
+        [(value)]="recipientEmail"
+        [required]="true"
+        [error]="emailError()"
+        hint="Defaulted to the primary guest email on file."
+        (blurred)="validateEmail()" />
+    </div>
+  </lib-form-modal>
+
+</lib-page-container>
