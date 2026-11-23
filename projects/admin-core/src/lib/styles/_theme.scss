@@ -12,7 +12,8 @@
 /* Theme based classes */
 :root {
     /* Typography Font-Size Scale */
-    --fs-2xs: 0.625rem;   /* 10px */
+    --fs-3xs: 0.5625rem;   /* 9px */
+    --fs-2xs: 0.625rem;    /* 10px */
     --fs-xs: 0.6875rem;    /* 11px */
     --fs-sm: 0.75rem;      /* 12px */
     --fs-base: 0.8125rem;  /* 13px */
@@ -21,6 +22,14 @@
     --fs-xl: 1.125rem;     /* 18px */
     --fs-2xl: 1.25rem;     /* 20px */
     --fs-3xl: 1.5rem;      /* 24px */
+    --fs-4xl: 1.75rem;     /* 28px */
+    --fs-5xl: 2rem;        /* 32px */
+    --fs-5xl-alt: 2.25rem; /* 36px */
+    --fs-6xl: 2.5rem;      /* 40px */
+    --fs-6xl-alt: 2.75rem; /* 44px */
+    --fs-7xl: 3rem;        /* 48px */
+    --fs-icon-md: 1.25rem; /* Standard action icon */
+    --fs-icon-lg: 1.35rem; /* Large action icon */
 
     /* Brand EasyFlys Colors */
     --purple-primary: #5B1B8A;  /* Deep Indigo-Purple from EasyFlys "easy" ribbon */
@@ -435,7 +444,7 @@ h5 {
         border-radius: var(--radius, 8px);
 
         .icon {
-            font-size: 1.35rem;
+            font-size: var(--fs-icon-lg);
         }
     }
 
@@ -595,7 +604,7 @@ lib-button + .btn,
         border-top-right-radius: var(--radius-lg, 0.75rem) !important;
 
         .p-dialog-title {
-            font-size: 1rem !important;
+            font-size: var(--fs-lg) !important;
             font-weight: 700 !important;
             color: var(--fg) !important;
         }

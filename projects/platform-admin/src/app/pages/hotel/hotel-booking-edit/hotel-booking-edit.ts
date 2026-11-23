@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DecimalPipe } from '@angular/common';
 import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angular/forms';
@@ -38,13 +39,14 @@ import {
   styleUrl: './hotel-booking-edit.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class HotelBookingEditComponent {
+export class HotelBookingEditComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly bookingService = inject(BookingDetailsService);
   private readonly messageService = inject(MessageService);
+  private readonly destroyRef = inject(DestroyRef);
 
-  readonly booking = signal<HotelBookingDetails>(this.initBooking());
+  readonly booking = computed(() => this.bookingService.currentBooking()!);
   readonly isSaving = signal<boolean>(false);
 
   // Modals state
@@ -110,13 +112,14 @@ export class HotelBookingEditComponent {
     note: new FormControl<string>('', { nonNullable: true }),
   });
 
-  constructor() {
-    this.syncFormWithBooking();
-  }
-
-  private initBooking(): HotelBookingDetails {
-    const id = this.route.snapshot.paramMap.get('id') || '6424674325436';
-    return this.bookingService.getBookingById(id);
+  ngOnInit(): void {
+    const id = this.route.snapshot.paramMap.get('id') || '';
+    if (id) {
+      this.bookingService.loadByRef(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: () => this.syncFormWithBooking(),
+        error: () => this.messageService.add({ severity: 'error', summary: 'Load Failed', detail: 'Could not load booking details.' }),
+      });
+    }
   }
 
   private syncFormWithBooking(): void {
@@ -197,29 +200,32 @@ export class HotelBookingEditComponent {
 
     this.isSaving.set(true);
     const formVal = this.editForm.getRawValue();
+    const ref = this.booking()?.bookingRef || this.route.snapshot.paramMap.get('id') || '';
 
-    setTimeout(() => {
-      const updated = this.bookingService.updateBooking({
-        issueSupplier: formVal.issueSupplier,
-        status: formVal.bookingStatus,
-        paymentStatus: formVal.paymentStatus,
-        hotelConfirmationNo: formVal.confirmationNumber,
-        refundBookingAmount: formVal.refundBookingAmount,
-        deductBookingAmount: formVal.deductBookingAmount,
-        note: formVal.note,
-      });
-
-      this.booking.set(updated);
-      this.isSaving.set(false);
-      this.editForm.patchValue({ note: '' });
-
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Booking Updated',
-        detail: `Booking ${updated.bookingId} details successfully updated.`,
-        life: 4000,
-      });
-    }, 350);
+    this.bookingService.updateBooking(ref, {
+      issueSupplier: formVal.issueSupplier,
+      status: formVal.bookingStatus,
+      paymentStatus: formVal.paymentStatus,
+      hotelConfirmationNo: formVal.confirmationNumber,
+      refundBookingAmount: formVal.refundBookingAmount,
+      deductBookingAmount: formVal.deductBookingAmount,
+      note: formVal.note,
+    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (updated) => {
+        this.isSaving.set(false);
+        this.editForm.patchValue({ note: '' });
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Booking Updated',
+          detail: `Booking ${updated.bookingId} details successfully updated.`,
+          life: 4000,
+        });
+      },
+      error: () => {
+        this.isSaving.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Update Failed', detail: 'Could not update booking details.', life: 4000 });
+      },
+    });
   }
 
   onCancelEdit(): void {

@@ -1,0 +1,185 @@
+<lib-page-container
+  title="Customers"
+  subtitle="View and manage registered customer accounts across the platform"
+  [breadcrumbs]="[
+    { label: 'Dashboard', route: '/' },
+    { label: 'Users & Access' },
+    { label: 'Customers' }
+  ]">
+
+  <div page-actions>
+    <lib-button variant="primary" icon="person_add" (click)="openAddModal()">
+      Add Customer
+    </lib-button>
+  </div>
+
+  <lib-data-table
+    [value]="filteredCustomers()"
+    [columns]="columns()"
+    [totalRecords]="filteredCustomers().length"
+    [loading]="loading()"
+    [checkbox]="true"
+    [(selection)]="selectedCustomers"
+    [searchable]="true"
+    searchPlaceholder="Search by name, email, phone, country..."
+    (search)="onSearch($event)">
+
+    <div table-actions class="table-actions-group">
+      <lib-button
+        variant="outline"
+        icon="tune"
+        [badge]="activeFilterCount() ? activeFilterCount() : ''"
+        (click)="filterVisible.set(true)">
+        Filters
+      </lib-button>
+    </div>
+
+    <div selection-actions class="selection-actions-group">
+      <lib-button variant="outline-warning" icon="sync" (click)="openBulkStatusModal()">
+        Change Status
+      </lib-button>
+      <lib-button variant="danger" icon="delete" (click)="confirmBulkDelete()">
+        Delete Selected ({{ selectedCustomers().length }})
+      </lib-button>
+    </div>
+
+    <!-- Name + Email cell -->
+    <ng-template #nameTpl let-row>
+      <div class="customer-name-cell">
+        <div class="customer-avatar">
+          <span class="icon">person</span>
+        </div>
+        <div class="customer-info">
+          <span class="customer-full-name">{{ row.firstName }} {{ row.lastName }}</span>
+          <span class="customer-email">{{ row.email }}</span>
+        </div>
+      </div>
+    </ng-template>
+
+    <!-- Status badge -->
+    <ng-template #statusTpl let-row>
+      <lib-status-badge [status]="row.status" />
+    </ng-template>
+
+    <!-- Row actions -->
+    <ng-template #actionsTpl let-row>
+      <div class="table-row-actions">
+        <lib-table-action action="edit" tooltip="Edit Customer" (clicked)="openEditModal(row)" />
+        <lib-table-action action="delete" tooltip="Delete Customer" (clicked)="confirmDelete(row)" />
+      </div>
+    </ng-template>
+  </lib-data-table>
+
+  <!-- Filter Sidebar -->
+  <lib-filter-sidebar
+    [(visible)]="filterVisible"
+    title="Filter Customers"
+    (apply)="applyFilters()"
+    (reset)="resetFilters()">
+
+    <div class="filter-form-fields">
+      <lib-select-field
+        label="Status"
+        placeholder="All Statuses"
+        [options]="statusOptions"
+        [clearable]="true"
+        [value]="selectedStatusFilter()"
+        (valueChange)="selectedStatusFilter.set($event)" />
+
+      <lib-select-field
+        label="Country"
+        placeholder="All Countries"
+        [options]="countryOptions"
+        [clearable]="true"
+        [value]="selectedCountryFilter()"
+        (valueChange)="selectedCountryFilter.set($event)" />
+
+      <lib-datepicker-field
+        label="Registered Date Range"
+        placeholder="Select start & end dates"
+        selectionMode="range"
+        dateFormat="dd/mm/yy"
+        [(value)]="selectedDateRangeFilter" />
+    </div>
+  </lib-filter-sidebar>
+
+  <!-- Bulk Status Modal -->
+  <lib-status-modal
+    [(visible)]="statusModalVisible"
+    [count]="selectedCustomers().length"
+    [options]="[
+      { label: 'Active', value: 'Active', description: 'Allow customer to log in and book' },
+      { label: 'Inactive', value: 'Inactive', description: 'Temporarily disable the account' },
+      { label: 'Blocked', value: 'Blocked', description: 'Permanently block this account' }
+    ]"
+    (confirmed)="onBulkStatusConfirm($event)" />
+
+  <!-- Add / Edit Modal -->
+  <lib-form-modal
+    [(visible)]="modalVisible"
+    [title]="isEditing() ? 'Edit Customer' : 'Add Customer'"
+    width="44rem"
+    [submitLabel]="isEditing() ? 'Update' : 'Save'"
+    submitIcon="save"
+    (submitted)="saveCustomer()">
+
+    <div class="modal-form-grid">
+      <div class="form-row-2">
+        <lib-text-field
+          label="First Name"
+          placeholder="First name"
+          [required]="true"
+          [formControl]="form.controls.firstName" />
+
+        <lib-text-field
+          label="Last Name"
+          placeholder="Last name"
+          [required]="true"
+          [formControl]="form.controls.lastName" />
+      </div>
+
+      <div class="form-row-2">
+        <lib-text-field
+          label="Email Address"
+          placeholder="email@example.com"
+          [required]="true"
+          [formControl]="form.controls.email" />
+
+        <lib-text-field
+          label="Phone Number"
+          placeholder="+91 98765 43210"
+          [required]="true"
+          [formControl]="form.controls.phone" />
+      </div>
+
+      <div class="form-row-2">
+        <lib-select-field
+          label="Country"
+          placeholder="Select country"
+          [required]="true"
+          [options]="countryOptions"
+          [formControl]="form.controls.country" />
+
+        <lib-select-field
+          label="Status"
+          [required]="true"
+          [options]="statusOptions"
+          [formControl]="form.controls.status" />
+      </div>
+    </div>
+  </lib-form-modal>
+
+  <!-- Delete Confirmation -->
+  <lib-confirm-dialog
+    [(visible)]="confirmDeleteVisible"
+    title="Confirm Delete"
+    [message]="
+      itemToDelete()
+        ? 'Are you sure you want to delete &quot;' + itemToDelete()!.firstName + ' ' + itemToDelete()!.lastName + '&quot;? This action cannot be undone.'
+        : 'Are you sure you want to delete ' + selectedCustomers().length + ' selected customer(s)? This action cannot be undone.'
+    "
+    confirmLabel="Delete"
+    severity="danger"
+    (confirmed)="executeDelete()" />
+
+</lib-page-container>

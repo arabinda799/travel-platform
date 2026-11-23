@@ -1,4 +1,4 @@
-import { Component, input, model, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, model, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DialogModule } from 'primeng/dialog';
 import { Select } from 'primeng/select';
@@ -16,6 +16,7 @@ export interface StatusOption {
   imports: [FormsModule, DialogModule, Select, ButtonComponent],
   templateUrl: './status-modal.html',
   styleUrl: './status-modal.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StatusModalComponent {
   readonly visible = model<boolean>(false);

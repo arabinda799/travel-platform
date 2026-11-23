@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 @Component({
   selector: 'lib-modal-header',
@@ -6,6 +6,7 @@ import { Component, input } from '@angular/core';
   imports: [],
   templateUrl: './modal-header.html',
   styleUrl: './modal-header.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ModalHeaderComponent {
   readonly icon = input<string>('');

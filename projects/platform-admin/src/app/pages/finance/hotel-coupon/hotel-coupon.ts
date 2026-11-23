@@ -1,38 +1,20 @@
 import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  signal,
-  TemplateRef,
-  viewChild,
+  ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal,
+  TemplateRef, viewChild, OnInit,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DecimalPipe } from '@angular/common';
 import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import {
-  PageContainerComponent,
-  DataTableComponent,
-  ButtonComponent,
-  FormModalComponent,
-  TextFieldComponent,
-  SelectFieldComponent,
-  FileUploadFieldComponent,
-  DatePickerFieldComponent,
-  FilterSidebarComponent,
-  StatusBadgeComponent,
-  TableActionComponent,
-  ThumbImageComponent,
-  TableColumn,
-  STATUS_OPTIONS,
-  BreadcrumbItem,
+  PageContainerComponent, DataTableComponent, ButtonComponent,
+  FormModalComponent, TextFieldComponent, SelectFieldComponent,
+  FileUploadFieldComponent, DatePickerFieldComponent,
+  FilterSidebarComponent, StatusBadgeComponent, TableActionComponent,
+  ThumbImageComponent, TableColumn, STATUS_OPTIONS, BreadcrumbItem,
 } from 'admin-core';
 import {
-  HotelCoupon,
-  HotelCouponService,
-  CouponType,
-  CouponStatus,
-  ShowOnList,
+  HotelCoupon, HotelCouponService, CouponType, CouponStatus, ShowOnList,
 } from './hotel-coupon.service';
 
 function toDate(val: string | Date | null | undefined): Date | null {
@@ -45,10 +27,7 @@ function toDate(val: string | Date | null | undefined): Date | null {
 function formatDateToIso(date: Date | string | null | undefined): string {
   if (!date) return '';
   if (typeof date === 'string') {
-    // If already in YYYY-MM-DD or contains date part
-    if (/^\d{4}-\d{2}-\d{2}/.test(date)) {
-      return date.substring(0, 10);
-    }
+    if (/^\d{4}-\d{2}-\d{2}/.test(date)) return date.substring(0, 10);
     const d = new Date(date);
     if (isNaN(d.getTime())) return date;
     date = d;
@@ -63,28 +42,20 @@ function formatDateToIso(date: Date | string | null | undefined): string {
   selector: 'app-hotel-coupon',
   standalone: true,
   imports: [
-    DecimalPipe,
-    ReactiveFormsModule,
-    PageContainerComponent,
-    DataTableComponent,
-    ButtonComponent,
-    FormModalComponent,
-    TextFieldComponent,
-    SelectFieldComponent,
-    FileUploadFieldComponent,
-    DatePickerFieldComponent,
-    FilterSidebarComponent,
-    StatusBadgeComponent,
-    TableActionComponent,
-    ThumbImageComponent,
+    DecimalPipe, ReactiveFormsModule,
+    PageContainerComponent, DataTableComponent, ButtonComponent,
+    FormModalComponent, TextFieldComponent, SelectFieldComponent,
+    FileUploadFieldComponent, DatePickerFieldComponent,
+    FilterSidebarComponent, StatusBadgeComponent, TableActionComponent, ThumbImageComponent,
   ],
   templateUrl: './hotel-coupon.html',
   styleUrl: './hotel-coupon.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class HotelCouponComponent {
+export class HotelCouponComponent implements OnInit {
   private readonly couponService = inject(HotelCouponService);
   private readonly messageService = inject(MessageService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly breadcrumbs: BreadcrumbItem[] = [
     { label: 'Dashboard', route: '/dashboard' },
@@ -93,10 +64,10 @@ export class HotelCouponComponent {
   ];
 
   readonly coupons = this.couponService.coupons;
+  readonly loading = this.couponService.loading;
   readonly searchQuery = signal<string>('');
-  readonly loading = signal<boolean>(false);
+  readonly isSaving = signal<boolean>(false);
 
-  // Filter Sidebar State
   readonly filterVisible = signal<boolean>(false);
   readonly selectedRegionFilter = signal<string | null>(null);
   readonly appliedRegionFilter = signal<string | null>(null);
@@ -116,23 +87,15 @@ export class HotelCouponComponent {
     return count;
   });
 
-  // Modal State (Add / Edit)
   readonly modalVisible = signal<boolean>(false);
   readonly isEditing = signal<boolean>(false);
   readonly editingId = signal<string | null>(null);
-
-  // Display-only signal for uploaded file name
   readonly formImageFileName = signal<string>('');
 
-  // Reactive Form
   readonly form = new FormGroup({
     regionType: new FormControl<string>('Domestic', Validators.required),
     starRating: new FormControl<string>('All', Validators.required),
-    couponCode: new FormControl<string>('', [
-      Validators.required,
-      Validators.minLength(3),
-      Validators.pattern('^[a-zA-Z0-9_-]+$'),
-    ]),
+    couponCode: new FormControl<string>('', [Validators.required, Validators.minLength(3), Validators.pattern('^[a-zA-Z0-9_-]+$')]),
     checkInDate: new FormControl<Date | string | null>(null, Validators.required),
     checkOutDate: new FormControl<Date | string | null>(null, Validators.required),
     couponType: new FormControl<CouponType>('Fixed', Validators.required),
@@ -147,7 +110,6 @@ export class HotelCouponComponent {
     couponText: new FormControl<string>(''),
   });
 
-  // Table Templates
   readonly imageTpl = viewChild<TemplateRef<any>>('imageTpl');
   readonly codeTpl = viewChild<TemplateRef<any>>('codeTpl');
   readonly detailsTpl = viewChild<TemplateRef<any>>('detailsTpl');
@@ -159,7 +121,6 @@ export class HotelCouponComponent {
   readonly statusTpl = viewChild<TemplateRef<any>>('statusTpl');
   readonly actionsTpl = viewChild<TemplateRef<any>>('actionsTpl');
 
-  // Option sets
   readonly regionOptions = [
     { label: 'All Regions', value: 'All' },
     { label: 'Domestic', value: 'Domestic' },
@@ -189,116 +150,45 @@ export class HotelCouponComponent {
   readonly statusOptions = STATUS_OPTIONS;
 
   readonly columns = computed<TableColumn[]>(() => [
-    {
-      field: 'imageUrl',
-      header: 'Banner',
-      width: '6.5rem',
-      bodyTemplate: this.imageTpl(),
-    },
-    {
-      field: 'couponCode',
-      header: 'Coupon Code',
-      width: '12rem',
-      sortable: true,
-      bodyTemplate: this.codeTpl(),
-    },
-    {
-      field: 'couponText',
-      header: 'Title & Criteria',
-      width: '18rem',
-      sortable: true,
-      bodyTemplate: this.detailsTpl(),
-    },
-    {
-      field: 'value',
-      header: 'Discount Value',
-      width: '11rem',
-      sortable: true,
-      bodyTemplate: this.discountTpl(),
-    },
-    {
-      field: 'checkInDate',
-      header: 'Stay Window',
-      width: '12rem',
-      bodyTemplate: this.stayDatesTpl(),
-    },
-    {
-      field: 'validFromDate',
-      header: 'Validity Period',
-      width: '12rem',
-      bodyTemplate: this.validityTpl(),
-    },
-    {
-      field: 'usedCount',
-      header: 'Usage',
-      width: '9rem',
-      sortable: true,
-      bodyTemplate: this.usageTpl(),
-    },
-    {
-      field: 'showOnList',
-      header: 'Show On List',
-      width: '7.5rem',
-      bodyTemplate: this.showOnListTpl(),
-    },
-    {
-      field: 'status',
-      header: 'Status',
-      width: '7.5rem',
-      sortable: true,
-      bodyTemplate: this.statusTpl(),
-    },
-    {
-      field: 'actions',
-      header: 'Action',
-      width: '5.5rem',
-      align: 'center',
-      frozen: true,
-      frozenAlign: 'right',
-      bodyTemplate: this.actionsTpl(),
-    },
+    { field: 'imageUrl', header: 'Banner', width: '6.5rem', bodyTemplate: this.imageTpl() },
+    { field: 'couponCode', header: 'Coupon Code', width: '12rem', sortable: true, bodyTemplate: this.codeTpl() },
+    { field: 'couponText', header: 'Title & Criteria', width: '18rem', sortable: true, bodyTemplate: this.detailsTpl() },
+    { field: 'value', header: 'Discount Value', width: '11rem', sortable: true, bodyTemplate: this.discountTpl() },
+    { field: 'checkInDate', header: 'Stay Window', width: '12rem', bodyTemplate: this.stayDatesTpl() },
+    { field: 'validFromDate', header: 'Validity Period', width: '12rem', bodyTemplate: this.validityTpl() },
+    { field: 'usedCount', header: 'Usage', width: '9rem', sortable: true, bodyTemplate: this.usageTpl() },
+    { field: 'showOnList', header: 'Show On List', width: '7.5rem', bodyTemplate: this.showOnListTpl() },
+    { field: 'status', header: 'Status', width: '7.5rem', sortable: true, bodyTemplate: this.statusTpl() },
+    { field: 'actions', header: 'Action', width: '5.5rem', align: 'center', frozen: true, frozenAlign: 'right', bodyTemplate: this.actionsTpl() },
   ]);
 
   readonly filteredCoupons = computed<HotelCoupon[]>(() => {
     let result = this.coupons();
     const query = this.searchQuery().trim().toLowerCase();
-
     if (query) {
-      result = result.filter(
-        c =>
-          c.couponCode.toLowerCase().includes(query) ||
-          c.couponText.toLowerCase().includes(query) ||
-          c.regionType.toLowerCase().includes(query) ||
-          c.starRating.toLowerCase().includes(query)
+      result = result.filter(c =>
+        c.couponCode.toLowerCase().includes(query) ||
+        c.couponText.toLowerCase().includes(query) ||
+        c.regionType.toLowerCase().includes(query) ||
+        c.starRating.toLowerCase().includes(query)
       );
     }
-
     const region = this.appliedRegionFilter();
-    if (region && region !== 'All') {
-      result = result.filter(c => c.regionType === region || c.regionType === 'All');
-    }
-
+    if (region && region !== 'All') result = result.filter(c => c.regionType === region || c.regionType === 'All');
     const type = this.appliedTypeFilter();
-    if (type) {
-      result = result.filter(c => c.couponType === type);
-    }
-
+    if (type) result = result.filter(c => c.couponType === type);
     const status = this.appliedStatusFilter();
-    if (status) {
-      result = result.filter(c => c.status === status);
-    }
-
+    if (status) result = result.filter(c => c.status === status);
     const showOnList = this.appliedShowOnListFilter();
-    if (showOnList) {
-      result = result.filter(c => c.showOnList === showOnList);
-    }
-
+    if (showOnList) result = result.filter(c => c.showOnList === showOnList);
     return result;
   });
 
-  onSearch(query: string): void {
-    this.searchQuery.set(query);
+  ngOnInit(): void {
+    this.couponService.load();
   }
+
+  onSearch(query: string): void { this.searchQuery.set(query); }
 
   openFilter(): void {
     this.selectedRegionFilter.set(this.appliedRegionFilter());
@@ -332,34 +222,17 @@ export class HotelCouponComponent {
     this.isEditing.set(false);
     this.editingId.set(null);
     this.formImageFileName.set('');
-
     const now = new Date();
-    const futureCheckIn = new Date();
-    futureCheckIn.setDate(now.getDate() + 1);
-    const futureCheckOut = new Date();
-    futureCheckOut.setDate(now.getDate() + 60);
-
-    const validTo = new Date();
-    validTo.setDate(now.getDate() + 45);
-
+    const futureCheckIn = new Date(); futureCheckIn.setDate(now.getDate() + 1);
+    const futureCheckOut = new Date(); futureCheckOut.setDate(now.getDate() + 60);
+    const validTo = new Date(); validTo.setDate(now.getDate() + 45);
     this.form.reset({
-      regionType: 'Domestic',
-      starRating: 'All',
-      couponCode: this.generateRandomCode(),
-      checkInDate: futureCheckIn,
-      checkOutDate: futureCheckOut,
-      couponType: 'Fixed',
-      value: 500,
-      couponUseLimit: 100,
-      showOnList: 'Yes',
-      couponMaxLimit: 500,
-      status: 'Active',
-      validFromDate: now,
-      validToDate: validTo,
-      imageUrl: '',
-      couponText: '',
+      regionType: 'Domestic', starRating: 'All', couponCode: this.generateRandomCode(),
+      checkInDate: futureCheckIn, checkOutDate: futureCheckOut,
+      couponType: 'Fixed', value: 500, couponUseLimit: 100, showOnList: 'Yes',
+      couponMaxLimit: 500, status: 'Active', validFromDate: now, validToDate: validTo,
+      imageUrl: '', couponText: '',
     });
-
     this.modalVisible.set(true);
   }
 
@@ -367,34 +240,21 @@ export class HotelCouponComponent {
     this.isEditing.set(true);
     this.editingId.set(coupon.id);
     this.formImageFileName.set(coupon.imageUrl ? coupon.imageUrl.split('/').pop() || 'banner.jpg' : '');
-
     this.form.reset({
-      regionType: coupon.regionType,
-      starRating: coupon.starRating,
-      couponCode: coupon.couponCode,
-      checkInDate: toDate(coupon.checkInDate),
-      checkOutDate: toDate(coupon.checkOutDate),
-      couponType: coupon.couponType,
-      value: coupon.value,
-      couponUseLimit: coupon.couponUseLimit,
-      showOnList: coupon.showOnList,
-      couponMaxLimit: coupon.couponMaxLimit,
-      status: coupon.status,
-      validFromDate: toDate(coupon.validFromDate),
-      validToDate: toDate(coupon.validToDate),
-      imageUrl: coupon.imageUrl,
-      couponText: coupon.couponText,
+      regionType: coupon.regionType, starRating: coupon.starRating, couponCode: coupon.couponCode,
+      checkInDate: toDate(coupon.checkInDate), checkOutDate: toDate(coupon.checkOutDate),
+      couponType: coupon.couponType, value: coupon.value, couponUseLimit: coupon.couponUseLimit,
+      showOnList: coupon.showOnList, couponMaxLimit: coupon.couponMaxLimit, status: coupon.status,
+      validFromDate: toDate(coupon.validFromDate), validToDate: toDate(coupon.validToDate),
+      imageUrl: coupon.imageUrl, couponText: coupon.couponText,
     });
-
     this.modalVisible.set(true);
   }
 
   generateRandomCode(): string {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let code = 'HOTEL';
-    for (let i = 0; i < 5; i++) {
-      code += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
+    for (let i = 0; i < 5; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
     return code;
   }
 
@@ -405,16 +265,11 @@ export class HotelCouponComponent {
   onSaveCoupon(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Validation Required',
-        detail: 'Please fill in all mandatory fields with valid values.',
-      });
+      this.messageService.add({ severity: 'warn', summary: 'Validation Required', detail: 'Please fill in all mandatory fields with valid values.' });
       return;
     }
 
     const fv = this.form.getRawValue();
-
     const payload = {
       regionType: fv.regionType || 'All',
       starRating: fv.starRating || 'All',
@@ -433,45 +288,32 @@ export class HotelCouponComponent {
       couponText: fv.couponText || '',
     };
 
-    if (this.isEditing() && this.editingId()) {
-      this.couponService.updateCoupon(this.editingId()!, payload);
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Coupon Updated',
-        detail: `Coupon ${payload.couponCode} updated successfully.`,
-      });
-    } else {
-      this.couponService.addCoupon(payload);
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Coupon Created',
-        detail: `Coupon ${payload.couponCode} created successfully.`,
-      });
-    }
-
-    this.modalVisible.set(false);
+    this.isSaving.set(true);
+    const id = this.editingId();
+    const obs$ = id ? this.couponService.updateCoupon(id, payload) : this.couponService.addCoupon(payload);
+    obs$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (result) => {
+        this.messageService.add({
+          severity: 'success',
+          summary: id ? 'Coupon Updated' : 'Coupon Created',
+          detail: `Coupon ${result.couponCode} ${id ? 'updated' : 'created'} successfully.`,
+        });
+        this.isSaving.set(false);
+        this.modalVisible.set(false);
+      },
+      error: (err: { error?: { message?: string } }) => {
+        const detail = err?.error?.message || 'Could not save coupon.';
+        this.messageService.add({ severity: 'error', summary: 'Save Failed', detail });
+        this.isSaving.set(false);
+      },
+    });
   }
 
   copyCouponCode(code: string, event?: Event): void {
-    if (event) {
-      event.stopPropagation();
-    }
+    if (event) event.stopPropagation();
     navigator.clipboard.writeText(code).then(
-      () => {
-        this.messageService.add({
-          severity: 'info',
-          summary: 'Copied to Clipboard',
-          detail: `Coupon code ${code} copied!`,
-          life: 2000,
-        });
-      },
-      () => {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to copy code.',
-        });
-      }
+      () => this.messageService.add({ severity: 'info', summary: 'Copied to Clipboard', detail: `Coupon code ${code} copied!`, life: 2000 }),
+      () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to copy code.' }),
     );
   }
 }

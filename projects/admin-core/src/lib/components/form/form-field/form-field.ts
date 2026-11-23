@@ -1,4 +1,4 @@
-import { Component, computed, DoCheck, input, signal, ViewEncapsulation } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DoCheck, input, signal, ViewEncapsulation } from '@angular/core';
 import { AbstractControl, Validators } from '@angular/forms';
 
 @Component({
@@ -8,6 +8,7 @@ import { AbstractControl, Validators } from '@angular/forms';
   templateUrl: './form-field.html',
   styleUrl: './form-field.scss',
   encapsulation: ViewEncapsulation.None,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FormFieldComponent implements DoCheck {
   readonly label = input<string>('');

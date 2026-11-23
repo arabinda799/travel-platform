@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { filter } from 'rxjs/operators';
 import { AdminLayoutComponent, NavItem } from 'admin-core';
 import { CompanySettingsService } from './pages/settings/company-settings/company-settings.service';
 
@@ -12,11 +14,13 @@ import { CompanySettingsService } from './pages/settings/company-settings/compan
 })
 export class App {
   private readonly settingsService = inject(CompanySettingsService);
+  private readonly router = inject(Router);
   readonly title = signal('platform-admin');
+
+  readonly isAuthRoute = signal(this.router.url.startsWith('/auth'));
 
   readonly settings = this.settingsService.settings;
 
-  // Dark-mode sidebar prefers dark logo, then light logo
   readonly brandLogo = computed(() => {
     const s = this.settings();
     return s.logos?.['dark'] || s.logos?.['light'] || '';
@@ -36,6 +40,18 @@ export class App {
   });
 
   constructor() {
+    this.router.events
+      .pipe(
+        filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+        takeUntilDestroyed(),
+      )
+      .subscribe(e => {
+        this.isAuthRoute.set(e.urlAfterRedirects.startsWith('/auth'));
+      });
+
+    // Load platform settings on startup so brand name + logos are available app-wide
+    this.settingsService.load().subscribe();
+
     effect(() => {
       const logo = this.brandLogo();
       if (!logo) {
@@ -139,16 +155,6 @@ export class App {
         { label: 'Hotel Query List', icon: 'contact_support', route: '/hotel/queries' },
       ],
     },
-    {
-      label: 'Hotel Extranet Management',
-      icon: 'hotel',
-      expanded: false,
-      children: [
-        { label: 'Trending Destinations', icon: 'trending_up', route: '/hotel/trending-destinations' },
-        { label: 'Popular Hotels', icon: 'star', route: '/hotel/popular-hotels' },
-      ],
-    },
-
     // Users & Access Section
     { label: 'Users & Access', isSection: true },
     { label: 'Platform Users', icon: 'badge', route: '/users/platform' },
@@ -192,30 +198,6 @@ export class App {
     },
     { label: 'Wallet', icon: 'account_balance_wallet', route: '/finance/wallet' },
     { label: 'Transactions', icon: 'receipt_long', route: '/finance/transactions' },
-
-    // Content Section
-    { label: 'Content', isSection: true },
-    {
-      label: 'Pages',
-      icon: 'auto_stories',
-      expanded: false,
-      children: [
-        { label: 'Page List', icon: 'description', route: '/content/pages' },
-        { label: 'Menu List', icon: 'menu_open', route: '/content/pages/menus' },
-      ],
-    },
-    {
-      label: 'Blogs',
-      icon: 'rss_feed',
-      expanded: false,
-      children: [
-        { label: 'Category', icon: 'category', route: '/content/blogs/categories' },
-        { label: 'Blog List', icon: 'article', route: '/content/blogs' },
-      ],
-    },
-    { label: 'Sliders', icon: 'view_carousel', route: '/content/sliders' },
-    { label: 'Newsletter', icon: 'mail', route: '/content/newsletter' },
-    { label: 'Query List', icon: 'contact_mail', route: '/content/queries' },
 
     // System Section
     { label: 'System', isSection: true },

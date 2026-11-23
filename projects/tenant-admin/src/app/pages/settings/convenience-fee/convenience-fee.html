@@ -1,0 +1,147 @@
+<lib-page-container
+  title="Convenience Fee Configuration"
+  subtitle="Set up payment gateway transaction convenience fees and charges by payment mode and service"
+  icon="payments"
+  [breadcrumbs]="breadcrumbs">
+
+  <!-- Top Page Action: Back Button & Add Convenience Fee Button -->
+  <div page-actions class="page-top-actions">
+    <lib-button
+      variant="outline"
+      icon="arrow_back"
+      (click)="goBack()">
+      Back to Gateways
+    </lib-button>
+
+    <lib-button
+      variant="primary"
+      icon="add"
+      (click)="openAddFeeModal()">
+      Add Convenience Fee
+    </lib-button>
+  </div>
+
+  <div class="convenience-fee-container">
+
+    <!-- Configured Fee Rules Table -->
+    <section class="fee-table-card">
+      <header class="fee-card-header">
+        <div class="header-title-wrap">
+          <span class="icon header-icon">table_chart</span>
+          <h2 class="fee-card-title">Configured Convenience Fee Rules</h2>
+        </div>
+      </header>
+
+      <lib-data-table
+        [value]="tableData()"
+        [columns]="columns"
+        [totalRecords]="tableData().length"
+        [loading]="false"
+        [checkbox]="false"
+        [searchable]="true"
+        searchPlaceholder="Search fee rules by gateway or service...">
+
+        <!-- Actions Template: Edit Rule / Delete Rule -->
+        <ng-template #actionsTpl let-row>
+          <div class="table-row-actions">
+            <lib-table-action action="edit" tooltip="Edit Fee Rule" (clicked)="onEditRule(row)" />
+            <lib-table-action action="delete" tooltip="Remove Fee Rule" (clicked)="onDeleteRule(row)" />
+          </div>
+        </ng-template>
+
+      </lib-data-table>
+    </section>
+
+  </div>
+
+</lib-page-container>
+
+<!-- Configure Convenience Fee Modal (Opens on Add Fee or Edit Fee) -->
+<lib-form-modal
+  [(visible)]="isEditorVisible"
+  [title]="editingRuleId() ? 'Update Convenience Fee Rule' : 'Configure Convenience Fee'"
+  [subtitle]="editingRuleId() ? 'Update fee rates and charges for selected gateway' : 'Set up payment gateway transaction convenience fees and charges by payment mode and service'"
+  icon="tune"
+  width="50rem"
+  [submitLabel]="editingRuleId() ? 'Update Fee Rule' : 'Save Fee Configuration'"
+  submitIcon="save"
+  [loading]="isSaving()"
+  (submitted)="onSubmitFeeConfig()">
+
+  <form [formGroup]="feeForm" class="fee-editor-body">
+
+    <!-- Selector Row: Payment Gateway & Service -->
+    <div class="fee-top-controls-grid">
+      <lib-select-field
+        label="Payment Gateway"
+        formControlName="gatewayId"
+        [options]="gatewayOptions()"
+        placeholder="Select Gateway"
+        [required]="true"
+        (valueChange)="onGatewayChange($event)" />
+
+      <lib-select-field
+        label="Service"
+        formControlName="service"
+        [options]="serviceOptions"
+        placeholder="Select Service (e.g. Hotel, Make Payment)"
+        [required]="true" />
+    </div>
+
+    <!-- Section: Amount Range -->
+    <div class="fee-range-section">
+      <div class="fee-grid-row range-row">
+        <div class="col-label">
+          <span class="row-label">Amount Range</span>
+        </div>
+        <div class="col-inputs range-inputs-pair">
+          <lib-text-field
+            label="Min Value"
+            type="number"
+            placeholder="Min Value"
+            formControlName="minAmount"
+            [required]="true" />
+
+          <lib-text-field
+            label="Max Value"
+            type="number"
+            placeholder="Max Value"
+            formControlName="maxAmount"
+            [required]="true" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Dynamic Payment Mode Rows -->
+    <div class="fee-modes-section" formArrayName="modesArray">
+      @for (group of modesFormArray.controls; track $index) {
+        <div [formGroupName]="$index" class="fee-grid-row mode-fee-row">
+          <div class="col-label">
+            <span class="row-label">{{ group.get('mode')?.value }}</span>
+          </div>
+
+          <div class="col-inputs mode-inputs-pair">
+            <div class="input-cell-value">
+              <lib-text-field
+                [label]="group.get('mode')?.value === 'Debit Card' ? 'Debit Card value *' : 'Value'"
+                type="number"
+                [placeholder]="group.get('mode')?.value === 'Debit Card' ? 'Debit Card Value' : 'Value'"
+                formControlName="value"
+                [required]="true" />
+            </div>
+
+            <div class="input-cell-type">
+              <lib-select-field
+                label="Type"
+                formControlName="type"
+                [options]="feeTypeOptions"
+                [required]="true" />
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+
+  </form>
+
+</lib-form-modal>

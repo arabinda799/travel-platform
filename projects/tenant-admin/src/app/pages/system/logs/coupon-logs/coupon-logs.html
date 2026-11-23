@@ -1,0 +1,153 @@
+<lib-page-container
+  title="Coupon Logs"
+  subtitle="Coupon redemption history — applied, expired, invalid, and limit-reached usage records"
+  [breadcrumbs]="breadcrumbs">
+
+  <lib-data-table
+    [value]="filteredLogs()"
+    [columns]="columns()"
+    [totalRecords]="filteredLogs().length"
+    [loading]="loading()"
+    [checkbox]="true"
+    [(selection)]="selectedItems"
+    [searchable]="true"
+    searchPlaceholder="Search by coupon code, user, or booking ID..."
+    (search)="onSearch($event)">
+
+    <div table-actions class="table-actions-group">
+      <lib-button
+        variant="outline"
+        icon="tune"
+        [badge]="activeFilterCount() ? activeFilterCount() : ''"
+        (click)="filterVisible.set(true)">
+        Filters
+      </lib-button>
+    </div>
+
+    <div selection-actions class="selection-actions-group">
+      <lib-button variant="outline" icon="download" (click)="exportData(true)">
+        Export Selected ({{ selectedItems().length }})
+      </lib-button>
+      <lib-button variant="danger" icon="delete" (click)="confirmBulkDelete()">
+        Delete Selected ({{ selectedItems().length }})
+      </lib-button>
+    </div>
+
+    <!-- Coupon code chip -->
+    <ng-template #couponTpl let-row>
+      <span class="coupon-code-chip">{{ row.couponCode }}</span>
+    </ng-template>
+
+    <!-- User + email -->
+    <ng-template #userTpl let-row>
+      <div class="user-name-cell">
+        <span class="user-name">{{ row.usedBy }}</span>
+        <span class="user-email-subtext">{{ row.email }}</span>
+      </div>
+    </ng-template>
+
+    <!-- Discount amount -->
+    <ng-template #amountTpl let-row>
+      <span class="discount-amount">{{ formatDiscount(row) }}</span>
+    </ng-template>
+
+    <!-- Status badge -->
+    <ng-template #statusTpl let-row>
+      <lib-status-badge
+        [status]="row.status === 'Applied' ? 'Active' : row.status === 'Limit Reached' ? 'Pending' : 'Inactive'"
+        [label]="row.status" />
+    </ng-template>
+
+    <!-- Row actions -->
+    <ng-template #actionsTpl let-row>
+      <div class="table-row-actions">
+        <lib-table-action action="view" tooltip="View Details" (clicked)="openDetail(row)" />
+        <lib-table-action action="delete" tooltip="Remove Entry" (clicked)="confirmDeleteSingle(row)" />
+      </div>
+    </ng-template>
+
+  </lib-data-table>
+
+</lib-page-container>
+
+<!-- ─── Filter Sidebar ─── -->
+<lib-filter-sidebar
+  [(visible)]="filterVisible"
+  (apply)="onApplyFilters()"
+  (reset)="onResetFilters()">
+
+  <div class="filter-group">
+    <lib-select-field
+      label="Status"
+      [options]="statusOptions"
+      [value]="selectedStatusFilter()"
+      (valueChange)="selectedStatusFilter.set($event)"
+      placeholder="All Statuses"
+      [clearable]="true" />
+  </div>
+
+  <div class="filter-group">
+    <lib-select-field
+      label="Discount Type"
+      [options]="typeOptions"
+      [value]="selectedTypeFilter()"
+      (valueChange)="selectedTypeFilter.set($event)"
+      placeholder="All Types"
+      [clearable]="true" />
+  </div>
+
+</lib-filter-sidebar>
+
+<!-- ─── Detail Modal ─── -->
+<lib-view-modal
+  [(visible)]="detailVisible"
+  title="Coupon Usage Log"
+  subtitle="Redemption record for this coupon application"
+  icon="confirmation_number"
+  width="40rem">
+
+  @if (activeLog(); as log) {
+    <div class="log-detail">
+      <div class="log-detail-row">
+        <span class="log-detail-label">Coupon Code</span>
+        <span class="coupon-code-chip">{{ log.couponCode }}</span>
+      </div>
+      <div class="log-detail-row">
+        <span class="log-detail-label">Used By</span>
+        <span class="log-detail-value">{{ log.usedBy }}</span>
+      </div>
+      <div class="log-detail-row">
+        <span class="log-detail-label">Email</span>
+        <span class="log-detail-value">{{ log.email }}</span>
+      </div>
+      <div class="log-detail-row">
+        <span class="log-detail-label">Booking ID</span>
+        <span class="log-detail-value mono">{{ log.bookingId }}</span>
+      </div>
+      <div class="log-detail-row">
+        <span class="log-detail-label">Discount</span>
+        <span class="log-detail-value">{{ formatDiscount(log) }} ({{ log.discountType }})</span>
+      </div>
+      <div class="log-detail-row">
+        <span class="log-detail-label">Status</span>
+        <lib-status-badge
+          [status]="log.status === 'Applied' ? 'Active' : log.status === 'Limit Reached' ? 'Pending' : 'Inactive'"
+          [label]="log.status" />
+      </div>
+      <div class="log-detail-row">
+        <span class="log-detail-label">Used At</span>
+        <span class="log-detail-value">{{ log.usedAt }}</span>
+      </div>
+    </div>
+  }
+
+</lib-view-modal>
+
+<!-- ─── Confirm Delete ─── -->
+<lib-confirm-dialog
+  [(visible)]="confirmDeleteVisible"
+  [title]="itemToDelete() ? 'Remove Log Entry' : 'Remove Selected Entries'"
+  [message]="itemToDelete() ? 'Are you sure you want to remove this coupon log entry?' : 'Are you sure you want to remove the ' + selectedItems().length + ' selected entries?'"
+  confirmLabel="Remove"
+  severity="danger"
+  (confirmed)="executeDelete()" />

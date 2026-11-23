@@ -1,16 +1,18 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
+  OnInit,
   computed,
-  effect,
   inject,
   signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { PageContainerComponent, ButtonComponent } from 'admin-core';
-import { ALL_PERMISSIONS, MODULE_TITLES, Role, RoleService } from '../role-list/role.service';
-import { PERMISSION_GROUPS, PermGroup, TOTAL_PERM_COUNT } from '../role-permissions/role-permissions';
+import { Role, RoleService } from '../role-list/role.service';
+import { PERMISSION_GROUPS, PermGroup } from '../role-permissions/role-permissions';
 import { PlatformUser, PlatformUserService } from '../platform-user-list/platform-user.service';
 
 @Component({
@@ -21,12 +23,13 @@ import { PlatformUser, PlatformUserService } from '../platform-user-list/platfor
   styleUrl: './user-permissions.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class UserPermissionsComponent {
+export class UserPermissionsComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly userService = inject(PlatformUserService);
   private readonly roleService = inject(RoleService);
   private readonly messageService = inject(MessageService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly userId = signal<string>('');
 
@@ -51,21 +54,18 @@ export class UserPermissionsComponent {
   readonly expandedGroups = signal<Set<string>>(new Set(PERMISSION_GROUPS.map(g => g.key)));
 
   readonly permissionGroups = PERMISSION_GROUPS;
-  readonly totalPermCount = TOTAL_PERM_COUNT;
 
   readonly rolePermCount = computed(() => this.role()?.permissionIds.length ?? 0);
   readonly disabledCount = computed(() => this.draftDisabledIds().length);
   readonly effectiveCount = computed(() => this.rolePermCount() - this.disabledCount());
 
-  constructor() {
-    effect(() => {
-      const id = this.route.snapshot.params['id'];
-      if (id) {
-        this.userId.set(id);
-        const user = this.userService.users().find(u => u.id === id);
-        if (user) this.draftDisabledIds.set([...user.disabledPermissionIds]);
-      }
-    });
+  ngOnInit(): void {
+    const id = this.route.snapshot.params['id'];
+    if (id) {
+      this.userId.set(id);
+      const user = this.userService.users().find(u => u.id === id);
+      if (user) this.draftDisabledIds.set([...user.disabledPermissionIds]);
+    }
   }
 
   readonly breadcrumbs = computed(() => {
@@ -85,10 +85,6 @@ export class UserPermissionsComponent {
 
   /** Is this permission currently disabled (restricted) for this user? */
   isDisabled(id: string): boolean { return this.draftDisabledSet().has(id); }
-
-  /** Is this permission effectively active (in role AND not disabled)? */
-  isActive(id: string): boolean { return this.isInRole(id) && !this.isDisabled(id); }
-
   isExpanded(key: string): boolean { return this.expandedGroups().has(key); }
 
   toggleExpand(key: string): void {
@@ -123,23 +119,6 @@ export class UserPermissionsComponent {
     this.draftDisabledIds.set([...s]);
   }
 
-  isGroupAllAllowed(group: PermGroup): boolean {
-    const rolePerms = this.rolePermSet();
-    const disabled = this.draftDisabledSet();
-    return group.allPermIds.filter(id => rolePerms.has(id)).every(id => !disabled.has(id));
-  }
-
-  isGroupAllRestricted(group: PermGroup): boolean {
-    const rolePerms = this.rolePermSet();
-    const disabled = this.draftDisabledSet();
-    const roleGroupPerms = group.allPermIds.filter(id => rolePerms.has(id));
-    return roleGroupPerms.length > 0 && roleGroupPerms.every(id => disabled.has(id));
-  }
-
-  isGroupPartial(group: PermGroup): boolean {
-    return !this.isGroupAllAllowed(group) && !this.isGroupAllRestricted(group);
-  }
-
   /** How many in this group are from role? */
   groupRoleCount(group: PermGroup): number {
     const rolePerms = this.rolePermSet();
@@ -162,14 +141,20 @@ export class UserPermissionsComponent {
   save(): void {
     const user = this.user();
     if (!user) return;
-    this.userService.updateDisabledPermissions(user.id, this.draftDisabledIds());
     const name = `${user.firstName} ${user.lastName}`;
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Permissions Updated',
-      detail: `${name}: ${this.effectiveCount()} active, ${this.disabledCount()} restricted.`,
-    });
-    this.router.navigate(['/users/platform']);
+    this.userService.updateDisabledPermissions(user.id, this.draftDisabledIds())
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Permissions Updated',
+            detail: `${name}: ${this.effectiveCount()} active, ${this.disabledCount()} restricted.`,
+          });
+          this.router.navigate(['/users/platform']);
+        },
+        error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save permissions.' }),
+      });
   }
 
   goBack(): void { this.router.navigate(['/users/platform']); }

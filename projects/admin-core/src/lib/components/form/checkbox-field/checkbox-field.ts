@@ -1,5 +1,5 @@
-import { Component, forwardRef, inject, Injector, input, model, OnInit } from '@angular/core';
-import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR, NgControl } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, inject, Injector, input, model, OnInit } from '@angular/core';
+import { ControlValueAccessor, FormsModule, NgControl } from '@angular/forms';
 import { CheckboxModule } from 'primeng/checkbox';
 
 let nextId = 0;
@@ -10,6 +10,7 @@ let nextId = 0;
   imports: [FormsModule, CheckboxModule],
   templateUrl: './checkbox-field.html',
   styleUrl: './checkbox-field.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CheckboxFieldComponent implements ControlValueAccessor, OnInit {
   private readonly injector = inject(Injector);

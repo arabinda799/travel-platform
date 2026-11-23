@@ -1,11 +1,6 @@
 import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  signal,
-  TemplateRef,
-  viewChild,
+  ChangeDetectionStrategy, Component, DestroyRef, OnInit,
+  computed, inject, signal, TemplateRef, viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angular/forms';
@@ -26,8 +21,8 @@ import {
   TableColumn,
   BreadcrumbItem,
 } from 'admin-core';
-import { PageListService, PageItem } from './page-list.service';
 import { exportToCsv } from '../../../shared/utils/export.util';
+import { PageListService, PageItem } from './page-list.service';
 
 @Component({
   selector: 'app-page-list',
@@ -51,9 +46,10 @@ import { exportToCsv } from '../../../shared/utils/export.util';
   styleUrl: './page-list.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class PageListComponent {
+export class PageListComponent implements OnInit {
   private readonly pageService = inject(PageListService);
   private readonly messageService = inject(MessageService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly breadcrumbs: BreadcrumbItem[] = [
     { label: 'Content', route: '/content/blogs' },
@@ -61,27 +57,24 @@ export class PageListComponent {
   ];
 
   readonly pages = this.pageService.pages;
+  readonly loading = this.pageService.loading;
+  readonly isSaving = signal<boolean>(false);
   readonly searchQuery = signal('');
   readonly selectedPages = signal<PageItem[]>([]);
-  readonly loading = signal(false);
 
-  // Filter sidebar
   readonly filterVisible = signal(false);
   readonly selectedStatusFilter = signal<string | null>(null);
   readonly selectedTemplateFilter = signal<string | null>(null);
   readonly appliedStatusFilter = signal<string | null>(null);
   readonly appliedTemplateFilter = signal<string | null>(null);
 
-  // Add/Edit modal
   readonly modalVisible = signal(false);
   readonly isEditing = signal(false);
   readonly editingId = signal<string | null>(null);
 
-  // View modal
   readonly viewModalVisible = signal(false);
   readonly activeItem = signal<PageItem | null>(null);
 
-  // Delete dialog
   readonly confirmDeleteVisible = signal(false);
   readonly itemToDelete = signal<PageItem | null>(null);
 
@@ -116,7 +109,6 @@ export class PageListComponent {
     });
   }
 
-  // Templates
   readonly titleTpl = viewChild<TemplateRef<unknown>>('titleTpl');
   readonly statusTpl = viewChild<TemplateRef<unknown>>('statusTpl');
   readonly actionsTpl = viewChild<TemplateRef<unknown>>('actionsTpl');
@@ -148,6 +140,14 @@ export class PageListComponent {
     return list;
   });
 
+  ngOnInit(): void {
+    this.pageService.load();
+  }
+
+  generateSlug(title: string): string {
+    return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  }
+
   onSearch(query: string): void { this.searchQuery.set(query); }
 
   onApplyFilters(): void {
@@ -164,17 +164,6 @@ export class PageListComponent {
     this.filterVisible.set(false);
   }
 
-  generateSlug(title: string): string {
-    return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-  }
-
-  onTitleChange(): void {
-    if (!this.isEditing()) {
-      const title = this.form.controls.title.value ?? '';
-      this.form.controls.slug.setValue(this.generateSlug(title));
-    }
-  }
-
   openAddModal(): void {
     this.isEditing.set(false);
     this.editingId.set(null);
@@ -185,14 +174,7 @@ export class PageListComponent {
   openEditModal(item: PageItem): void {
     this.isEditing.set(true);
     this.editingId.set(item.id);
-    this.form.patchValue({
-      title: item.title,
-      slug: item.slug,
-      template: item.template,
-      status: item.status,
-      author: item.author,
-      content: item.content ?? '',
-    });
+    this.form.patchValue({ title: item.title, slug: item.slug, template: item.template, status: item.status, author: item.author, content: item.content ?? '' });
     this.modalVisible.set(true);
   }
 
@@ -209,21 +191,23 @@ export class PageListComponent {
     }
     const { title, slug, template, status, author, content } = this.form.getRawValue();
     const payload = {
-      title: title!.trim(),
-      slug: slug!.trim(),
-      template: template!,
-      status: status!,
-      author: author!.trim(),
-      content: content?.trim() || '',
+      title: title!.trim(), slug: slug!.trim(), template: template!,
+      status: status!, author: author!.trim(), content: content?.trim() || '',
     };
-    if (this.isEditing() && this.editingId()) {
-      this.pageService.updatePage(this.editingId()!, payload);
-      this.messageService.add({ severity: 'success', summary: 'Page Updated', detail: 'Page details have been saved.' });
-    } else {
-      this.pageService.addPage(payload);
-      this.messageService.add({ severity: 'success', summary: 'Page Created', detail: 'New page added successfully.' });
-    }
-    this.modalVisible.set(false);
+    this.isSaving.set(true);
+    const id = this.editingId();
+    const obs$ = id ? this.pageService.updatePage(id, payload) : this.pageService.addPage(payload);
+    obs$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.messageService.add({ severity: 'success', summary: id ? 'Page Updated' : 'Page Created', detail: id ? 'Page details have been saved.' : 'New page added successfully.' });
+        this.isSaving.set(false);
+        this.modalVisible.set(false);
+      },
+      error: (err: { error?: { message?: string } }) => {
+        this.messageService.add({ severity: 'error', summary: 'Save Failed', detail: err?.error?.message || 'Could not save page.' });
+        this.isSaving.set(false);
+      },
+    });
   }
 
   confirmDeleteSingle(item: PageItem): void {
@@ -239,17 +223,27 @@ export class PageListComponent {
 
   executeDelete(): void {
     const single = this.itemToDelete();
-    if (single) {
-      this.pageService.deletePage(single.id);
-      this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `"${single.title}" has been deleted.` });
-    } else {
-      const ids = this.selectedPages().map(p => p.id);
-      this.pageService.bulkDelete(ids);
-      this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `${ids.length} pages deleted.` });
-      this.selectedPages.set([]);
-    }
-    this.confirmDeleteVisible.set(false);
-    this.itemToDelete.set(null);
+    const obs$ = single
+      ? this.pageService.deletePage(single.id)
+      : this.pageService.bulkDelete(this.selectedPages().map(p => p.id));
+
+    obs$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        if (single) {
+          this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `"${single.title}" has been deleted.` });
+        } else {
+          const count = this.selectedPages().length;
+          this.selectedPages.set([]);
+          this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `${count} pages deleted.` });
+        }
+        this.confirmDeleteVisible.set(false);
+        this.itemToDelete.set(null);
+      },
+      error: () => {
+        this.messageService.add({ severity: 'error', summary: 'Delete Failed', detail: 'Could not delete page(s).' });
+        this.confirmDeleteVisible.set(false);
+      },
+    });
   }
 
   exportData(selectedOnly = false): void {

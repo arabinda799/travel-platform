@@ -1,0 +1,179 @@
+.export-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+// Message preview in table cell — single-line truncation
+.message-preview {
+  display: block;
+  max-width: 15rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-base);
+  color: var(--fg-muted);
+}
+
+// ─── Query Detail Modal body ───────────────────────────
+.query-detail-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+// KPI strip at top of modal
+.qd-kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.qd-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0.75rem 1rem;
+  border-right: 1px solid var(--border);
+
+  &:last-child {
+    border-right: none;
+  }
+}
+
+.qd-kpi-label {
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+
+.qd-kpi-value {
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: var(--fg);
+
+  &.mono {
+    font-family: 'Roboto Mono', monospace;
+  }
+}
+
+// Two-column layout for guest + stay sections
+.qd-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+// Individual section card
+.qd-section {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+
+  &--full {
+    grid-column: 1 / -1;
+  }
+}
+
+.qd-section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 0.75rem;
+
+  .icon {
+    font-size: var(--fs-lg);
+    color: var(--accent);
+  }
+
+  h4 {
+    margin: 0;
+    font-size: var(--fs-base);
+    font-weight: 600;
+    color: var(--fg);
+    letter-spacing: 0.01em;
+  }
+}
+
+.qd-info-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.qd-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: var(--fs-base);
+}
+
+.qd-info-label {
+  color: var(--fg-muted);
+  flex-shrink: 0;
+  min-width: 6rem;
+}
+
+.qd-info-value {
+  color: var(--fg);
+  font-weight: 500;
+  text-align: right;
+  word-break: break-word;
+}
+
+// Message and response text boxes
+.qd-message-box,
+.qd-response-box {
+  font-size: var(--fs-md);
+  line-height: 1.65;
+  color: var(--fg);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.875rem 1rem;
+}
+
+.qd-no-response {
+  font-size: var(--fs-base);
+  color: var(--fg-muted);
+  font-style: italic;
+  padding: 0.5rem 0;
+}
+
+// Footer meta row
+.qd-footer-meta {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+  font-size: var(--fs-base);
+  color: var(--fg-muted);
+  flex-wrap: wrap;
+}
+
+.qd-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+
+  .icon {
+    font-size: var(--fs-base);
+  }
+
+  strong {
+    color: var(--fg);
+    font-weight: 600;
+  }
+}

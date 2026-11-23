@@ -1,0 +1,35 @@
+.page-actions-group,
+.subscriber-name {
+  font-weight: 500;
+  color: var(--fg);
+}
+
+.empty-cell {
+  color: var(--fg-muted);
+}
+
+.email-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--fg);
+
+  .icon {
+    font-size: var(--fs-lg);
+    color: var(--accent);
+  }
+
+  .email-text {
+    font-weight: 500;
+  }
+}
+
+.subscriber-form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  .form-row {
+    width: 100%;
+  }
+}

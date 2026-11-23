@@ -1,0 +1,148 @@
+<lib-page-container
+  title="Menu List"
+  subtitle="Build and manage navigation menus by assigning pages"
+  [breadcrumbs]="breadcrumbs">
+
+  <div page-actions>
+    <lib-button variant="primary" icon="label" (click)="openLabelsModal()">
+      Menu Labels
+    </lib-button>
+  </div>
+
+  <!-- Menu selector bar -->
+  <div class="menu-selector-bar">
+    <div class="menu-select-wrapper">
+      <lib-select-field
+        label="Select a menu to edit"
+        [options]="menuOptions()"
+        [value]="selectedMenuId()"
+        (valueChange)="onMenuSelectChange($event)"
+        placeholder="Choose menu to edit..." />
+    </div>
+    <div class="menu-select-action">
+      <lib-button variant="primary" icon="check_circle" (click)="selectCurrentMenu()">
+        Select Current Menu
+      </lib-button>
+    </div>
+  </div>
+
+  <!-- Two-panel layout -->
+  <div class="menu-builder-layout">
+
+    <!-- Left: Available Pages -->
+    <div class="menu-panel available-panel">
+      <div class="panel-select-all">
+        <input type="checkbox"
+          class="app-checkbox"
+          [checked]="leftSelectAll()"
+          (change)="toggleLeftAll($any($event.target).checked)" />
+        <span>Select All</span>
+      </div>
+      <div class="panel-items">
+        @for (page of availablePages(); track page.id) {
+          <div class="panel-item">
+            <input type="checkbox"
+              class="app-checkbox"
+              [checked]="leftChecked().has(page.id)"
+              (change)="toggleLeft(page.id, $any($event.target).checked)" />
+            <span class="item-title">{{ page.title }}</span>
+          </div>
+        }
+        @if (availablePages().length === 0) {
+          <div class="empty-panel">All pages are already in this menu</div>
+        }
+      </div>
+      <div class="panel-footer">
+        <lib-button variant="primary" [disabled]="leftChecked().size === 0" (click)="addPages()">
+          Add Menu Pages
+        </lib-button>
+      </div>
+    </div>
+
+    <!-- Right: Current Menu Items -->
+    <div class="menu-panel current-panel">
+      <div class="panel-header-row">
+        <span class="panel-header-title">Menu List (drag &amp; drop to reorder menu)</span>
+        <label class="select-all-right">
+          <input type="checkbox"
+            class="app-checkbox"
+            [checked]="rightSelectAll()"
+            (change)="toggleRightAll($any($event.target).checked)" />
+          <span>Select All</span>
+        </label>
+      </div>
+      <div class="panel-items">
+        @for (entry of currentMenuEntries(); track entry.id; let i = $index) {
+          <div class="panel-item draggable"
+            draggable="true"
+            [class.drag-over]="dragOverIndex() === i"
+            (dragstart)="onDragStart(i)"
+            (dragover)="onDragOver($event, i)"
+            (drop)="onDrop(i)"
+            (dragend)="onDragEnd()">
+            <span class="icon drag-handle">drag_indicator</span>
+            <input type="checkbox"
+              class="app-checkbox"
+              [checked]="rightChecked().has(entry.id)"
+              (change)="toggleRight(entry.id, $any($event.target).checked)" />
+            <span class="item-title">{{ entry.title }}</span>
+          </div>
+        }
+        @if (currentMenuEntries().length === 0) {
+          <div class="empty-panel">No pages in this menu yet</div>
+        }
+      </div>
+      <div class="panel-footer">
+        <lib-button variant="danger" [disabled]="rightChecked().size === 0" (click)="removePages()">
+          Remove Menu Pages
+        </lib-button>
+      </div>
+    </div>
+
+  </div>
+
+</lib-page-container>
+
+<!-- Edit Menu Labels Modal -->
+<lib-form-modal
+  [(visible)]="labelsModalVisible"
+  title="Edit Menu Labels"
+  subtitle="Update the navigation group names"
+  icon="label"
+  width="32rem"
+  submitLabel="Update"
+  submitIcon="check"
+  (submitted)="onUpdateLabels()">
+
+  <form [formGroup]="labelsForm" class="labels-form-grid">
+    <div class="form-row">
+      <lib-text-field
+        label="Header Menu (Label 1)"
+        placeholder="e.g. Header Menu"
+        formControlName="label1"
+        [required]="true" />
+    </div>
+    <div class="form-row">
+      <lib-text-field
+        label="Footer Column 1 (Label 2)"
+        placeholder="e.g. Company"
+        formControlName="label2"
+        [required]="true" />
+    </div>
+    <div class="form-row">
+      <lib-text-field
+        label="Footer Column 2 (Label 3)"
+        placeholder="e.g. Quick Links"
+        formControlName="label3"
+        [required]="true" />
+    </div>
+    <div class="form-row">
+      <lib-text-field
+        label="Footer Column 3 (Label 4)"
+        placeholder="e.g. Support"
+        formControlName="label4"
+        [required]="true" />
+    </div>
+  </form>
+
+</lib-form-modal>

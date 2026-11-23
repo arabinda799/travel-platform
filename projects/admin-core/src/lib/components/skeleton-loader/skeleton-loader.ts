@@ -1,9 +1,10 @@
-import { Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 @Component({
   selector: 'lib-skeleton',
   templateUrl: './skeleton-loader.html',
   styleUrl: './skeleton-loader.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SkeletonLoaderComponent {
   readonly variant = input<'table' | 'form' | 'card' | 'line'>('table');

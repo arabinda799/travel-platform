@@ -1,4 +1,4 @@
-import { Component, input, model, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, model, output } from '@angular/core';
 import { Drawer } from 'primeng/drawer';
 import { ButtonComponent } from '../button/button';
 
@@ -7,6 +7,7 @@ import { ButtonComponent } from '../button/button';
   imports: [Drawer, ButtonComponent],
   templateUrl: './filter-sidebar.html',
   styleUrl: './filter-sidebar.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FilterSidebarComponent {
   readonly title = input<string>('Filters');

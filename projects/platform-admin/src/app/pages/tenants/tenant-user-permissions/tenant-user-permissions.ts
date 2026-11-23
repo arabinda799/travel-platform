@@ -1,8 +1,8 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  OnInit,
   computed,
-  effect,
   inject,
   signal,
 } from '@angular/core';
@@ -10,7 +10,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { PageContainerComponent, ButtonComponent } from 'admin-core';
 import { Role, RoleService } from '../../users/role-list/role.service';
-import { PERMISSION_GROUPS, PermGroup, TOTAL_PERM_COUNT } from '../../users/role-permissions/role-permissions';
+import { PERMISSION_GROUPS, PermGroup } from '../../users/role-permissions/role-permissions';
 import { TenantUser, TenantUserService } from '../tenant-user-list/tenant-user.service';
 
 @Component({
@@ -21,7 +21,7 @@ import { TenantUser, TenantUserService } from '../tenant-user-list/tenant-user.s
   styleUrl: './tenant-user-permissions.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class TenantUserPermissionsComponent {
+export class TenantUserPermissionsComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly userService = inject(TenantUserService);
@@ -45,20 +45,17 @@ export class TenantUserPermissionsComponent {
   readonly draftDisabledSet = computed(() => new Set(this.draftDisabledIds()));
   readonly expandedGroups = signal<Set<string>>(new Set(PERMISSION_GROUPS.map(g => g.key)));
   readonly permissionGroups = PERMISSION_GROUPS;
-  readonly totalPermCount = TOTAL_PERM_COUNT;
   readonly rolePermCount = computed(() => this.role()?.permissionIds.length ?? 0);
   readonly disabledCount = computed(() => this.draftDisabledIds().length);
   readonly effectiveCount = computed(() => this.rolePermCount() - this.disabledCount());
 
-  constructor() {
-    effect(() => {
-      const id = this.route.snapshot.params['id'];
-      if (id) {
-        this.userId.set(id);
-        const user = this.userService.users().find(u => u.id === id);
-        if (user) this.draftDisabledIds.set([...user.disabledPermissionIds]);
-      }
-    });
+  ngOnInit(): void {
+    const id = this.route.snapshot.params['id'];
+    if (id) {
+      this.userId.set(id);
+      const user = this.userService.users().find(u => u.id === id);
+      if (user) this.draftDisabledIds.set([...user.disabledPermissionIds]);
+    }
   }
 
   readonly breadcrumbs = computed(() => {
@@ -73,7 +70,6 @@ export class TenantUserPermissionsComponent {
 
   isInRole(id: string): boolean { return this.rolePermSet().has(id); }
   isDisabled(id: string): boolean { return this.draftDisabledSet().has(id); }
-  isActive(id: string): boolean { return this.isInRole(id) && !this.isDisabled(id); }
   isExpanded(key: string): boolean { return this.expandedGroups().has(key); }
 
   toggleExpand(key: string): void {

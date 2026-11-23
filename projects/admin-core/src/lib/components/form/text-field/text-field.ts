@@ -1,5 +1,5 @@
-import { ChangeDetectorRef, Component, DoCheck, forwardRef, inject, Injector, input, model, OnInit, output, signal } from '@angular/core';
-import { ControlValueAccessor, NG_VALUE_ACCESSOR, NgControl } from '@angular/forms';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DoCheck, inject, Injector, input, model, OnInit, output, signal } from '@angular/core';
+import { ControlValueAccessor, NgControl } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
 import { FormFieldComponent } from '../form-field/form-field';
 
@@ -11,6 +11,7 @@ let nextId = 0;
   imports: [InputTextModule, FormFieldComponent],
   templateUrl: './text-field.html',
   styleUrl: './text-field.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TextFieldComponent implements ControlValueAccessor, OnInit, DoCheck {
   private readonly injector = inject(Injector);

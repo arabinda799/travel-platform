@@ -1,55 +1,39 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal, TemplateRef, viewChild } from '@angular/core';
+import {
+  ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal,
+  TemplateRef, viewChild, OnInit,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import {
-  PageContainerComponent,
-  DataTableComponent,
-  ButtonComponent,
-  StatusBadgeComponent,
-  StatusModalComponent,
-  FormModalComponent,
-  ConfirmDialogComponent,
-  TextFieldComponent,
-  SelectFieldComponent,
-  TableActionComponent,
-  TableColumn,
-  TableLazyEvent,
-  BreadcrumbItem,
+  PageContainerComponent, DataTableComponent, ButtonComponent,
+  StatusBadgeComponent, StatusModalComponent, FormModalComponent,
+  ConfirmDialogComponent, TextFieldComponent, SelectFieldComponent,
+  TableActionComponent, TableColumn, TableLazyEvent, BreadcrumbItem,
 } from 'admin-core';
 import {
-  HotelPricingService,
-  HotelDiscount,
-  PricingTarget,
-  ALL_REGION_TYPES,
+  HotelPricingService, HotelDiscount, PricingTarget, ALL_REGION_TYPES,
 } from '../hotel-pricing.service';
 
 @Component({
   selector: 'app-hotel-discount',
   standalone: true,
   imports: [
-    DatePipe,
-    DecimalPipe,
-    ReactiveFormsModule,
-    PageContainerComponent,
-    DataTableComponent,
-    ButtonComponent,
-    StatusBadgeComponent,
-    StatusModalComponent,
-    FormModalComponent,
-    ConfirmDialogComponent,
-    TextFieldComponent,
-    SelectFieldComponent,
-    TableActionComponent,
+    DatePipe, DecimalPipe, ReactiveFormsModule,
+    PageContainerComponent, DataTableComponent, ButtonComponent,
+    StatusBadgeComponent, StatusModalComponent, FormModalComponent,
+    ConfirmDialogComponent, TextFieldComponent, SelectFieldComponent, TableActionComponent,
   ],
   templateUrl: './hotel-discount.html',
   styleUrl: './hotel-discount.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class HotelDiscountComponent {
+export class HotelDiscountComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly pricingService = inject(HotelPricingService);
   private readonly messageService = inject(MessageService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly allRegions = ALL_REGION_TYPES;
 
@@ -60,24 +44,22 @@ export class HotelDiscountComponent {
     { label: 'Hotel Discount' },
   ];
 
-  // Table State
   readonly discounts = this.pricingService.discounts;
-  readonly isLoading = signal<boolean>(false);
+  readonly isLoading = this.pricingService.loading;
   readonly searchQuery = signal<string>('');
+  readonly isSaving = signal<boolean>(false);
   selectedDiscounts: HotelDiscount[] = [];
 
   readonly filteredDiscounts = computed(() => {
     const q = this.searchQuery().trim().toLowerCase();
     const list = this.discounts();
     if (!q) return list;
-    return list.filter(
-      (d) =>
-        d.markupFor.toLowerCase().includes(q) ||
-        d.regionTypes.some((r) => r.toLowerCase().includes(q))
+    return list.filter(d =>
+      d.markupFor.toLowerCase().includes(q) ||
+      d.regionTypes.some(r => r.toLowerCase().includes(q))
     );
   });
 
-  // Table Templates
   readonly regionTpl = viewChild<TemplateRef<any>>('regionTpl');
   readonly valueTpl = viewChild<TemplateRef<any>>('valueTpl');
   readonly limitTpl = viewChild<TemplateRef<any>>('limitTpl');
@@ -85,7 +67,6 @@ export class HotelDiscountComponent {
   readonly dateTpl = viewChild<TemplateRef<any>>('dateTpl');
   readonly actionsTpl = viewChild<TemplateRef<any>>('actionsTpl');
 
-  // Columns
   readonly columns = computed<TableColumn[]>(() => [
     { field: 'markupFor', header: 'Discount For', sortable: true, width: '10rem' },
     { field: 'regionTypes', header: 'Region Type', sortable: false, width: '16rem', bodyTemplate: this.regionTpl() },
@@ -96,7 +77,6 @@ export class HotelDiscountComponent {
     { field: 'actions', header: 'Action', width: '6.5rem', align: 'center', bodyTemplate: this.actionsTpl(), frozen: true, frozenAlign: 'right' },
   ]);
 
-  // Dropdown Options Matching Image 2
   readonly markupForOptions = [
     { label: 'Please Select', value: '' },
     { label: 'B2B', value: 'B2B' as PricingTarget },
@@ -110,20 +90,13 @@ export class HotelDiscountComponent {
     { label: 'Inactive', value: 'Inactive' },
   ];
 
-  // Modal State
   readonly isModalVisible = signal<boolean>(false);
-  readonly isSaving = signal<boolean>(false);
   readonly editingDiscountId = signal<string | null>(null);
   readonly isRegionDropdownOpen = signal<boolean>(false);
-
-  // Delete State
   readonly isDeleteModalVisible = signal<boolean>(false);
   readonly discountToDelete = signal<HotelDiscount | null>(null);
-
-  // Status Change State
   readonly isStatusModalVisible = signal<boolean>(false);
 
-  // Form (Matches Image 2)
   discountForm: FormGroup = this.fb.group({
     markupFor: ['B2B', [Validators.required]],
     regionTypes: [['Domestic'], [Validators.required]],
@@ -136,34 +109,23 @@ export class HotelDiscountComponent {
     return this.editingDiscountId() ? 'EDIT HOTEL DISCOUNT' : 'ADD HOTEL DISCOUNT';
   }
 
-  onSearch(query: string): void {
-    this.searchQuery.set(query);
+  ngOnInit(): void {
+    this.pricingService.loadDiscounts();
   }
 
+  onSearch(query: string): void { this.searchQuery.set(query); }
   onLazyLoad(_event: TableLazyEvent): void {}
 
   openAddModal(): void {
     this.editingDiscountId.set(null);
-    this.discountForm.reset({
-      markupFor: 'B2B',
-      regionTypes: ['Domestic'],
-      value: 5,
-      maxLimit: 1500,
-      status: 'Active',
-    });
+    this.discountForm.reset({ markupFor: 'B2B', regionTypes: ['Domestic'], value: 5, maxLimit: 1500, status: 'Active' });
     this.isRegionDropdownOpen.set(false);
     this.isModalVisible.set(true);
   }
 
   openEditModal(discount: HotelDiscount): void {
     this.editingDiscountId.set(discount.id);
-    this.discountForm.patchValue({
-      markupFor: discount.markupFor,
-      regionTypes: [...discount.regionTypes],
-      value: discount.value,
-      maxLimit: discount.maxLimit,
-      status: discount.status,
-    });
+    this.discountForm.patchValue({ markupFor: discount.markupFor, regionTypes: [...discount.regionTypes], value: discount.value, maxLimit: discount.maxLimit, status: discount.status });
     this.isRegionDropdownOpen.set(false);
     this.isModalVisible.set(true);
   }
@@ -173,24 +135,15 @@ export class HotelDiscountComponent {
     this.editingDiscountId.set(null);
   }
 
-  // Region Multi-select (Matching Image 2 "1 selected")
-  toggleRegionDropdown(): void {
-    this.isRegionDropdownOpen.update((open) => !open);
-  }
+  toggleRegionDropdown(): void { this.isRegionDropdownOpen.update(open => !open); }
 
   isRegionSelected(region: string): boolean {
-    const selected = (this.discountForm.get('regionTypes')?.value as string[]) || [];
-    return selected.includes(region);
+    return ((this.discountForm.get('regionTypes')?.value as string[]) || []).includes(region);
   }
 
   toggleRegion(region: string): void {
     const current = (this.discountForm.get('regionTypes')?.value as string[]) || [];
-    let updated: string[];
-    if (current.includes(region)) {
-      updated = current.filter((r) => r !== region);
-    } else {
-      updated = [...current, region];
-    }
+    const updated = current.includes(region) ? current.filter(r => r !== region) : [...current, region];
     this.discountForm.patchValue({ regionTypes: updated });
     this.discountForm.get('regionTypes')?.markAsDirty();
   }
@@ -198,53 +151,38 @@ export class HotelDiscountComponent {
   onSubmitDiscount(): void {
     this.discountForm.markAllAsTouched();
     if (this.discountForm.invalid || !this.discountForm.value.markupFor) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Validation Error',
-        detail: 'Please fill in all required fields.',
-        life: 4000,
-      });
+      this.messageService.add({ severity: 'error', summary: 'Validation Error', detail: 'Please fill in all required fields.', life: 4000 });
       return;
     }
 
-    this.isSaving.set(true);
     const formVal = this.discountForm.value;
+    const payload = {
+      markupFor: formVal.markupFor,
+      regionTypes: formVal.regionTypes,
+      value: Number(formVal.value) || 0,
+      maxLimit: formVal.maxLimit !== '' && formVal.maxLimit !== null ? Number(formVal.maxLimit) : null,
+      status: formVal.status,
+    };
 
-    setTimeout(() => {
-      const id = this.editingDiscountId();
-      if (id) {
-        this.pricingService.updateDiscount(id, {
-          markupFor: formVal.markupFor,
-          regionTypes: formVal.regionTypes,
-          value: Number(formVal.value) || 0,
-          maxLimit: formVal.maxLimit !== '' && formVal.maxLimit !== null ? Number(formVal.maxLimit) : null,
-          status: formVal.status,
-        });
+    this.isSaving.set(true);
+    const id = this.editingDiscountId();
+    const obs$ = id ? this.pricingService.updateDiscount(id, payload) : this.pricingService.addDiscount(payload);
+    obs$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
         this.messageService.add({
           severity: 'success',
-          summary: 'Discount Updated',
-          detail: 'Hotel discount rule updated successfully.',
+          summary: id ? 'Discount Updated' : 'Discount Added',
+          detail: id ? 'Hotel discount rule updated successfully.' : 'New hotel discount rule added successfully.',
           life: 4000,
         });
-      } else {
-        this.pricingService.addDiscount({
-          markupFor: formVal.markupFor,
-          regionTypes: formVal.regionTypes,
-          value: Number(formVal.value) || 0,
-          maxLimit: formVal.maxLimit !== '' && formVal.maxLimit !== null ? Number(formVal.maxLimit) : null,
-          status: formVal.status,
-        });
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Discount Added',
-          detail: 'New hotel discount rule added successfully.',
-          life: 4000,
-        });
-      }
-
-      this.isSaving.set(false);
-      this.closeModal();
-    }, 400);
+        this.isSaving.set(false);
+        this.closeModal();
+      },
+      error: () => {
+        this.messageService.add({ severity: 'error', summary: 'Save Failed', detail: 'Could not save discount rule.', life: 4000 });
+        this.isSaving.set(false);
+      },
+    });
   }
 
   openDeleteModal(discount: HotelDiscount): void {
@@ -254,32 +192,32 @@ export class HotelDiscountComponent {
 
   confirmDelete(): void {
     const d = this.discountToDelete();
-    if (d) {
-      this.pricingService.deleteDiscount(d.id);
-      this.messageService.add({
-        severity: 'info',
-        summary: 'Discount Removed',
-        detail: `Discount rule for ${d.markupFor} deleted.`,
-        life: 3000,
-      });
-    }
-    this.isDeleteModalVisible.set(false);
-    this.discountToDelete.set(null);
+    if (!d) return;
+    this.pricingService.deleteDiscount(d.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.messageService.add({ severity: 'info', summary: 'Discount Removed', detail: `Discount rule for ${d.markupFor} deleted.`, life: 3000 });
+        this.isDeleteModalVisible.set(false);
+        this.discountToDelete.set(null);
+      },
+      error: () => {
+        this.messageService.add({ severity: 'error', summary: 'Delete Failed', detail: 'Could not remove discount rule.', life: 3000 });
+        this.isDeleteModalVisible.set(false);
+      },
+    });
   }
 
   onStatusChangeSubmit(event: string | { status: string; reason?: string }): void {
-    const rawStatus = typeof event === 'string' ? event : event.status;
-    const newStatus = rawStatus as 'Active' | 'Inactive';
-    const ids = this.selectedDiscounts.map((d) => d.id);
-    this.pricingService.updateMultipleDiscountStatus(ids, newStatus);
-    this.selectedDiscounts = [];
-    this.isStatusModalVisible.set(false);
-
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Status Updated',
-      detail: `Updated status to "${newStatus}" for selected discounts.`,
-      life: 4000,
+    const newStatus = (typeof event === 'string' ? event : event.status) as 'Active' | 'Inactive';
+    const ids = this.selectedDiscounts.map(d => d.id);
+    this.pricingService.updateMultipleDiscountStatus(ids, newStatus).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.selectedDiscounts = [];
+        this.isStatusModalVisible.set(false);
+        this.messageService.add({ severity: 'success', summary: 'Status Updated', detail: `Updated status to "${newStatus}" for selected discounts.`, life: 4000 });
+      },
+      error: () => {
+        this.messageService.add({ severity: 'error', summary: 'Update Failed', detail: 'Could not update status.', life: 4000 });
+      },
     });
   }
 }

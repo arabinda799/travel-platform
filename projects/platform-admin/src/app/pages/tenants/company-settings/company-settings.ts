@@ -1,11 +1,14 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
+  OnInit,
   computed,
-  effect,
   inject,
   signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { forkJoin } from 'rxjs';
 import { ReactiveFormsModule, FormGroup, FormControl } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
@@ -13,8 +16,6 @@ import {
   PageContainerComponent,
   ButtonComponent,
   TextFieldComponent,
-  SelectFieldComponent,
-  TextareaFieldComponent,
   SwitchFieldComponent,
 } from 'admin-core';
 import { TenantCompany, TenantBranding, TenantSmtp, CompanyService } from '../company-list/company.service';
@@ -40,19 +41,18 @@ const TABS: TabItem[] = [
     PageContainerComponent,
     ButtonComponent,
     TextFieldComponent,
-    SelectFieldComponent,
-    TextareaFieldComponent,
     SwitchFieldComponent,
   ],
   templateUrl: './company-settings.html',
   styleUrl: './company-settings.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class TenantCompanySettingsComponent {
+export class TenantCompanySettingsComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly companyService = inject(CompanyService);
   private readonly messageService = inject(MessageService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly companyId = signal<string>('');
   readonly company = computed<TenantCompany | null>(() =>
@@ -134,15 +134,13 @@ export class TenantCompanySettingsComponent {
     ];
   });
 
-  constructor() {
-    effect(() => {
-      const id = this.route.snapshot.params['id'];
-      if (id) {
-        this.companyId.set(id);
-        const company = this.companyService.companies().find(c => c.id === id);
-        if (company) this._patchForms(company);
-      }
-    });
+  ngOnInit(): void {
+    const id = this.route.snapshot.params['id'];
+    if (id) {
+      this.companyId.set(id);
+      const company = this.companyService.companies().find(c => c.id === id);
+      if (company) this._patchForms(company);
+    }
   }
 
   private _patchForms(company: TenantCompany): void {
@@ -213,13 +211,19 @@ export class TenantCompanySettingsComponent {
       fromEmail: smv.fromEmail ?? '', fromName: smv.fromName ?? '', replyToEmail: smv.replyToEmail ?? '',
     };
 
-    this.companyService.updateBranding(company.id, branding);
-    this.companyService.updateSmtp(company.id, smtp);
-
-    setTimeout(() => {
-      this.saving.set(false);
-      this.messageService.add({ severity: 'success', summary: 'Saved', detail: `${company.companyName} settings updated.` });
-    }, 300);
+    forkJoin([
+      this.companyService.updateBranding(company.id, branding),
+      this.companyService.updateSmtp(company.id, smtp),
+    ]).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.messageService.add({ severity: 'success', summary: 'Saved', detail: `${company.companyName} settings updated.` });
+      },
+      error: () => {
+        this.saving.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save settings.' });
+      },
+    });
   }
 
   goBack(): void { this.router.navigate(['/tenants/companies']); }

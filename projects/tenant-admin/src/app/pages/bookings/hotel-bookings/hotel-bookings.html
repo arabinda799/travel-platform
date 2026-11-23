@@ -1,0 +1,188 @@
+<lib-page-container
+  title="Booking List"
+  subtitle="Manage all hotel bookings"
+  icon="calendar_month"
+  variant="list"
+  [breadcrumbs]="breadcrumbs"
+  [loading]="false">
+
+  <lib-data-table
+    [value]="bookings()"
+    [columns]="columns"
+    [totalRecords]="totalRecords()"
+    [loading]="isLoading()"
+    [rows]="10"
+    [checkbox]="true"
+    [searchable]="true"
+    [searchPlaceholder]="'Search by booking ref, guest...'"
+    (search)="onTableSearch($event)"
+    (refresh)="onResetFilters()"
+    [(selection)]="selectedBookings"
+    trackByField="id"
+    (lazyLoad)="simulateLoad($event)">
+
+    <!-- Standard Table Actions (0 selected) -->
+    <div table-actions class="table-actions-group">
+      <lib-button
+        variant="outline"
+        icon="tune"
+        [badge]="activeFilterCount() ? activeFilterCount() : ''"
+        (click)="filterVisible.set(true)">
+        Filters
+      </lib-button>
+
+      <lib-button
+        variant="info"
+        icon="download"
+        [dropdown]="true"
+        (click)="exportMenu.toggle($event)">
+        Export
+      </lib-button>
+      <p-menu #exportMenu [model]="exportMenuItems()" [popup]="true" appendTo="body" />
+    </div>
+
+    <!-- Bulk Selection Actions (1+ selected) -->
+    <div selection-actions class="selection-actions-group">
+      <lib-button
+        variant="outline-warning"
+        icon="sync"
+        (click)="statusModalVisible.set(true)">
+        Change Status
+      </lib-button>
+
+      <lib-button
+        variant="danger"
+        icon="delete"
+        (click)="deleteConfirmVisible.set(true)">
+        Delete
+      </lib-button>
+    </div>
+
+  </lib-data-table>
+
+</lib-page-container>
+
+<!-- Custom cell templates -->
+<ng-template #statusTpl let-row>
+  <lib-status-badge [status]="row.status" />
+</ng-template>
+
+<ng-template #paymentStatusTpl let-row>
+  <lib-status-badge [status]="row.paymentStatus" />
+</ng-template>
+
+<ng-template #amountTpl let-row>
+  <span class="amount-cell">₹{{ row.amount | number }}</span>
+</ng-template>
+
+<ng-template #actionsTpl let-row>
+  <div class="table-row-actions">
+    <lib-table-action action="view" tooltip="View Confirmation" (clicked)="viewBooking(row)" />
+    <lib-table-action action="edit" tooltip="Edit Booking" (clicked)="editBooking(row)" />
+  </div>
+</ng-template>
+
+<ng-template #bookingDateTpl let-row>
+  <span class="booking-date-cell mono">{{ row.bookingDate | date:'dd MMM yyyy, hh:mm a' }}</span>
+</ng-template>
+
+<!-- Filter Sidebar -->
+<lib-filter-sidebar
+  [(visible)]="filterVisible"
+  (apply)="onApplyFilters()"
+  (reset)="onResetFilters()">
+
+  <!-- 1. Booking Status -->
+  <div class="filter-group">
+    <lib-select-field
+      label="Booking Status"
+      [options]="statusOptions"
+      [value]="selectedStatus()"
+      (valueChange)="selectedStatus.set($event)"
+      placeholder="All Statuses"
+      [filter]="true"
+      filterPlaceholder="Search booking status..."
+      [clearable]="true" />
+  </div>
+
+  <!-- 2. Payment Status -->
+  <div class="filter-group">
+    <lib-select-field
+      label="Payment Status"
+      [options]="paymentStatusOptions"
+      [value]="selectedPaymentStatus()"
+      (valueChange)="selectedPaymentStatus.set($event)"
+      placeholder="All Payment Statuses"
+      [filter]="true"
+      filterPlaceholder="Search payment status..."
+      [clearable]="true" />
+  </div>
+
+  <!-- 3. Check-in Date -->
+  <div class="filter-group">
+    <lib-datepicker-field
+      label="Check-in Date"
+      [value]="checkInDate()"
+      (valueChange)="checkInDate.set($event)"
+      placeholder="Select check-in date"
+      dateFormat="dd/mm/yy" />
+  </div>
+
+  <!-- 4. Book Date (Date Range Picker) -->
+  <div class="filter-group">
+    <label class="filter-label">Book Date</label>
+    <lib-date-range-picker
+      [value]="bookDateRange()"
+      (valueChange)="bookDateRange.set($event)"
+      placeholder="Select booking date range" />
+  </div>
+
+  <!-- 5. Supplier -->
+  <div class="filter-group">
+    <lib-select-field
+      label="Supplier"
+      [options]="supplierOptions"
+      [value]="selectedSupplier()"
+      (valueChange)="selectedSupplier.set($event)"
+      placeholder="All Suppliers"
+      [filter]="true"
+      filterPlaceholder="Search suppliers..."
+      [clearable]="true" />
+  </div>
+
+</lib-filter-sidebar>
+
+<!-- Common Delete Confirmation Dialog -->
+<lib-confirm-dialog
+  [(visible)]="deleteConfirmVisible"
+  [count]="selectedBookings().length"
+  (confirmed)="onConfirmDelete()" />
+
+<!-- Common Status Change Modal -->
+<lib-status-modal
+  [(visible)]="statusModalVisible"
+  [count]="selectedBookings().length"
+  [options]="statusModalOptions"
+  [(selectedStatus)]="selectedStatusOption"
+  (confirmed)="onConfirmStatusChange($event)" />
+
+<!-- Custom Date Range Export Modal -->
+<lib-modal
+  [(visible)]="exportDateRangeVisible"
+  title="Export by Date Range"
+  icon="date_range"
+  width="24rem">
+  <div class="export-modal-body">
+    <span class="export-label">Select Date Range</span>
+    <lib-date-range-picker
+      [(value)]="exportDateRange"
+      placeholder="Choose range to export..." />
+    <span class="export-hint">Export all bookings created within the selected window.</span>
+    <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem;">
+      <lib-button variant="outline" (click)="exportDateRangeVisible.set(false)">Cancel</lib-button>
+      <lib-button variant="primary" icon="download" [disabled]="!exportDateRange" (click)="confirmCustomDateExport()">
+        Download
+      </lib-button>
+    </div>
+  </div>
+</lib-modal>

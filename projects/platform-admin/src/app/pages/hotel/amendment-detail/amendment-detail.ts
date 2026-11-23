@@ -1,18 +1,17 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal, OnInit } from '@angular/core';
+import {
+  ChangeDetectionStrategy, Component, DestroyRef, OnInit,
+  computed, inject, signal,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DecimalPipe } from '@angular/common';
 import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import {
-  PageContainerComponent,
-  ButtonComponent,
-  StatusBadgeComponent,
-  TextFieldComponent,
-  CheckboxFieldComponent,
-  BreadcrumbItem,
+  PageContainerComponent, ButtonComponent, StatusBadgeComponent,
+  TextFieldComponent, CheckboxFieldComponent, BreadcrumbItem,
 } from 'admin-core';
-import { AmendmentDetailService, AmendmentDetailData } from './amendment-detail.service';
+import { AmendmentDetailService } from './amendment-detail.service';
 
 @Component({
   selector: 'app-amendment-detail',
@@ -20,11 +19,8 @@ import { AmendmentDetailService, AmendmentDetailData } from './amendment-detail.
   imports: [
     DecimalPipe,
     ReactiveFormsModule,
-    PageContainerComponent,
-    ButtonComponent,
-    StatusBadgeComponent,
-    TextFieldComponent,
-    CheckboxFieldComponent,
+    PageContainerComponent, ButtonComponent, StatusBadgeComponent,
+    TextFieldComponent, CheckboxFieldComponent,
   ],
   templateUrl: './amendment-detail.html',
   styleUrl: './amendment-detail.scss',
@@ -35,8 +31,12 @@ export class AmendmentDetailComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly service = inject(AmendmentDetailService);
   private readonly messageService = inject(MessageService);
+  private readonly destroyRef = inject(DestroyRef);
 
-  readonly amendment = signal<AmendmentDetailData>(this.load());
+  private readonly amendmentId = this.route.snapshot.paramMap.get('id') || '305';
+
+  readonly amendment = computed(() => this.service.amendment()!);
+  readonly loading = this.service.loading;
   readonly isSaving = signal(false);
   readonly isApproving = signal(false);
   readonly isRejecting = signal(false);
@@ -44,7 +44,7 @@ export class AmendmentDetailComponent implements OnInit {
   readonly breadcrumbs: BreadcrumbItem[] = [
     { label: 'Home', route: '/' },
     { label: 'Amendments', route: '/hotel/amendments' },
-    { label: 'Amendment #' + this.amendment().amendmentId },
+    { label: 'Amendment #' + this.amendmentId },
   ];
 
   readonly form = new FormGroup({
@@ -57,34 +57,31 @@ export class AmendmentDetailComponent implements OnInit {
     currentCurrencyRate:       new FormControl<number>(1, [Validators.required, Validators.min(0)]),
   });
 
-  readonly showCurrencyRate = computed(() =>
-    this.form.controls.changeBookingCurrencyRate.value === true
-  );
+  readonly showCurrencyRate = computed(() => this.form.controls.changeBookingCurrencyRate.value === true);
 
   ngOnInit(): void {
-    const a = this.amendment();
-    this.form.patchValue({
-      cancellationCharge:        a.cancellationCharge,
-      cancellationServiceCharge: a.cancellationServiceCharge,
-      cancellationChargeGst:     a.cancellationChargeGst,
-      refundAmount:              a.refundAmount,
-      tdsReturn:                 a.tdsReturn,
-      changeBookingCurrencyRate: a.changeBookingCurrencyRate,
-      currentCurrencyRate:       a.currentCurrencyRate,
+    this.service.loadById(this.amendmentId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (a) => {
+        this.form.patchValue({
+          cancellationCharge: a.cancellationCharge,
+          cancellationServiceCharge: a.cancellationServiceCharge,
+          cancellationChargeGst: a.cancellationChargeGst,
+          refundAmount: a.refundAmount,
+          tdsReturn: a.tdsReturn,
+          changeBookingCurrencyRate: a.changeBookingCurrencyRate,
+          currentCurrencyRate: a.currentCurrencyRate,
+        });
+        this.form.controls.cancellationCharge.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.recalcRefund());
+        this.form.controls.cancellationServiceCharge.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.recalcRefund());
+        this.form.controls.cancellationChargeGst.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.recalcRefund());
+      },
+      error: () => this.messageService.add({ severity: 'error', summary: 'Load Failed', detail: 'Could not load amendment details.' }),
     });
-
-    this.form.controls.cancellationCharge.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => this.recalcRefund());
-    this.form.controls.cancellationServiceCharge.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => this.recalcRefund());
-    this.form.controls.cancellationChargeGst.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => this.recalcRefund());
-  }
-
-  private load(): AmendmentDetailData {
-    const id = this.route.snapshot.paramMap.get('id') || '305';
-    return this.service.getById(id);
   }
 
   private recalcRefund(): void {
     const a = this.amendment();
+    if (!a) return;
     const charge = Number(this.form.controls.cancellationCharge.value) || 0;
     const svc    = Number(this.form.controls.cancellationServiceCharge.value) || 0;
     const gst    = Number(this.form.controls.cancellationChargeGst.value) || 0;
@@ -92,31 +89,39 @@ export class AmendmentDetailComponent implements OnInit {
     this.form.controls.refundAmount.setValue(refund, { emitEvent: false });
   }
 
-  goBack(): void {
-    this.router.navigate(['/hotel/amendments']);
-  }
+  goBack(): void { this.router.navigate(['/hotel/amendments']); }
 
   viewBookingDetails(): void {
-    const bookingId = this.amendment().bookingId;
-    this.router.navigate(['/hotel/bookings', bookingId, 'edit']);
+    const bookingId = this.amendment()?.bookingId;
+    if (bookingId) this.router.navigate(['/hotel/bookings', bookingId, 'edit']);
   }
 
   onApprove(): void {
     this.isApproving.set(true);
-    setTimeout(() => {
-      this.isApproving.set(false);
-      this.amendment.update(a => ({ ...a, amendmentStatus: 'Approved' }));
-      this.messageService.add({ severity: 'success', summary: 'Approved', detail: 'Amendment has been approved.', life: 4000 });
-    }, 600);
+    this.service.approve(this.amendmentId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.isApproving.set(false);
+        this.messageService.add({ severity: 'success', summary: 'Approved', detail: 'Amendment has been approved.', life: 4000 });
+      },
+      error: () => {
+        this.isApproving.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not approve amendment.' });
+      },
+    });
   }
 
   onReject(): void {
     this.isRejecting.set(true);
-    setTimeout(() => {
-      this.isRejecting.set(false);
-      this.amendment.update(a => ({ ...a, amendmentStatus: 'Rejected' }));
-      this.messageService.add({ severity: 'warn', summary: 'Rejected', detail: 'Amendment has been rejected.', life: 4000 });
-    }, 600);
+    this.service.reject(this.amendmentId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.isRejecting.set(false);
+        this.messageService.add({ severity: 'warn', summary: 'Rejected', detail: 'Amendment has been rejected.', life: 4000 });
+      },
+      error: () => {
+        this.isRejecting.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not reject amendment.' });
+      },
+    });
   }
 
   onSave(): void {
@@ -125,10 +130,25 @@ export class AmendmentDetailComponent implements OnInit {
       this.messageService.add({ severity: 'error', summary: 'Validation Error', detail: 'Please fill in all required fields.', life: 4000 });
       return;
     }
+    const v = this.form.getRawValue();
     this.isSaving.set(true);
-    setTimeout(() => {
-      this.isSaving.set(false);
-      this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Amendment details updated successfully.', life: 4000 });
-    }, 600);
+    this.service.update(this.amendmentId, {
+      cancellationCharge: v.cancellationCharge ?? 0,
+      cancellationServiceCharge: v.cancellationServiceCharge ?? 0,
+      cancellationChargeGst: v.cancellationChargeGst ?? 0,
+      refundAmount: v.refundAmount ?? 0,
+      tdsReturn: v.tdsReturn ?? false,
+      changeBookingCurrencyRate: v.changeBookingCurrencyRate ?? true,
+      currentCurrencyRate: v.currentCurrencyRate ?? 1,
+    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.isSaving.set(false);
+        this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Amendment details updated successfully.', life: 4000 });
+      },
+      error: () => {
+        this.isSaving.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Save Failed', detail: 'Could not save amendment details.' });
+      },
+    });
   }
 }

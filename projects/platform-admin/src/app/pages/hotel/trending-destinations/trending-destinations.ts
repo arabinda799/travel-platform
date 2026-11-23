@@ -1,23 +1,16 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal, TemplateRef, viewChild } from '@angular/core';
+import {
+  ChangeDetectionStrategy, Component, DestroyRef, OnInit,
+  computed, inject, signal, TemplateRef, viewChild,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import {
-  PageContainerComponent,
-  DataTableComponent,
-  ButtonComponent,
-  FormModalComponent,
-  TextFieldComponent,
-  SelectFieldComponent,
-  FileUploadFieldComponent,
-  FilterSidebarComponent,
-  StatusModalComponent,
-  ConfirmDialogComponent,
-  StatusBadgeComponent,
-  TableActionComponent,
-  TableColumn,
-  STATUS_OPTIONS,
-  BreadcrumbItem,
-  ThumbImageComponent,
+  PageContainerComponent, DataTableComponent, ButtonComponent,
+  FormModalComponent, TextFieldComponent, SelectFieldComponent,
+  FileUploadFieldComponent, FilterSidebarComponent, StatusModalComponent,
+  ConfirmDialogComponent, StatusBadgeComponent, TableActionComponent,
+  TableColumn, STATUS_OPTIONS, BreadcrumbItem, ThumbImageComponent,
 } from 'admin-core';
 import { TrendingDestination, TrendingDestinationsService } from './trending-destinations.service';
 
@@ -26,27 +19,20 @@ import { TrendingDestination, TrendingDestinationsService } from './trending-des
   standalone: true,
   imports: [
     ReactiveFormsModule,
-    PageContainerComponent,
-    DataTableComponent,
-    ButtonComponent,
-    FormModalComponent,
-    TextFieldComponent,
-    SelectFieldComponent,
-    FileUploadFieldComponent,
-    FilterSidebarComponent,
-    StatusModalComponent,
-    ConfirmDialogComponent,
-    StatusBadgeComponent,
-    TableActionComponent,
+    PageContainerComponent, DataTableComponent, ButtonComponent,
+    FormModalComponent, TextFieldComponent, SelectFieldComponent,
+    FileUploadFieldComponent, FilterSidebarComponent, StatusModalComponent,
+    ConfirmDialogComponent, StatusBadgeComponent, TableActionComponent,
     ThumbImageComponent,
   ],
   templateUrl: './trending-destinations.html',
   styleUrl: './trending-destinations.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class TrendingDestinationsComponent {
+export class TrendingDestinationsComponent implements OnInit {
   private readonly service = inject(TrendingDestinationsService);
   private readonly messageService = inject(MessageService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly breadcrumbs: BreadcrumbItem[] = [
     { label: 'Hotel', route: '/hotel/bookings' },
@@ -54,16 +40,15 @@ export class TrendingDestinationsComponent {
   ];
 
   readonly destinations = this.service.destinations;
+  readonly loading = this.service.loading;
   readonly searchQuery = signal('');
   readonly selectedItems = signal<TrendingDestination[]>([]);
-  readonly loading = signal(false);
+  readonly isSaving = signal(false);
 
-  // Filter state
   readonly filterVisible = signal(false);
   readonly selectedStatusFilter = signal<string | null>(null);
   readonly appliedStatusFilter = signal<string | null>(null);
 
-  // Modal state
   readonly modalVisible = signal(false);
   readonly isEditing = signal(false);
   readonly editingId = signal<string | null>(null);
@@ -82,7 +67,6 @@ export class TrendingDestinationsComponent {
     status: new FormControl<'Active' | 'Inactive'>('Active', Validators.required),
   });
 
-  // Table column templates
   readonly imageTpl = viewChild<TemplateRef<unknown>>('imageTpl');
   readonly nameTpl = viewChild<TemplateRef<unknown>>('nameTpl');
   readonly statusTpl = viewChild<TemplateRef<unknown>>('statusTpl');
@@ -103,42 +87,24 @@ export class TrendingDestinationsComponent {
   readonly filteredDestinations = computed(() => {
     let list = this.destinations();
     const q = this.searchQuery().toLowerCase().trim();
-    if (q) {
-      list = list.filter(d =>
-        d.name.toLowerCase().includes(q) ||
-        (d.subtitle ?? '').toLowerCase().includes(q),
-      );
-    }
+    if (q) list = list.filter(d => d.name.toLowerCase().includes(q) || (d.subtitle ?? '').toLowerCase().includes(q));
     const sf = this.appliedStatusFilter();
-    if (sf) {
-      list = list.filter(d => d.isActive === (sf === 'Active'));
-    }
+    if (sf) list = list.filter(d => d.isActive === (sf === 'Active'));
     return list;
   });
 
+  ngOnInit(): void { this.service.load(); }
+
   onSearch(query: string): void { this.searchQuery.set(query); }
 
-  onApplyFilters(): void {
-    this.appliedStatusFilter.set(this.selectedStatusFilter());
-    this.filterVisible.set(false);
-  }
+  onApplyFilters(): void { this.appliedStatusFilter.set(this.selectedStatusFilter()); this.filterVisible.set(false); }
 
-  onResetFilters(): void {
-    this.selectedStatusFilter.set(null);
-    this.appliedStatusFilter.set(null);
-    this.filterVisible.set(false);
-  }
+  onResetFilters(): void { this.selectedStatusFilter.set(null); this.appliedStatusFilter.set(null); this.filterVisible.set(false); }
 
   openAddModal(): void {
     this.isEditing.set(false);
     this.editingId.set(null);
-    this.form.reset({
-      name: '',
-      subtitle: '',
-      imageUrl: '',
-      sortOrder: String(this.destinations().length + 1),
-      status: 'Active',
-    });
+    this.form.reset({ name: '', subtitle: '', imageUrl: '', sortOrder: String(this.destinations().length + 1), status: 'Active' });
     this.formImageFileName.set('');
     this.modalVisible.set(true);
   }
@@ -146,13 +112,7 @@ export class TrendingDestinationsComponent {
   openEditModal(dest: TrendingDestination): void {
     this.isEditing.set(true);
     this.editingId.set(dest.id);
-    this.form.patchValue({
-      name: dest.name,
-      subtitle: dest.subtitle ?? '',
-      imageUrl: dest.imageUrl ?? '',
-      sortOrder: String(dest.sortOrder),
-      status: dest.isActive ? 'Active' : 'Inactive',
-    });
+    this.form.patchValue({ name: dest.name, subtitle: dest.subtitle ?? '', imageUrl: dest.imageUrl ?? '', sortOrder: String(dest.sortOrder), status: dest.isActive ? 'Active' : 'Inactive' });
     const parts = (dest.imageUrl ?? '').split('/');
     this.formImageFileName.set(parts[parts.length - 1].split('?')[0] || 'Destination Image');
     this.modalVisible.set(true);
@@ -172,20 +132,26 @@ export class TrendingDestinationsComponent {
       sortOrder: parseInt(v.sortOrder ?? '1', 10) || 1,
       isActive: v.status === 'Active',
     };
-    if (this.isEditing() && this.editingId()) {
-      this.service.update(this.editingId()!, payload);
-      this.messageService.add({ severity: 'success', summary: 'Destination Updated', detail: `"${payload.name}" updated successfully.` });
-    } else {
-      this.service.add(payload);
-      this.messageService.add({ severity: 'success', summary: 'Destination Added', detail: `"${payload.name}" added to trending destinations.` });
-    }
-    this.modalVisible.set(false);
+    this.isSaving.set(true);
+    const obs$ = this.isEditing() && this.editingId()
+      ? this.service.update(this.editingId()!, payload)
+      : this.service.add(payload);
+    obs$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (result) => {
+        this.isSaving.set(false);
+        const label = this.isEditing() ? 'Destination Updated' : 'Destination Added';
+        const detail = this.isEditing() ? `"${result.name}" updated successfully.` : `"${result.name}" added to trending destinations.`;
+        this.messageService.add({ severity: 'success', summary: label, detail });
+        this.modalVisible.set(false);
+      },
+      error: () => {
+        this.isSaving.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Save Failed', detail: 'Could not save destination.' });
+      },
+    });
   }
 
-  confirmDeleteSingle(dest: TrendingDestination): void {
-    this.itemToDelete.set(dest);
-    this.confirmDeleteVisible.set(true);
-  }
+  confirmDeleteSingle(dest: TrendingDestination): void { this.itemToDelete.set(dest); this.confirmDeleteVisible.set(true); }
 
   confirmBulkDelete(): void {
     if (this.selectedItems().length === 0) return;
@@ -195,17 +161,24 @@ export class TrendingDestinationsComponent {
 
   executeDelete(): void {
     const single = this.itemToDelete();
-    if (single) {
-      this.service.delete(single.id);
-      this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `"${single.name}" deleted successfully.` });
-    } else {
-      const ids = this.selectedItems().map(d => d.id);
-      this.service.bulkDelete(ids);
-      this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `${ids.length} destinations deleted.` });
-      this.selectedItems.set([]);
-    }
-    this.confirmDeleteVisible.set(false);
-    this.itemToDelete.set(null);
+    const obs$ = single ? this.service.delete(single.id) : this.service.bulkDelete(this.selectedItems().map(d => d.id));
+    obs$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        if (single) {
+          this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `"${single.name}" deleted successfully.` });
+        } else {
+          const count = this.selectedItems().length;
+          this.selectedItems.set([]);
+          this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `${count} destinations deleted.` });
+        }
+        this.confirmDeleteVisible.set(false);
+        this.itemToDelete.set(null);
+      },
+      error: () => {
+        this.messageService.add({ severity: 'error', summary: 'Delete Failed', detail: 'Could not delete destination.' });
+        this.confirmDeleteVisible.set(false);
+      },
+    });
   }
 
   openBulkStatusModal(): void {
@@ -214,7 +187,9 @@ export class TrendingDestinationsComponent {
 
   onBulkStatusConfirm(newStatus: string): void {
     const active = newStatus === 'Active';
-    this.selectedItems().forEach(d => this.service.updateStatus(d.id, active));
+    this.selectedItems().forEach(d => {
+      this.service.updateStatus(d.id, active).pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
+    });
     this.messageService.add({ severity: 'success', summary: 'Status Updated', detail: `${this.selectedItems().length} destinations set to ${newStatus}.` });
     this.selectedItems.set([]);
     this.statusModalVisible.set(false);

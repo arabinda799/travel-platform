@@ -1,18 +1,20 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   computed,
   effect,
   inject,
   signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import {
   PageContainerComponent,
   ButtonComponent,
 } from 'admin-core';
-import { ALL_PERMISSIONS, MODULE_TITLES, PARENT_MAP, Role, RoleService } from '../role-list/role.service';
+import { ALL_PERMISSIONS, MODULE_TITLES, Role, RoleService } from '../role-list/role.service';
 
 // ─── Permission matrix types ──────────────────────────────────────────────────
 
@@ -108,6 +110,7 @@ export class RolePermissionsComponent {
   private readonly router = inject(Router);
   private readonly roleService = inject(RoleService);
   private readonly messageService = inject(MessageService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly roleId = signal<string>('');
   readonly role = computed<Role | null>(() =>
@@ -196,13 +199,19 @@ export class RolePermissionsComponent {
   save(): void {
     const role = this.role();
     if (!role) return;
-    this.roleService.updatePermissions(role.id, this.draftPermIds());
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Permissions Saved',
-      detail: `${this.draftPermIds().length} permissions assigned to "${role.name}".`,
-    });
-    this.router.navigate(['/users/roles']);
+    this.roleService.updatePermissions(role.id, this.draftPermIds())
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Permissions Saved',
+            detail: `${this.draftPermIds().length} permissions assigned to "${role.name}".`,
+          });
+          this.router.navigate(['/users/roles']);
+        },
+        error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save permissions.' }),
+      });
   }
 
   goBack(): void { this.router.navigate(['/users/roles']); }

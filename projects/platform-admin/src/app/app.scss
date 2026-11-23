@@ -32,7 +32,7 @@
   }
 
   .brand-icon {
-    font-size: 1.625rem;
+    font-size: var(--fs-4xl);
     color: var(--accent);
     display: inline-flex;
     align-items: center;

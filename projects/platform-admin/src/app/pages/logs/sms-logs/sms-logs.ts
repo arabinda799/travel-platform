@@ -1,17 +1,14 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal, TemplateRef, viewChild } from '@angular/core';
+import {
+  ChangeDetectionStrategy, Component, DestroyRef, OnInit,
+  computed, inject, signal, TemplateRef, viewChild,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MessageService } from 'primeng/api';
 import {
-  PageContainerComponent,
-  DataTableComponent,
-  ButtonComponent,
-  ViewModalComponent,
-  FilterSidebarComponent,
-  ConfirmDialogComponent,
-  SelectFieldComponent,
-  StatusBadgeComponent,
-  TableActionComponent,
-  TableColumn,
-  BreadcrumbItem,
+  PageContainerComponent, DataTableComponent, ButtonComponent,
+  ViewModalComponent, FilterSidebarComponent, ConfirmDialogComponent,
+  SelectFieldComponent, StatusBadgeComponent, TableActionComponent,
+  TableColumn, BreadcrumbItem,
 } from 'admin-core';
 import { SmsLog, SmsLogsService } from './sms-logs.service';
 import { exportToCsv } from '../../../shared/utils/export.util';
@@ -20,23 +17,18 @@ import { exportToCsv } from '../../../shared/utils/export.util';
   selector: 'app-sms-logs',
   standalone: true,
   imports: [
-    PageContainerComponent,
-    DataTableComponent,
-    ButtonComponent,
-    ViewModalComponent,
-    FilterSidebarComponent,
-    ConfirmDialogComponent,
-    SelectFieldComponent,
-    StatusBadgeComponent,
-    TableActionComponent,
+    PageContainerComponent, DataTableComponent, ButtonComponent,
+    ViewModalComponent, FilterSidebarComponent, ConfirmDialogComponent,
+    SelectFieldComponent, StatusBadgeComponent, TableActionComponent,
   ],
   templateUrl: './sms-logs.html',
   styleUrl: './sms-logs.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SmsLogsComponent {
+export class SmsLogsComponent implements OnInit {
   private readonly service = inject(SmsLogsService);
   private readonly messageService = inject(MessageService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly breadcrumbs: BreadcrumbItem[] = [
     { label: 'Logs', route: '/system/logs/sms' },
@@ -44,17 +36,14 @@ export class SmsLogsComponent {
   ];
 
   readonly logs = this.service.logs;
+  readonly loading = this.service.loading;
   readonly searchQuery = signal('');
   readonly selectedItems = signal<SmsLog[]>([]);
-  readonly loading = signal(false);
-
   readonly filterVisible = signal(false);
   readonly selectedStatusFilter = signal<string | null>(null);
   readonly appliedStatusFilter = signal<string | null>(null);
-
   readonly detailVisible = signal(false);
   readonly activeLog = signal<SmsLog | null>(null);
-
   readonly confirmDeleteVisible = signal(false);
   readonly itemToDelete = signal<SmsLog | null>(null);
 
@@ -89,41 +78,27 @@ export class SmsLogsComponent {
     return list;
   });
 
+  ngOnInit(): void { this.service.load(); }
+
   onSearch(q: string): void { this.searchQuery.set(q); }
 
-  onApplyFilters(): void {
-    this.appliedStatusFilter.set(this.selectedStatusFilter());
-    this.filterVisible.set(false);
-  }
+  onApplyFilters(): void { this.appliedStatusFilter.set(this.selectedStatusFilter()); this.filterVisible.set(false); }
 
-  onResetFilters(): void {
-    this.selectedStatusFilter.set(null);
-    this.appliedStatusFilter.set(null);
-    this.filterVisible.set(false);
-  }
+  onResetFilters(): void { this.selectedStatusFilter.set(null); this.appliedStatusFilter.set(null); this.filterVisible.set(false); }
 
-  openDetail(log: SmsLog): void {
-    this.activeLog.set(log);
-    this.detailVisible.set(true);
-  }
+  openDetail(log: SmsLog): void { this.activeLog.set(log); this.detailVisible.set(true); }
 
   onResend(log: SmsLog): void {
-    const updated = this.service.resend(log.id);
-    if (this.activeLog()?.id === log.id && updated) {
-      this.activeLog.set(updated);
-    }
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Resent',
-      detail: `SMS to ${log.to} has been resent successfully.`,
-      life: 3000,
+    this.service.resend(log.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (updated) => {
+        if (this.activeLog()?.id === log.id) this.activeLog.set(updated);
+        this.messageService.add({ severity: 'success', summary: 'Resent', detail: `SMS to ${log.to} has been resent successfully.`, life: 3000 });
+      },
+      error: () => this.messageService.add({ severity: 'error', summary: 'Resend Failed', detail: 'Could not resend SMS.' }),
     });
   }
 
-  confirmDeleteSingle(log: SmsLog): void {
-    this.itemToDelete.set(log);
-    this.confirmDeleteVisible.set(true);
-  }
+  confirmDeleteSingle(log: SmsLog): void { this.itemToDelete.set(log); this.confirmDeleteVisible.set(true); }
 
   confirmBulkDelete(): void {
     if (this.selectedItems().length === 0) return;
@@ -133,29 +108,33 @@ export class SmsLogsComponent {
 
   executeDelete(): void {
     const single = this.itemToDelete();
-    if (single) {
-      this.service.delete(single.id);
-      this.messageService.add({ severity: 'success', summary: 'Deleted', detail: 'SMS log entry removed.' });
-    } else {
-      const ids = this.selectedItems().map(l => l.id);
-      this.service.bulkDelete(ids);
-      this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `${ids.length} log entries removed.` });
-      this.selectedItems.set([]);
-    }
-    this.confirmDeleteVisible.set(false);
-    this.itemToDelete.set(null);
+    const obs$ = single ? this.service.delete(single.id) : this.service.bulkDelete(this.selectedItems().map(l => l.id));
+    obs$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        if (single) {
+          this.messageService.add({ severity: 'success', summary: 'Deleted', detail: 'SMS log entry removed.' });
+        } else {
+          const count = this.selectedItems().length;
+          this.selectedItems.set([]);
+          this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `${count} log entries removed.` });
+        }
+        this.confirmDeleteVisible.set(false);
+        this.itemToDelete.set(null);
+      },
+      error: () => {
+        this.messageService.add({ severity: 'error', summary: 'Delete Failed', detail: 'Could not delete log entry.' });
+        this.confirmDeleteVisible.set(false);
+      },
+    });
   }
 
   exportSelected(): void {
     const rows = this.selectedItems();
     if (!rows.length) return;
     exportToCsv('sms_logs', rows, [
-      { field: 'to', header: 'Phone' },
-      { field: 'message', header: 'Message' },
-      { field: 'template', header: 'Template' },
-      { field: 'status', header: 'Status' },
-      { field: 'triggeredBy', header: 'Triggered By' },
-      { field: 'sentAt', header: 'Sent At' },
+      { field: 'to', header: 'Phone' }, { field: 'message', header: 'Message' },
+      { field: 'template', header: 'Template' }, { field: 'status', header: 'Status' },
+      { field: 'triggeredBy', header: 'Triggered By' }, { field: 'sentAt', header: 'Sent At' },
       { field: 'errorMessage', header: 'Error' },
     ]);
     this.messageService.add({ severity: 'success', summary: 'Exported', detail: `${rows.length} records exported.` });

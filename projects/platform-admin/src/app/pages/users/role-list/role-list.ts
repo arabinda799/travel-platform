@@ -1,12 +1,16 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
+  OnInit,
   computed,
   inject,
   signal,
   TemplateRef,
   viewChild,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { forkJoin } from 'rxjs';
 import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
@@ -70,10 +74,11 @@ const STATUS_OPTIONS: SelectOption<RoleStatus>[] = [
   styleUrl: './role-list.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class RoleListComponent {
+export class RoleListComponent implements OnInit {
   private readonly roleService = inject(RoleService);
   private readonly messageService = inject(MessageService);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly roles = this.roleService.roles;
   readonly searchQuery = signal<string>('');
@@ -155,6 +160,8 @@ export class RoleListComponent {
     { field: 'actions', header: 'Action', width: '7.5rem', align: 'center', frozen: true, frozenAlign: 'right', bodyTemplate: this.actionsTpl() },
   ]);
 
+  ngOnInit(): void { this.roleService.load(); }
+
   onSearch(query: string): void { this.searchQuery.set(query); }
 
   applyFilters(): void {
@@ -205,16 +212,29 @@ export class RoleListComponent {
     };
 
     if (this.isEditing() && this.editingId()) {
-      this.roleService.update(this.editingId()!, payload);
-      this.messageService.add({ severity: 'success', summary: 'Updated', detail: `"${payload.name}" updated.` });
+      this.roleService.update(this.editingId()!, payload)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: () => {
+            this.messageService.add({ severity: 'success', summary: 'Updated', detail: `"${payload.name}" updated.` });
+            this.modalVisible.set(false);
+          },
+          error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to update role.' }),
+        });
+      return;
     } else {
-      const created = this.roleService.add(payload);
-      this.messageService.add({ severity: 'success', summary: 'Created', detail: `"${payload.name}" created. Assign permissions now.` });
-      this.modalVisible.set(false);
-      this.router.navigate(['/users/roles', created.id, 'permissions']);
+      this.roleService.add(payload)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: created => {
+            this.messageService.add({ severity: 'success', summary: 'Created', detail: `"${payload.name}" created. Assign permissions now.` });
+            this.modalVisible.set(false);
+            this.router.navigate(['/users/roles', created.id, 'permissions']);
+          },
+          error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to create role.' }),
+        });
       return;
     }
-    this.modalVisible.set(false);
   }
 
   openPermissions(role: Role): void {
@@ -233,15 +253,22 @@ export class RoleListComponent {
 
   executeDelete(): void {
     const single = this.itemToDelete();
-    if (single) {
-      this.roleService.delete(single.id);
-      this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `"${single.name}" deleted.` });
-    } else {
-      const ids = this.selectedRoles().map(r => r.id);
-      this.roleService.deleteMultiple(ids);
-      this.selectedRoles.set([]);
-      this.messageService.add({ severity: 'success', summary: 'Bulk Deleted', detail: `${ids.length} roles deleted.` });
-    }
-    this.confirmDeleteVisible.set(false);
+    const obs = single
+      ? this.roleService.delete(single.id)
+      : this.roleService.deleteMultiple(this.selectedRoles().map(r => r.id));
+
+    obs.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        if (single) {
+          this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `"${single.name}" deleted.` });
+        } else {
+          const count = this.selectedRoles().length;
+          this.selectedRoles.set([]);
+          this.messageService.add({ severity: 'success', summary: 'Bulk Deleted', detail: `${count} roles deleted.` });
+        }
+        this.confirmDeleteVisible.set(false);
+      },
+      error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Delete failed.' }),
+    });
   }
 }

@@ -1,12 +1,15 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
+  OnInit,
   computed,
   inject,
   signal,
   TemplateRef,
   viewChild,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
@@ -66,10 +69,11 @@ const PG_OWNER_OPTIONS: SelectOption<PgOwner>[] = [
   styleUrl: './company-list.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class CompanyListComponent {
+export class CompanyListComponent implements OnInit {
   private readonly companyService = inject(CompanyService);
   private readonly messageService = inject(MessageService);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly companies = this.companyService.companies;
   readonly searchQuery = signal<string>('');
@@ -143,6 +147,8 @@ export class CompanyListComponent {
     this.filterVisible.set(false);
   }
 
+  ngOnInit(): void { this.companyService.load(); }
+
   resetFilters(): void {
     this.selectedStatusFilter.set(null);
     this.appliedStatusFilter.set(null);
@@ -191,14 +197,26 @@ export class CompanyListComponent {
     if (this.isEditing() && this.editingId()) {
       const existing = this.companyService.companies().find(c => c.id === this.editingId());
       const editPayload = { ...payload, branding: existing?.branding ?? payload.branding, smtp: existing?.smtp ?? payload.smtp };
-      this.companyService.update(this.editingId()!, editPayload);
-      this.messageService.add({ severity: 'success', summary: 'Updated', detail: `${payload.companyName} updated.` });
-      this.modalVisible.set(false);
+      this.companyService.update(this.editingId()!, editPayload)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: () => {
+            this.messageService.add({ severity: 'success', summary: 'Updated', detail: `${payload.companyName} updated.` });
+            this.modalVisible.set(false);
+          },
+          error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to update company.' }),
+        });
     } else {
-      const created = this.companyService.add(payload);
-      this.messageService.add({ severity: 'success', summary: 'Created', detail: `${payload.companyName} created. Configure whitelabel settings now.` });
-      this.modalVisible.set(false);
-      this.router.navigate(['/tenants/companies', created.id, 'settings']);
+      this.companyService.add(payload)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: created => {
+            this.messageService.add({ severity: 'success', summary: 'Created', detail: `${payload.companyName} created. Configure whitelabel settings now.` });
+            this.modalVisible.set(false);
+            this.router.navigate(['/tenants/companies', created.id, 'settings']);
+          },
+          error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to create company.' }),
+        });
     }
   }
 
@@ -214,8 +232,14 @@ export class CompanyListComponent {
   executeDelete(): void {
     const item = this.itemToDelete();
     if (!item) return;
-    this.companyService.delete(item.id);
-    this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `${item.companyName} deleted.` });
-    this.confirmDeleteVisible.set(false);
+    this.companyService.delete(item.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `${item.companyName} deleted.` });
+          this.confirmDeleteVisible.set(false);
+        },
+        error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Delete failed.' }),
+      });
   }
 }

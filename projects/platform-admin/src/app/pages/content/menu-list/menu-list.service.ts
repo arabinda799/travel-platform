@@ -1,4 +1,7 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
+import { Observable } from 'rxjs';
+import { tap } from 'rxjs/operators';
+import { ApiService } from 'admin-core';
 
 export interface MenuLabel {
   id: string;
@@ -13,71 +16,88 @@ export interface MenuPageEntry {
   order: number;
 }
 
-export interface PageItem {
-  id: string;
-  title: string;
-  slug: string;
-  template: string;
-  status: 'Published' | 'Draft' | 'Archived';
-  author: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-const LABELS_KEY = 'platform_menu_labels';
-const ITEMS_KEY = 'platform_menu_items';
-const PAGES_KEY = 'platform_pages';
-
-const DEFAULT_LABELS: MenuLabel[] = [
-  { id: 'm1', name: 'Company' },
-  { id: 'm2', name: 'Policies' },
-  { id: 'm3', name: 'Resources' },
-  { id: 'm4', name: 'Keep in Touch' },
-];
-
 @Injectable({ providedIn: 'root' })
 export class MenuListService {
-  loadMenuLabels(): MenuLabel[] {
-    try {
-      const raw = sessionStorage.getItem(LABELS_KEY);
-      if (raw) return JSON.parse(raw) as MenuLabel[];
-    } catch { /* ignore */ }
-    sessionStorage.setItem(LABELS_KEY, JSON.stringify(DEFAULT_LABELS));
-    return DEFAULT_LABELS;
+  private readonly api = inject(ApiService);
+
+  private readonly _labels = signal<MenuLabel[]>([]);
+  private readonly _items = signal<Record<string, MenuPageEntry[]>>({});
+  private readonly _loading = signal<boolean>(false);
+
+  readonly labels = this._labels.asReadonly();
+  readonly items = this._items.asReadonly();
+  readonly loading = this._loading.asReadonly();
+
+  loadLabels(): void {
+    this._loading.set(true);
+    this.api.get<MenuLabel[]>('/menu-labels').subscribe({
+      next: (data) => {
+        this._labels.set(data);
+        this._loading.set(false);
+      },
+      error: () => this._loading.set(false),
+    });
   }
 
-  saveMenuLabels(labels: MenuLabel[]): void {
-    try { sessionStorage.setItem(LABELS_KEY, JSON.stringify(labels)); } catch { /* ignore */ }
+  loadItems(labelId: string): void {
+    this.api.get<MenuPageEntry[]>(`/menu-items?labelId=${labelId}`).subscribe({
+      next: (data) => {
+        this._items.update(all => ({ ...all, [labelId]: data }));
+      },
+    });
   }
 
-  loadMenuItems(pages: PageItem[]): Record<string, MenuPageEntry[]> {
-    try {
-      const raw = sessionStorage.getItem(ITEMS_KEY);
-      if (raw) return JSON.parse(raw) as Record<string, MenuPageEntry[]>;
-    } catch { /* ignore */ }
-    const seed: Record<string, MenuPageEntry[]> = {};
-    const policySlugs = ['privacy-policy', 'terms-conditions', 'faq'];
-    const policyPages = pages.filter(p => policySlugs.includes(p.slug));
-    seed['m2'] = policyPages.map((p, i) => ({
-      id: `seed-m2-${i}`,
-      pageId: p.id,
-      title: p.title,
-      slug: p.slug,
-      order: i,
-    }));
-    try { sessionStorage.setItem(ITEMS_KEY, JSON.stringify(seed)); } catch { /* ignore */ }
-    return seed;
+  addLabel(name: string): Observable<MenuLabel> {
+    return this.api.post<MenuLabel>('/menu-labels', { name }).pipe(
+      tap((label) => this._labels.update(list => [...list, label]))
+    );
   }
 
-  saveMenuItems(items: Record<string, MenuPageEntry[]>): void {
-    try { sessionStorage.setItem(ITEMS_KEY, JSON.stringify(items)); } catch { /* ignore */ }
+  updateLabel(id: string, name: string): Observable<MenuLabel> {
+    return this.api.patch<MenuLabel>(`/menu-labels/${id}`, { name }).pipe(
+      tap((updated) => {
+        this._labels.update(list => list.map(l => l.id === id ? updated : l));
+      })
+    );
   }
 
-  loadPages(): PageItem[] {
-    try {
-      const raw = sessionStorage.getItem(PAGES_KEY);
-      if (raw) return JSON.parse(raw) as PageItem[];
-    } catch { /* ignore */ }
-    return [];
+  deleteLabel(id: string): Observable<void> {
+    return this.api.delete<void>(`/menu-labels/${id}`).pipe(
+      tap(() => {
+        this._labels.update(list => list.filter(l => l.id !== id));
+        this._items.update(all => {
+          const copy = { ...all };
+          delete copy[id];
+          return copy;
+        });
+      })
+    );
+  }
+
+  saveMenuItems(labelId: string, pageIds: string[]): Observable<MenuPageEntry[]> {
+    return this.api.post<MenuPageEntry[]>('/menu-items', { labelId, pageIds }).pipe(
+      tap((entries) => {
+        this._items.update(all => ({ ...all, [labelId]: entries }));
+      })
+    );
+  }
+
+  deleteMenuItem(id: string, labelId: string): Observable<void> {
+    return this.api.delete<void>(`/menu-items/${id}`).pipe(
+      tap(() => {
+        this._items.update(all => ({
+          ...all,
+          [labelId]: (all[labelId] ?? []).filter(e => e.id !== id),
+        }));
+      })
+    );
+  }
+
+  updateLabelsLocal(updated: MenuLabel[]): void {
+    this._labels.set(updated);
+  }
+
+  updateItemsLocal(labelId: string, entries: MenuPageEntry[]): void {
+    this._items.update(all => ({ ...all, [labelId]: entries }));
   }
 }

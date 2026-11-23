@@ -1,5 +1,5 @@
-import { ChangeDetectorRef, Component, DoCheck, forwardRef, inject, Injector, input, model, OnInit } from '@angular/core';
-import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR, NgControl } from '@angular/forms';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DoCheck, inject, Injector, input, model, OnInit } from '@angular/core';
+import { ControlValueAccessor, FormsModule, NgControl } from '@angular/forms';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 
 let nextId = 0;
@@ -10,6 +10,7 @@ let nextId = 0;
   imports: [FormsModule, ToggleSwitchModule],
   templateUrl: './switch-field.html',
   styleUrl: './switch-field.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SwitchFieldComponent implements ControlValueAccessor, OnInit, DoCheck {
   private readonly injector = inject(Injector);

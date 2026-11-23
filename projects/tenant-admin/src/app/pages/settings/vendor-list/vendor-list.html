@@ -1,0 +1,290 @@
+<lib-page-container
+  title="Vendor List"
+  subtitle="Manage 3rd-party inventory suppliers, bedbanks, GDS integrations, and API credentials"
+  [breadcrumbs]="[
+    { label: 'Dashboard', route: '/dashboard' },
+    { label: 'Settings' },
+    { label: 'Vendor List' }
+  ]">
+
+  <!-- Top Page Action: Export CSV & Add Vendor -->
+  <div page-actions class="page-actions-group">
+    <lib-button
+      variant="outline"
+      icon="download"
+      (click)="exportData(false)">
+      Export CSV
+    </lib-button>
+
+    <lib-button
+      variant="primary"
+      icon="add"
+      (click)="openAddModal()">
+      Add Vendor
+    </lib-button>
+  </div>
+
+  <!-- Reusable Data Table Component -->
+  <lib-data-table
+    [value]="filteredVendors()"
+    [columns]="columns()"
+    [totalRecords]="filteredVendors().length"
+    [loading]="loading()"
+    [checkbox]="true"
+    [(selection)]="selectedVendors"
+    [searchable]="true"
+    searchPlaceholder="Search vendors by name, code, endpoint, credentials..."
+    (search)="onSearch($event)">
+
+    <!-- Table Action: Filters Button -->
+    <div table-actions class="table-actions-group">
+      <lib-button
+        variant="outline"
+        icon="tune"
+        [badge]="activeFilterCount() ? activeFilterCount() : ''"
+        (click)="filterVisible.set(true)">
+        Filters
+      </lib-button>
+    </div>
+
+    <!-- Bulk Selection Actions -->
+    <div selection-actions class="selection-actions-group">
+      <lib-button
+        variant="outline"
+        icon="download"
+        (click)="exportData(true)">
+        Export Selected ({{ selectedVendors().length }})
+      </lib-button>
+
+      <lib-button
+        variant="danger"
+        icon="delete"
+        (click)="confirmBulkDelete()">
+        Delete Selected ({{ selectedVendors().length }})
+      </lib-button>
+    </div>
+
+    <!-- Vendor Name & Code Template -->
+    <ng-template #vendorTpl let-row>
+      <div class="vendor-cell">
+        <span class="vendor-name">{{ row.name }}</span>
+        <span class="vendor-code">{{ row.code }}</span>
+      </div>
+    </ng-template>
+
+    <!-- Services Badges Template -->
+    <ng-template #servicesTpl let-row>
+      <div class="services-list">
+        @for (s of row.services; track s) {
+          <span class="service-chip" [class]="'svc-' + s.toLowerCase()">
+            <span class="icon">{{ s === 'HOTEL' ? 'hotel' : s === 'FLIGHT' ? 'flight' : s === 'BUS' ? 'directions_bus' : 'beach_access' }}</span>
+            {{ s }}
+          </span>
+        }
+      </div>
+    </ng-template>
+
+    <!-- Environment Mode Template -->
+    <ng-template #modeTpl let-row>
+      <span class="mode-pill" [class.mode-live]="row.mode === 'LIVE'" [class.mode-test]="row.mode === 'TEST'">
+        <span class="dot"></span>
+        {{ row.mode }}
+      </span>
+    </ng-template>
+
+    <!-- Endpoint URL Template -->
+    <ng-template #endpointTpl let-row>
+      <div class="endpoint-cell" [title]="row.apiUrl">
+        <span class="endpoint-url">{{ row.apiUrl }}</span>
+      </div>
+    </ng-template>
+
+    <!-- Credentials Template (JSON) -->
+    <ng-template #credentialsTpl let-row>
+      <div class="creds-cell">
+        <div class="creds-header">
+          <span class="creds-auth">{{ row.authType }}</span>
+        </div>
+        <div class="creds-keys-row">
+          @for (k of getCredentialKeys(row.credentials); track k) {
+            <span class="cred-chip" [title]="k + ': ' + getMaskedValue(row.credentials[k])">
+              <span class="key-name">{{ k }}:</span>
+              <span class="key-val">{{ getMaskedValue(row.credentials[k]) }}</span>
+            </span>
+          }
+        </div>
+      </div>
+    </ng-template>
+
+    <!-- Health & Latency Template -->
+    <ng-template #healthTpl let-row>
+      <div class="health-cell">
+        <span class="health-indicator" [class]="'health-' + row.healthStatus.toLowerCase()">
+          <span class="dot"></span>
+          {{ row.healthStatus }}
+        </span>
+        <span class="latency-val">{{ row.latencyMs }}ms</span>
+      </div>
+    </ng-template>
+
+    <!-- Status Template -->
+    <ng-template #statusTpl let-row>
+      <lib-status-badge [status]="row.isActive ? 'Active' : 'Inactive'" />
+    </ng-template>
+
+    <!-- Actions Template -->
+    <ng-template #actionsTpl let-row>
+      <div class="table-row-actions">
+        <button
+          type="button"
+          class="icon-action-btn ping-btn"
+          title="Test Connection (Ping API)"
+          (click)="pingVendor(row)">
+          <span class="icon">sensors</span>
+        </button>
+
+        <lib-table-action
+          action="edit"
+          tooltip="Configure Vendor"
+          (clicked)="openEditModal(row)" />
+
+        <lib-table-action
+          action="delete"
+          tooltip="Delete Vendor"
+          (clicked)="confirmDeleteSingle(row)" />
+      </div>
+    </ng-template>
+
+  </lib-data-table>
+
+</lib-page-container>
+
+<!-- Filter Sidebar -->
+<lib-filter-sidebar
+  [(visible)]="filterVisible"
+  (apply)="onApplyFilters()"
+  (reset)="onResetFilters()">
+
+  <div class="filter-group">
+    <lib-select-field
+      label="Service Type"
+      [options]="serviceOptions"
+      [value]="selectedServiceFilter()"
+      (valueChange)="selectedServiceFilter.set($event)"
+      placeholder="All Services"
+      [clearable]="true" />
+  </div>
+
+  <div class="filter-group">
+    <lib-select-field
+      label="Environment Mode"
+      [options]="modeOptions"
+      [value]="selectedModeFilter()"
+      (valueChange)="selectedModeFilter.set($event)"
+      placeholder="All Modes"
+      [clearable]="true" />
+  </div>
+
+  <div class="filter-group">
+    <lib-select-field
+      label="Status"
+      [options]="statusOptions"
+      [value]="selectedStatusFilter()"
+      (valueChange)="selectedStatusFilter.set($event)"
+      placeholder="All Statuses"
+      [clearable]="true" />
+  </div>
+
+</lib-filter-sidebar>
+
+<!-- Reusable Form Modal for Add / Edit -->
+<lib-form-modal
+  [(visible)]="modalVisible"
+  [title]="isEditing() ? 'Configure Vendor Integration' : 'Add New Vendor Integration'"
+  [subtitle]="isEditing() ? 'Update API endpoints, credentials, and environment mode' : 'Integrate a new 3rd-party inventory provider'"
+  [icon]="isEditing() ? 'settings_suggest' : 'add_business'"
+  width="48rem"
+  submitLabel="Save"
+  submitIcon="save"
+  (submitted)="onSaveVendor()">
+
+  <div class="vendor-form-grid">
+    <!-- Row 1: Name and Code -->
+    <div class="form-row two-cols">
+      <lib-text-field
+        label="Vendor / Supplier Name"
+        placeholder="e.g. RateHawk, TripJack"
+        [formControl]="form.controls.name"
+        [required]="true" />
+
+      <lib-text-field
+        label="Vendor Code"
+        placeholder="e.g. RATEHAWK, TRIPJACK"
+        [formControl]="form.controls.code"
+        [required]="true"
+        hint="Unique system identifier" />
+    </div>
+
+    <!-- Row 2: Service Type and Environment Mode -->
+    <div class="form-row two-cols">
+      <lib-select-field
+        label="Primary Service Vertical"
+        [options]="serviceOptions"
+        [formControl]="form.controls.serviceType"
+        [required]="true" />
+
+      <lib-select-field
+        label="Environment Mode"
+        [options]="modeOptions"
+        [formControl]="form.controls.mode"
+        [required]="true"
+        hint="Use Test for sandbox APIs" />
+    </div>
+
+    <!-- Row 3: API Endpoint URL and Auth Type -->
+    <div class="form-row two-cols">
+      <lib-text-field
+        label="Base API Endpoint URL"
+        placeholder="https://api.vendor.com/v1"
+        [formControl]="form.controls.apiUrl"
+        [required]="true" />
+
+      <lib-select-field
+        label="Authentication Type"
+        [options]="authTypeOptions"
+        [formControl]="form.controls.authType"
+        [required]="true" />
+    </div>
+
+    <!-- Row 4: Credentials JSON Textarea -->
+    <div class="form-row">
+      <lib-textarea-field
+        label="Credentials (JSON)"
+        placeholder='{\n  "keyId": "16726",\n  "apiKey": "••••••••"\n}'
+        [rows]="6"
+        [formControl]="form.controls.credentialsJson"
+        [required]="true"
+        hint="Enter supplier-specific credentials as a JSON object (e.g. keyId, apiKey, username, password, clientId, clientSecret)" />
+    </div>
+
+    <!-- Row 5: Status (When Editing) -->
+    @if (isEditing()) {
+      <div class="form-row">
+        <lib-select-field
+          label="Status"
+          [options]="statusOptions"
+          [formControl]="form.controls.status"
+          [required]="true" />
+      </div>
+    }
+  </div>
+
+</lib-form-modal>
+
+<!-- Delete Confirmation Dialog -->
+<lib-confirm-dialog
+  [(visible)]="confirmDeleteVisible"
+  [title]="itemToDelete() ? 'Remove Vendor Integration' : 'Remove Selected Vendors'"
+  [message]="itemToDelete() ? 'Are you sure you want to remove ' + itemToDelete()?.name + '? Inventory calls to this supplier will be halted.' : 'Are you sure you want to remove the selected vendors?'"
+  confirmLabel="Delete"
+  (confirmed)="executeDelete()" />

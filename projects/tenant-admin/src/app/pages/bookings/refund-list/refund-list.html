@@ -1,0 +1,174 @@
+<lib-page-container
+  title="Refund List"
+  subtitle="Track and manage hotel booking cancellations and refund disbursements"
+  [breadcrumbs]="breadcrumbs">
+
+  <lib-data-table
+    [value]="tableData()"
+    [columns]="columns()"
+    [totalRecords]="totalRecords()"
+    [loading]="isLoading()"
+    [checkbox]="true"
+    [(selection)]="selectedRefunds"
+    [searchable]="true"
+    searchPlaceholder="Search refunds by ref, booking ref, guest, hotel..."
+    (lazyLoad)="onLazyLoad($event)"
+    (search)="onSearch($event)">
+
+    <div table-actions class="table-actions-group">
+      <lib-button
+        variant="outline"
+        icon="tune"
+        [badge]="activeFilterCount() ? activeFilterCount() : ''"
+        (click)="filterVisible.set(true)">
+        Filters
+      </lib-button>
+
+      <lib-button
+        variant="info"
+        icon="download"
+        [dropdown]="true"
+        (click)="exportMenu.toggle($event)">
+        Export
+      </lib-button>
+      <p-menu #exportMenu [model]="exportMenuItems" [popup]="true" appendTo="body" />
+    </div>
+
+    <div selection-actions class="selection-actions-group">
+      <lib-button
+        variant="outline-warning"
+        icon="sync"
+        (click)="statusModalVisible.set(true)">
+        Change Status
+      </lib-button>
+      <lib-button
+        variant="danger"
+        icon="delete"
+        (click)="onBulkDelete()">
+        Delete Selected
+      </lib-button>
+    </div>
+
+    <ng-template #amountTpl let-row>
+      <span class="amount-cell">₹{{ row.bookingAmount | number }}</span>
+    </ng-template>
+
+    <ng-template #refundStatusTpl let-row>
+      <lib-status-badge [status]="row.refundStatus" />
+    </ng-template>
+
+    <ng-template #amendmentStatusTpl let-row>
+      <lib-status-badge [status]="row.amendmentStatus" />
+    </ng-template>
+
+    <ng-template #bookingStatusTpl let-row>
+      <lib-status-badge [status]="row.bookingStatus" />
+    </ng-template>
+
+    <ng-template #actionsTpl let-row>
+      <div class="table-row-actions">
+        <lib-table-action action="view" tooltip="View Refund" (clicked)="viewRefund(row)" />
+      </div>
+    </ng-template>
+
+  </lib-data-table>
+
+</lib-page-container>
+
+<lib-filter-sidebar
+  [(visible)]="filterVisible"
+  (apply)="onApplyFilters()"
+  (reset)="onResetFilters()">
+
+  <div class="filter-group">
+    <lib-select-field
+      label="Amendment Type"
+      [options]="typeOptions"
+      [value]="selectedType()"
+      (valueChange)="selectedType.set($event)"
+      placeholder="All Amendment Types"
+      [clearable]="true" />
+  </div>
+
+  <div class="filter-group">
+    <lib-select-field
+      label="Refund Status"
+      [options]="refundStatusOptions"
+      [value]="selectedRefundStatus()"
+      (valueChange)="selectedRefundStatus.set($event)"
+      placeholder="All Refund Statuses"
+      [clearable]="true" />
+  </div>
+
+  <div class="filter-group">
+    <lib-select-field
+      label="Amendment Status"
+      [options]="amendmentStatusOptions"
+      [value]="selectedAmendmentStatus()"
+      (valueChange)="selectedAmendmentStatus.set($event)"
+      placeholder="All Amendment Statuses"
+      [clearable]="true" />
+  </div>
+
+  <div class="filter-group">
+    <lib-select-field
+      label="Booking Status"
+      [options]="bookingStatusOptions"
+      [value]="selectedBookingStatus()"
+      (valueChange)="selectedBookingStatus.set($event)"
+      placeholder="All Booking Statuses"
+      [clearable]="true" />
+  </div>
+
+  <div class="filter-group">
+    <lib-datepicker-field
+      label="Refund Date"
+      selectionMode="range"
+      dateFormat="dd/mm/yy"
+      placeholder="Select start and end date"
+      [value]="selectedRefundDateRange()"
+      (valueChange)="selectedRefundDateRange.set($event)" />
+  </div>
+
+  <div class="filter-group">
+    <lib-datepicker-field
+      label="Booking Date"
+      selectionMode="range"
+      dateFormat="dd/mm/yy"
+      placeholder="Select start and end date"
+      [value]="selectedBookingDateRange()"
+      (valueChange)="selectedBookingDateRange.set($event)" />
+  </div>
+
+</lib-filter-sidebar>
+
+<lib-confirm-dialog
+  [(visible)]="deleteConfirmVisible"
+  title="Delete Refunds"
+  [message]="'Are you sure you want to delete ' + selectedRefunds.length + ' selected refund(s)? This action cannot be undone.'"
+  confirmLabel="Delete"
+  severity="danger"
+  (confirmed)="confirmBulkDelete()" />
+
+<lib-status-modal
+  [(visible)]="statusModalVisible"
+  [count]="selectedRefunds.length"
+  [options]="statusModalOptions"
+  (confirmed)="onStatusModalConfirm($event)" />
+
+<lib-modal
+  [(visible)]="exportDateRangeVisible"
+  title="Export Refunds"
+  subtitle="Select date range for export"
+  icon="download"
+  width="32rem">
+  <div class="export-modal-body">
+    <lib-date-range-picker
+      label="Requested Date Range"
+      [(value)]="exportDateRange" />
+  </div>
+  <div modal-footer class="export-modal-footer">
+    <lib-button variant="outline" (click)="exportDateRangeVisible.set(false)">Cancel</lib-button>
+    <lib-button variant="primary" icon="download" (click)="onExport('csv')">Download</lib-button>
+  </div>
+</lib-modal>

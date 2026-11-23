@@ -1,5 +1,5 @@
-import { ChangeDetectorRef, Component, DoCheck, forwardRef, inject, Injector, input, model, OnInit, output, signal } from '@angular/core';
-import { ControlValueAccessor, NG_VALUE_ACCESSOR, NgControl } from '@angular/forms';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DoCheck, inject, Injector, input, model, OnInit, output, signal } from '@angular/core';
+import { ControlValueAccessor, NgControl } from '@angular/forms';
 import { FormFieldComponent } from '../form-field/form-field';
 
 let nextId = 0;
@@ -10,6 +10,7 @@ let nextId = 0;
   imports: [FormFieldComponent],
   templateUrl: './file-upload-field.html',
   styleUrl: './file-upload-field.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FileUploadFieldComponent implements ControlValueAccessor, OnInit, DoCheck {
   private readonly injector = inject(Injector);

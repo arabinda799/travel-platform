@@ -1,0 +1,180 @@
+<lib-page-container
+  title="Roles & Permissions"
+  subtitle="Manage RBAC roles and assign permissions with tenant-level access control"
+  [breadcrumbs]="[
+    { label: 'Dashboard', route: '/' },
+    { label: 'Users & Access' },
+    { label: 'Roles & Permissions' }
+  ]">
+
+  <div page-actions>
+    <lib-button variant="primary" icon="add_moderator" (click)="openAddModal()">
+      Add Role
+    </lib-button>
+  </div>
+
+  <lib-data-table
+    [value]="filteredRoles()"
+    [columns]="columns()"
+    [totalRecords]="filteredRoles().length"
+    [loading]="loading()"
+    [checkbox]="true"
+    [(selection)]="selectedRoles"
+    [searchable]="true"
+    searchPlaceholder="Search by name or description..."
+    (search)="onSearch($event)">
+
+    <div table-actions class="table-actions-group">
+      <lib-button
+        variant="outline"
+        icon="tune"
+        [badge]="activeFilterCount() ? activeFilterCount() : ''"
+        (click)="filterVisible.set(true)">
+        Filters
+      </lib-button>
+    </div>
+
+    <div selection-actions class="selection-actions-group">
+      <lib-button variant="danger" icon="delete" (click)="confirmBulkDelete()">
+        Delete Selected ({{ selectedRoles().length }})
+      </lib-button>
+    </div>
+
+    <!-- Role name cell -->
+    <ng-template #nameTpl let-row>
+      <div class="role-name-cell">
+        <div class="role-icon" [class.role-icon--system]="row.type === 'SYSTEM'">
+          <span class="icon">{{ row.type === 'SYSTEM' ? 'shield' : 'manage_accounts' }}</span>
+        </div>
+        <div class="role-info">
+          <span class="role-name">{{ row.name }}</span>
+          @if (row.description) {
+            <span class="role-desc">{{ row.description }}</span>
+          }
+        </div>
+      </div>
+    </ng-template>
+
+    <!-- Type badge -->
+    <ng-template #typeTpl let-row>
+      <span class="type-badge" [class.type-badge--system]="row.type === 'SYSTEM'" [class.type-badge--custom]="row.type === 'CUSTOM'">
+        {{ row.type === 'SYSTEM' ? 'System' : 'Custom' }}
+      </span>
+    </ng-template>
+
+    <!-- Scope badge -->
+    <ng-template #scopeTpl let-row>
+      <span class="scope-badge scope-badge--{{ row.scope.toLowerCase() }}">
+        {{ row.scope }}
+      </span>
+    </ng-template>
+
+    <!-- Permission count -->
+    <ng-template #permCountTpl let-row>
+      <button class="perm-count-btn" (click)="openPermissions(row)" title="Manage permissions for {{ row.name }}">
+        <span class="icon">lock</span>
+        {{ row.permissionIds.length }} / {{ totalPermCount }}
+      </button>
+    </ng-template>
+
+    <!-- Status badge -->
+    <ng-template #statusTpl let-row>
+      <lib-status-badge [status]="row.status" />
+    </ng-template>
+
+    <!-- Row actions -->
+    <ng-template #actionsTpl let-row>
+      <div class="table-row-actions">
+        <lib-table-action action="edit" tooltip="Edit Role" (clicked)="openEditModal(row)" />
+        <lib-table-action action="delete" tooltip="Delete Role" (clicked)="confirmDelete(row)" />
+      </div>
+    </ng-template>
+  </lib-data-table>
+
+  <!-- Filter Sidebar -->
+  <lib-filter-sidebar
+    [(visible)]="filterVisible"
+    title="Filter Roles"
+    (apply)="applyFilters()"
+    (reset)="resetFilters()">
+    <div class="filter-form-fields">
+      <lib-select-field
+        label="Type"
+        placeholder="All Types"
+        [options]="roleTypeOptions"
+        [clearable]="true"
+        [value]="selectedTypeFilter()"
+        (valueChange)="selectedTypeFilter.set($event)" />
+      <lib-select-field
+        label="Scope"
+        placeholder="All Scopes"
+        [options]="scopeOptions"
+        [clearable]="true"
+        [value]="selectedScopeFilter()"
+        (valueChange)="selectedScopeFilter.set($event)" />
+      <lib-select-field
+        label="Status"
+        placeholder="All Statuses"
+        [options]="statusOptions"
+        [clearable]="true"
+        [value]="selectedStatusFilter()"
+        (valueChange)="selectedStatusFilter.set($event)" />
+    </div>
+  </lib-filter-sidebar>
+
+  <!-- Add / Edit Role Modal -->
+  <lib-form-modal
+    [(visible)]="modalVisible"
+    [title]="isEditing() ? 'Edit Role' : 'Add Role'"
+    width="38rem"
+    [submitLabel]="isEditing() ? 'Update' : 'Save & Assign Permissions'"
+    submitIcon="save"
+    (submitted)="saveRole()">
+    <div class="modal-form-grid">
+      <lib-text-field
+        label="Role Name"
+        placeholder="e.g. Finance Manager"
+        [required]="true"
+        [formControl]="form.controls.name" />
+
+      <div class="form-row-2">
+        <lib-select-field
+          label="Type"
+          [required]="true"
+          [options]="roleTypeOptions"
+          [formControl]="form.controls.type" />
+        <lib-select-field
+          label="Scope (Assigned To)"
+          [required]="true"
+          [options]="scopeOptions"
+          [formControl]="form.controls.scope" />
+      </div>
+
+      <lib-select-field
+        label="Status"
+        [required]="true"
+        [options]="statusOptions"
+        [formControl]="form.controls.status" />
+
+      <lib-textarea-field
+        label="Description"
+        placeholder="Briefly describe what this role is for..."
+        [rows]="3"
+        [formControl]="form.controls.description" />
+    </div>
+  </lib-form-modal>
+
+  <!-- Delete Confirmation -->
+  <lib-confirm-dialog
+    [(visible)]="confirmDeleteVisible"
+    title="Confirm Delete"
+    [message]="
+      itemToDelete()
+        ? 'Are you sure you want to delete the role &quot;' + itemToDelete()!.name + '&quot;? This cannot be undone.'
+        : 'Are you sure you want to delete ' + selectedRoles().length + ' selected role(s)? This cannot be undone.'
+    "
+    confirmLabel="Delete"
+    severity="danger"
+    (confirmed)="executeDelete()" />
+
+</lib-page-container>

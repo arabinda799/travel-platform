@@ -1,0 +1,298 @@
+<lib-page-container
+  title="Dashboard"
+  subtitle="Agency operations overview and analytics"
+  icon="dashboard"
+  [breadcrumbs]="breadcrumbs">
+
+  <div page-actions>
+    <lib-date-range-picker
+      [(value)]="dashboardDateRange"
+      (rangeChange)="onDashboardDateRangeChange($event)" />
+  </div>
+
+  <!-- 8 Stat Cards Grid -->
+  <div class="stat-grid">
+    @for (stat of stats; track stat.label) {
+      <div class="stat-card">
+        <div class="stat-icon" [class]="'stat-icon stat-icon--' + stat.colorVar">
+          <span class="icon">{{ stat.icon }}</span>
+        </div>
+        <span class="stat-label">{{ stat.label }}</span>
+        <span class="stat-value">{{ stat.value }}</span>
+        <span class="stat-change" [class.up]="stat.changeDir === 'up'" [class.down]="stat.changeDir === 'down'">
+          <span class="icon">{{ stat.changeDir === 'up' ? 'arrow_upward' : 'arrow_downward' }}</span>
+          {{ stat.change }}
+        </span>
+      </div>
+    }
+  </div>
+
+  <!-- Charts Row -->
+  <div class="charts-grid">
+    <!-- Chart 1: Booking Trend by Sector -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title-group">
+          <h3>Booking Trend</h3>
+          <span class="chart-subtitle">Monthly bookings volume</span>
+        </div>
+        <lib-date-range-picker
+          [(value)]="bookingTrendDateRange"
+          (rangeChange)="onBookingTrendDateChange($event)" />
+      </div>
+      <svg viewBox="0 0 400 160" class="chart-svg">
+        <defs>
+          <linearGradient id="areaGradTenant" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.3"/>
+            <stop offset="100%" stop-color="var(--accent)" stop-opacity="0.02"/>
+          </linearGradient>
+        </defs>
+        <g transform="translate(30,5)">
+          <line x1="0" y1="130" x2="360" y2="130" class="grid-line"/>
+          <line x1="0" y1="97" x2="360" y2="97" class="grid-line dashed"/>
+          <line x1="0" y1="65" x2="360" y2="65" class="grid-line dashed"/>
+          <line x1="0" y1="32" x2="360" y2="32" class="grid-line dashed"/>
+          <text x="-5" y="133" class="axis-text" text-anchor="end">0</text>
+          <text x="-5" y="100" class="axis-text" text-anchor="end">80</text>
+          <text x="-5" y="68" class="axis-text" text-anchor="end">160</text>
+          <text x="-5" y="35" class="axis-text" text-anchor="end">240</text>
+          <path d="M0,130 L0,85 L60,72 L120,90 L180,55 L240,42 L300,30 L360,18 L360,130 Z" fill="url(#areaGradTenant)"/>
+          <polyline points="0,85 60,72 120,90 180,55 240,42 300,30 360,18" fill="none" class="chart-line" stroke-width="2" stroke-linejoin="round"/>
+          <circle cx="0" cy="85" r="3" class="chart-dot"/><circle cx="60" cy="72" r="3" class="chart-dot"/>
+          <circle cx="120" cy="90" r="3" class="chart-dot"/><circle cx="180" cy="55" r="3" class="chart-dot"/>
+          <circle cx="240" cy="42" r="3" class="chart-dot"/><circle cx="300" cy="30" r="3" class="chart-dot"/>
+          <circle cx="360" cy="18" r="3" class="chart-dot"/>
+          <text x="0" y="145" class="axis-text" text-anchor="middle">Jun</text>
+          <text x="60" y="145" class="axis-text" text-anchor="middle">Jul</text>
+          <text x="120" y="145" class="axis-text" text-anchor="middle">Aug</text>
+          <text x="180" y="145" class="axis-text" text-anchor="middle">Sep</text>
+          <text x="240" y="145" class="axis-text" text-anchor="middle">Oct</text>
+          <text x="300" y="145" class="axis-text" text-anchor="middle">Nov</text>
+          <text x="360" y="145" class="axis-text" text-anchor="middle">Dec</text>
+        </g>
+      </svg>
+    </div>
+
+    <!-- Chart 2: Revenue Trend -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title-group">
+          <h3>Revenue Trend</h3>
+          <span class="chart-subtitle">Gross revenue over time</span>
+        </div>
+        <lib-date-range-picker
+          [(value)]="revenueDateRange"
+          (rangeChange)="onRevenueDateChange($event)" />
+      </div>
+      <svg viewBox="0 0 400 160" class="chart-svg">
+        <defs>
+          <linearGradient id="barGradTenant" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="var(--accent)"/>
+            <stop offset="100%" stop-color="var(--purple-vibrant, #7B1FA2)"/>
+          </linearGradient>
+        </defs>
+        <g transform="translate(30,5)">
+          <line x1="0" y1="130" x2="360" y2="130" class="grid-line"/>
+          <line x1="0" y1="97" x2="360" y2="97" class="grid-line dashed"/>
+          <line x1="0" y1="65" x2="360" y2="65" class="grid-line dashed"/>
+          <line x1="0" y1="32" x2="360" y2="32" class="grid-line dashed"/>
+          <text x="-5" y="133" class="axis-text" text-anchor="end">₹0</text>
+          <text x="-5" y="100" class="axis-text" text-anchor="end">₹25L</text>
+          <text x="-5" y="68" class="axis-text" text-anchor="end">₹50L</text>
+          <text x="-5" y="35" class="axis-text" text-anchor="end">₹75L</text>
+          <rect x="3" y="80" width="36" height="50" rx="3" fill="url(#barGradTenant)" opacity="0.7"/>
+          <rect x="55" y="68" width="36" height="62" rx="3" fill="url(#barGradTenant)" opacity="0.7"/>
+          <rect x="107" y="88" width="36" height="42" rx="3" fill="url(#barGradTenant)" opacity="0.8"/>
+          <rect x="159" y="55" width="36" height="75" rx="3" fill="url(#barGradTenant)" opacity="0.85"/>
+          <rect x="211" y="45" width="36" height="85" rx="3" fill="url(#barGradTenant)" opacity="0.9"/>
+          <rect x="263" y="38" width="36" height="92" rx="3" fill="url(#barGradTenant)" opacity="0.95"/>
+          <rect x="315" y="22" width="36" height="108" rx="3" fill="url(#barGradTenant)"/>
+          <text x="21" y="145" class="axis-text" text-anchor="middle">Jun</text>
+          <text x="73" y="145" class="axis-text" text-anchor="middle">Jul</text>
+          <text x="125" y="145" class="axis-text" text-anchor="middle">Aug</text>
+          <text x="177" y="145" class="axis-text" text-anchor="middle">Sep</text>
+          <text x="229" y="145" class="axis-text" text-anchor="middle">Oct</text>
+          <text x="281" y="145" class="axis-text" text-anchor="middle">Nov</text>
+          <text x="333" y="145" class="axis-text" text-anchor="middle">Dec</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Recent Bookings Table -->
+  <div class="recent-bookings-card">
+    <div class="card-header-row">
+      <div class="card-header-title">
+        <h3>Recent Bookings</h3>
+        <span class="card-subtitle">Live agency bookings across all sectors</span>
+      </div>
+      <div class="card-header-actions">
+        <!-- Service Filter Dropdown -->
+        <p-select
+          [options]="serviceOptions"
+          [ngModel]="selectedService()"
+          (ngModelChange)="onServiceChange($event)"
+          optionLabel="label"
+          optionValue="value"
+          styleClass="service-filter-select" />
+
+        <!-- Date Range Picker -->
+        <lib-date-range-picker
+          [(value)]="recentBookingsDateRange"
+          (rangeChange)="onRecentBookingsDateChange($event)" />
+
+        @if (selectedService() !== 'all') {
+          <a [routerLink]="viewAllRoute()" class="btn-view-all">
+            View All
+          </a>
+        }
+      </div>
+    </div>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          @if (selectedService() === 'all') {
+            <tr>
+              <th class="col-booking-id">Booking ID</th>
+              <th class="col-guest">Pax / Guest</th>
+              <th class="col-service text-center">Service</th>
+              <th class="col-amount text-right">Amount</th>
+              <th class="col-status text-center">Status</th>
+              <th class="col-action text-center">Action</th>
+            </tr>
+          } @else if (selectedService() === 'hotel') {
+            <tr>
+              <th class="col-booking-id">Booking ID</th>
+              <th class="col-guest">Guest</th>
+              <th>Hotel</th>
+              <th>Check In</th>
+              <th class="text-center">Nights</th>
+              <th class="text-right">Amount</th>
+              <th class="text-center">Status</th>
+              <th class="text-center">Action</th>
+            </tr>
+          } @else {
+            <tr>
+              <th class="col-booking-id">Booking ID</th>
+              <th class="col-guest">Passenger</th>
+              <th>Airline</th>
+              <th>Flight No</th>
+              <th>Route</th>
+              <th>Travel Date</th>
+              <th class="text-right">Amount</th>
+              <th class="text-center">Status</th>
+              <th class="text-center">Action</th>
+            </tr>
+          }
+        </thead>
+
+        <tbody>
+          @for (b of pagedBookings(); track b.id) {
+            <tr>
+              @if (selectedService() === 'all') {
+                <td class="col-booking-id">
+                  <a class="booking-id-link" [routerLink]="['/bookings/hotel']">{{ b.bookingRef }}</a>
+                </td>
+                <td class="col-guest">
+                  <div class="pax-cell">
+                    <span class="pax-name">{{ b.guest }}</span>
+                    <span class="pax-count">{{ b.paxCount }} Pax</span>
+                  </div>
+                </td>
+                <td class="col-service text-center">
+                  <span class="badge-service" [class.badge-service--hotel]="b.service === 'hotel'" [class.badge-service--flight]="b.service === 'flight'">
+                    <span class="icon">{{ b.service === 'hotel' ? 'hotel' : 'flight' }}</span>
+                    {{ b.service === 'hotel' ? 'Hotel' : 'Flight' }}
+                  </span>
+                </td>
+                <td class="col-amount text-right">
+                  <span class="amount-cell">{{ b.amount }}</span>
+                </td>
+                <td class="col-status text-center">
+                  <div class="status-cell-wrapper">
+                    <lib-status-badge [status]="b.status"></lib-status-badge>
+                  </div>
+                </td>
+                <td class="col-action text-center">
+                  <div class="table-row-actions">
+                    <lib-table-action
+                      action="view"
+                      tooltip="View Details"
+                      (clicked)="viewBooking(b)">
+                    </lib-table-action>
+                  </div>
+                </td>
+              } @else if (selectedService() === 'hotel') {
+                <td class="col-booking-id">
+                  <a class="booking-id-link" [routerLink]="['/bookings/hotel']">{{ b.bookingRef }}</a>
+                </td>
+                <td class="col-guest"><span class="pax-name">{{ b.guest }}</span></td>
+                <td><span class="service-name">{{ b.hotel }}</span></td>
+                <td><span class="date-cell">{{ b.checkIn }}</span></td>
+                <td class="text-center"><span>{{ b.nights }}N</span></td>
+                <td class="text-right"><span class="amount-cell">{{ b.amount }}</span></td>
+                <td class="text-center">
+                  <div class="status-cell-wrapper">
+                    <lib-status-badge [status]="b.status"></lib-status-badge>
+                  </div>
+                </td>
+                <td class="text-center">
+                  <div class="table-row-actions">
+                    <lib-table-action
+                      action="view"
+                      tooltip="View Details"
+                      (clicked)="viewBooking(b)">
+                    </lib-table-action>
+                  </div>
+                </td>
+              } @else {
+                <td class="col-booking-id">
+                  <a class="booking-id-link" [routerLink]="['/bookings/flight']">{{ b.bookingRef }}</a>
+                </td>
+                <td class="col-guest"><span class="pax-name">{{ b.guest }}</span></td>
+                <td><span class="service-name">{{ b.airline }}</span></td>
+                <td><span class="flight-no">{{ b.flightNo }}</span></td>
+                <td><span class="route-badge">{{ b.route }}</span></td>
+                <td><span class="date-cell">{{ b.travelDate }}</span></td>
+                <td class="text-right"><span class="amount-cell">{{ b.amount }}</span></td>
+                <td class="text-center">
+                  <div class="status-cell-wrapper">
+                    <lib-status-badge [status]="b.status"></lib-status-badge>
+                  </div>
+                </td>
+                <td class="text-center">
+                  <div class="table-row-actions">
+                    <lib-table-action
+                      action="view"
+                      tooltip="View Details"
+                      (clicked)="viewBooking(b)">
+                    </lib-table-action>
+                  </div>
+                </td>
+              }
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="10" class="empty-state">
+                <span class="icon">inbox</span>
+                <p>No bookings found for the selected criteria</p>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card-footer-row">
+      <p-paginator
+        [first]="first()"
+        [rows]="rows()"
+        [totalRecords]="filteredBookings().length"
+        [rowsPerPageOptions]="rowsPerPageOptions"
+        (onPageChange)="onPageChange($event)"
+        styleClass="dashboard-paginator" />
+    </div>
+  </div>
+
+</lib-page-container>

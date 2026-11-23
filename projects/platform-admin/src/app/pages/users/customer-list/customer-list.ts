@@ -1,12 +1,16 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
+  OnInit,
   computed,
   inject,
   signal,
   TemplateRef,
   viewChild,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { forkJoin } from 'rxjs';
 import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import {
@@ -74,9 +78,10 @@ const COUNTRY_OPTIONS: SelectOption<string>[] = [
   styleUrl: './customer-list.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class CustomerListComponent {
+export class CustomerListComponent implements OnInit {
   private readonly customerService = inject(CustomerService);
   private readonly messageService = inject(MessageService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly customers = this.customerService.customers;
   readonly searchQuery = signal<string>('');
@@ -214,6 +219,8 @@ export class CustomerListComponent {
     },
   ]);
 
+  ngOnInit(): void { this.customerService.load(); }
+
   onSearch(query: string): void {
     this.searchQuery.set(query);
   }
@@ -279,15 +286,18 @@ export class CustomerListComponent {
 
     const fullName = `${payload.firstName} ${payload.lastName}`;
 
-    if (this.isEditing() && this.editingId()) {
-      this.customerService.update(this.editingId()!, payload);
-      this.messageService.add({ severity: 'success', summary: 'Updated', detail: `${fullName} has been updated.` });
-    } else {
-      this.customerService.add(payload);
-      this.messageService.add({ severity: 'success', summary: 'Created', detail: `${fullName} has been added.` });
-    }
+    const obs = this.isEditing() && this.editingId()
+      ? this.customerService.update(this.editingId()!, payload)
+      : this.customerService.add(payload);
 
-    this.modalVisible.set(false);
+    obs.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        const msg = this.isEditing() ? `${fullName} has been updated.` : `${fullName} has been added.`;
+        this.messageService.add({ severity: 'success', summary: this.isEditing() ? 'Updated' : 'Created', detail: msg });
+        this.modalVisible.set(false);
+      },
+      error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Operation failed.' }),
+    });
   }
 
   openBulkStatusModal(): void {
@@ -298,14 +308,16 @@ export class CustomerListComponent {
   onBulkStatusConfirm(newStatus: string): void {
     const selected = this.selectedCustomers();
     const status = newStatus as CustomerStatus;
-    selected.forEach(c => this.customerService.updateStatus(c.id, status));
-    this.selectedCustomers.set([]);
-    this.statusModalVisible.set(false);
-    this.messageService.add({
-      severity: 'info',
-      summary: 'Status Updated',
-      detail: `Updated status to ${status} for ${selected.length} customer(s).`,
-    });
+    forkJoin(selected.map(c => this.customerService.updateStatus(c.id, status)))
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.selectedCustomers.set([]);
+          this.statusModalVisible.set(false);
+          this.messageService.add({ severity: 'info', summary: 'Status Updated', detail: `Updated status to ${status} for ${selected.length} customer(s).` });
+        },
+        error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Bulk status update failed.' }),
+      });
   }
 
   confirmDelete(item: Customer): void {
@@ -320,23 +332,22 @@ export class CustomerListComponent {
 
   executeDelete(): void {
     const single = this.itemToDelete();
-    if (single) {
-      this.customerService.delete(single.id);
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Deleted',
-        detail: `${single.firstName} ${single.lastName} was deleted.`,
-      });
-    } else {
-      const ids = this.selectedCustomers().map(c => c.id);
-      this.customerService.deleteMultiple(ids);
-      this.selectedCustomers.set([]);
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Bulk Deleted',
-        detail: `${ids.length} customer(s) were deleted.`,
-      });
-    }
-    this.confirmDeleteVisible.set(false);
+    const obs = single
+      ? this.customerService.delete(single.id)
+      : this.customerService.deleteMultiple(this.selectedCustomers().map(c => c.id));
+
+    obs.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        if (single) {
+          this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `${single.firstName} ${single.lastName} was deleted.` });
+        } else {
+          const count = this.selectedCustomers().length;
+          this.selectedCustomers.set([]);
+          this.messageService.add({ severity: 'success', summary: 'Bulk Deleted', detail: `${count} customer(s) were deleted.` });
+        }
+        this.confirmDeleteVisible.set(false);
+      },
+      error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Delete failed.' }),
+    });
   }
 }

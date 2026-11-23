@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { ToastModule } from 'primeng/toast';
 import { HeaderComponent } from './header/header';
 import { SidebarComponent } from './sidebar/sidebar';
@@ -10,6 +10,7 @@ import { NavItem } from '../../interfaces/nav-item';
   imports: [ToastModule, HeaderComponent, SidebarComponent, FooterComponent],
   templateUrl: './admin-layout.html',
   styleUrl: './admin-layout.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AdminLayoutComponent {
   readonly navItems = input<NavItem[]>([]);

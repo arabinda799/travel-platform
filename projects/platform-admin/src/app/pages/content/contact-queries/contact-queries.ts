@@ -1,9 +1,8 @@
-import { ChangeDetectionStrategy, Component,
-  computed,
-  inject,
-  signal,
-  TemplateRef,
-  viewChild, } from '@angular/core';
+import {
+  ChangeDetectionStrategy, Component, DestroyRef, OnInit,
+  computed, inject, signal, TemplateRef, viewChild,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import {
@@ -20,8 +19,8 @@ import {
   TableColumn,
   BreadcrumbItem,
 } from 'admin-core';
-import { ContactQueriesService, ContactQuery } from './contact-queries.service';
 import { exportToCsv } from '../../../shared/utils/export.util';
+import { ContactQuery, ContactQueriesService } from './contact-queries.service';
 
 @Component({
   selector: 'app-contact-queries',
@@ -41,11 +40,12 @@ import { exportToCsv } from '../../../shared/utils/export.util';
   ],
   templateUrl: './contact-queries.html',
   styleUrl: './contact-queries.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ContactQueriesComponent {
+export class ContactQueriesComponent implements OnInit {
   private readonly queriesService = inject(ContactQueriesService);
   private readonly messageService = inject(MessageService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly breadcrumbs: BreadcrumbItem[] = [
     { label: 'Content', route: '/content/sliders' },
@@ -53,11 +53,10 @@ export class ContactQueriesComponent {
   ];
 
   readonly queries = this.queriesService.queries;
+  readonly loading = this.queriesService.loading;
   readonly selectedQueries = signal<ContactQuery[]>([]);
   readonly searchQuery = signal('');
-  readonly loading = signal(false);
 
-  // Filter sidebar state
   readonly filterVisible = signal(false);
   readonly selectedStatusFilter = signal<string | null>(null);
   readonly selectedTypeFilter = signal<string | null>(null);
@@ -66,15 +65,12 @@ export class ContactQueriesComponent {
   readonly appliedTypeFilter = signal<string | null>(null);
   readonly appliedDateRangeFilter = signal<[Date, Date] | null>(null);
 
-  // View Detail Modal
   readonly viewModalVisible = signal(false);
   readonly activeQuery = signal<ContactQuery | null>(null);
 
-  // Delete Dialog
   readonly confirmDeleteVisible = signal(false);
   readonly itemToDelete = signal<ContactQuery | null>(null);
 
-  // Templates
   readonly nameTpl = viewChild<TemplateRef<unknown>>('nameTpl');
   readonly emailTpl = viewChild<TemplateRef<unknown>>('emailTpl');
   readonly queryTypeTpl = viewChild<TemplateRef<unknown>>('queryTypeTpl');
@@ -115,7 +111,6 @@ export class ContactQueriesComponent {
 
   readonly filteredQueries = computed(() => {
     let list = this.queries();
-
     const q = this.searchQuery().toLowerCase().trim();
     if (q) {
       list = list.filter(item =>
@@ -136,9 +131,7 @@ export class ContactQueriesComponent {
     const dateRange = this.appliedDateRangeFilter();
     if (dateRange?.[0]) {
       const start = new Date(dateRange[0]).setHours(0, 0, 0, 0);
-      const end = dateRange[1]
-        ? new Date(dateRange[1]).setHours(23, 59, 59, 999)
-        : new Date(dateRange[0]).setHours(23, 59, 59, 999);
+      const end = dateRange[1] ? new Date(dateRange[1]).setHours(23, 59, 59, 999) : new Date(dateRange[0]).setHours(23, 59, 59, 999);
       list = list.filter(item => {
         const dateStr = item.createdDate.split('/')[0].trim();
         const t = new Date(dateStr).getTime();
@@ -148,6 +141,10 @@ export class ContactQueriesComponent {
 
     return list;
   });
+
+  ngOnInit(): void {
+    this.queriesService.load();
+  }
 
   onSearch(query: string): void { this.searchQuery.set(query); }
 
@@ -176,9 +173,16 @@ export class ContactQueriesComponent {
   updateQueryStatus(status: 'New' | 'In Progress' | 'Resolved'): void {
     const q = this.activeQuery();
     if (!q) return;
-    this.queriesService.updateStatus(q.id, status);
-    this.activeQuery.set({ ...q, status });
-    this.messageService.add({ severity: 'success', summary: 'Status Updated', detail: `Query status updated to ${status}.` });
+    this.queriesService.updateStatus(q.id, status)
+      .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: (updated) => {
+          this.activeQuery.set(updated);
+          this.messageService.add({ severity: 'success', summary: 'Status Updated', detail: `Query status updated to ${status}.` });
+        },
+        error: () => {
+          this.messageService.add({ severity: 'error', summary: 'Update Failed', detail: 'Could not update query status.' });
+        },
+      });
   }
 
   confirmDeleteSingle(query: ContactQuery): void {
@@ -194,17 +198,27 @@ export class ContactQueriesComponent {
 
   executeDelete(): void {
     const single = this.itemToDelete();
-    if (single) {
-      this.queriesService.deleteQuery(single.id);
-      this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `Query from "${single.name}" deleted.` });
-    } else {
-      const ids = this.selectedQueries().map(q => q.id);
-      this.queriesService.bulkDelete(ids);
-      this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `${ids.length} queries deleted.` });
-      this.selectedQueries.set([]);
-    }
-    this.confirmDeleteVisible.set(false);
-    this.itemToDelete.set(null);
+    const obs$ = single
+      ? this.queriesService.deleteQuery(single.id)
+      : this.queriesService.bulkDelete(this.selectedQueries().map(q => q.id));
+
+    obs$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        if (single) {
+          this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `Query from "${single.name}" deleted.` });
+        } else {
+          const count = this.selectedQueries().length;
+          this.selectedQueries.set([]);
+          this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `${count} queries deleted.` });
+        }
+        this.confirmDeleteVisible.set(false);
+        this.itemToDelete.set(null);
+      },
+      error: () => {
+        this.messageService.add({ severity: 'error', summary: 'Delete Failed', detail: 'Could not delete query/queries.' });
+        this.confirmDeleteVisible.set(false);
+      },
+    });
   }
 
   exportData(selectedOnly = false): void {

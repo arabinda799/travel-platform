@@ -1,5 +1,5 @@
-import { ChangeDetectorRef, Component, DoCheck, forwardRef, inject, Injector, input, model, OnInit, signal } from '@angular/core';
-import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR, NgControl } from '@angular/forms';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DoCheck, inject, Injector, input, model, OnInit, signal } from '@angular/core';
+import { ControlValueAccessor, FormsModule, NgControl } from '@angular/forms';
 import { DatePickerModule } from 'primeng/datepicker';
 import { FormFieldComponent } from '../form-field/form-field';
 
@@ -11,6 +11,7 @@ let nextId = 0;
   imports: [FormsModule, DatePickerModule, FormFieldComponent],
   templateUrl: './datepicker-field.html',
   styleUrl: './datepicker-field.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DatePickerFieldComponent implements ControlValueAccessor, OnInit, DoCheck {
   private readonly injector = inject(Injector);

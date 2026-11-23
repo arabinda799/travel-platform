@@ -1,0 +1,350 @@
+<lib-page-container
+  title="Hotel Coupons"
+  subtitle="Manage promotional coupon codes, stay date windows, validity periods, and usage limits"
+  [breadcrumbs]="breadcrumbs">
+
+  <!-- Top Page Actions -->
+  <div page-actions class="page-top-actions">
+    <lib-button
+      variant="primary"
+      icon="add_circle"
+      (click)="openAddModal()">
+      Add Hotel Coupon
+    </lib-button>
+  </div>
+
+  <!-- Coupons Data Table -->
+  <lib-data-table
+    [value]="filteredCoupons()"
+    [columns]="columns()"
+    [totalRecords]="filteredCoupons().length"
+    [loading]="loading()"
+    [searchable]="true"
+    searchPlaceholder="Search by code, title, region, or star rating..."
+    (search)="onSearch($event)">
+
+    <div table-actions class="table-actions-group">
+      <lib-button
+        variant="outline"
+        icon="tune"
+        [badge]="activeFilterCount() ? activeFilterCount() : ''"
+        (click)="openFilter()">
+        Filters
+      </lib-button>
+    </div>
+
+    <!-- Image Thumbnail Template -->
+    <ng-template #imageTpl let-row>
+      <div class="coupon-thumb-cell">
+        <lib-thumb-image [src]="row.imageUrl" [alt]="row.couponCode" fallbackIcon="sell" />
+      </div>
+    </ng-template>
+
+    <!-- Coupon Code Template -->
+    <ng-template #codeTpl let-row>
+      <div class="coupon-code-cell">
+        <span class="coupon-badge" (click)="copyCouponCode(row.couponCode, $event)" title="Click to copy code">
+          <span class="code-text">{{ row.couponCode }}</span>
+          <span class="icon copy-icon">content_copy</span>
+        </span>
+        <span class="created-at">{{ row.createdAt }}</span>
+      </div>
+    </ng-template>
+
+    <!-- Details / Headline Template -->
+    <ng-template #detailsTpl let-row>
+      <div class="coupon-details-cell">
+        <div class="coupon-title">{{ row.couponText || 'No description provided' }}</div>
+        <div class="coupon-chips">
+          <span class="chip chip-region">
+            <span class="icon chip-icon">public</span>
+            {{ row.regionType }}
+          </span>
+          <span class="chip chip-star">
+            <span class="icon chip-icon">hotel_class</span>
+            {{ row.starRating }}
+          </span>
+        </div>
+      </div>
+    </ng-template>
+
+    <!-- Discount Value Template -->
+    <ng-template #discountTpl let-row>
+      <div class="discount-cell">
+        <span class="discount-value">
+          @if (row.couponType === 'Percentage') {
+            {{ row.value }}% OFF
+          } @else {
+            ₹{{ row.value | number }} OFF
+          }
+        </span>
+        <span class="discount-cap">
+          @if (row.couponType === 'Percentage') {
+            Max ₹{{ row.couponMaxLimit | number }}
+          } @else {
+            Min ₹{{ row.couponMaxLimit | number }}
+          }
+        </span>
+      </div>
+    </ng-template>
+
+    <!-- Stay Dates Window Template -->
+    <ng-template #stayDatesTpl let-row>
+      <div class="date-range-cell">
+        <div class="date-row">
+          <span class="date-label">In:</span>
+          <span class="date-val">{{ row.checkInDate }}</span>
+        </div>
+        <div class="date-row">
+          <span class="date-label">Out:</span>
+          <span class="date-val">{{ row.checkOutDate }}</span>
+        </div>
+      </div>
+    </ng-template>
+
+    <!-- Validity Period Template -->
+    <ng-template #validityTpl let-row>
+      <div class="date-range-cell">
+        <div class="date-row">
+          <span class="date-label">From:</span>
+          <span class="date-val">{{ row.validFromDate }}</span>
+        </div>
+        <div class="date-row">
+          <span class="date-label">To:</span>
+          <span class="date-val">{{ row.validToDate }}</span>
+        </div>
+      </div>
+    </ng-template>
+
+    <!-- Usage Template -->
+    <ng-template #usageTpl let-row>
+      <div class="usage-cell">
+        <div class="usage-text">
+          <strong>{{ row.usedCount }}</strong> / {{ row.couponUseLimit }} used
+        </div>
+        <div class="usage-bar-bg">
+          <div
+            class="usage-bar-fill"
+            [style.width.%]="(row.usedCount / (row.couponUseLimit || 1)) * 100">
+          </div>
+        </div>
+      </div>
+    </ng-template>
+
+    <!-- Show on List Template -->
+    <ng-template #showOnListTpl let-row>
+      <span
+        class="list-badge"
+        [class.list-yes]="row.showOnList === 'Yes'"
+        [class.list-no]="row.showOnList === 'No'">
+        <span class="dot"></span>
+        {{ row.showOnList }}
+      </span>
+    </ng-template>
+
+    <!-- Status Template -->
+    <ng-template #statusTpl let-row>
+      <lib-status-badge [status]="row.status" />
+    </ng-template>
+
+    <!-- Actions Template -->
+    <ng-template #actionsTpl let-row>
+      <div class="table-row-actions">
+        <lib-table-action
+          action="edit"
+          tooltip="Edit Coupon"
+          (clicked)="openEditModal(row)" />
+      </div>
+    </ng-template>
+
+  </lib-data-table>
+
+</lib-page-container>
+
+<!-- Filter Sidebar -->
+<lib-filter-sidebar
+  [(visible)]="filterVisible"
+  (apply)="onApplyFilters()"
+  (reset)="onResetFilters()">
+
+  <div class="filter-group">
+    <lib-select-field
+      label="Region Type"
+      [options]="regionOptions"
+      [value]="selectedRegionFilter()"
+      (valueChange)="selectedRegionFilter.set($event)"
+      placeholder="All Regions"
+      [clearable]="true" />
+  </div>
+
+  <div class="filter-group">
+    <lib-select-field
+      label="Coupon Type"
+      [options]="couponTypeOptions"
+      [value]="selectedTypeFilter()"
+      (valueChange)="selectedTypeFilter.set($event)"
+      placeholder="All Types"
+      [clearable]="true" />
+  </div>
+
+  <div class="filter-group">
+    <lib-select-field
+      label="Status"
+      [options]="statusOptions"
+      [value]="selectedStatusFilter()"
+      (valueChange)="selectedStatusFilter.set($event)"
+      placeholder="All Statuses"
+      [clearable]="true" />
+  </div>
+
+  <div class="filter-group">
+    <lib-select-field
+      label="Show On List"
+      [options]="showOnListOptions"
+      [value]="selectedShowOnListFilter()"
+      (valueChange)="selectedShowOnListFilter.set($event)"
+      placeholder="All"
+      [clearable]="true" />
+  </div>
+
+</lib-filter-sidebar>
+
+<!-- Add / Edit Hotel Coupon Modal (Matching user screenshot) -->
+<lib-form-modal
+  [(visible)]="modalVisible"
+  [title]="isEditing() ? 'EDIT HOTEL COUPON' : 'ADD HOTEL COUPON'"
+  [subtitle]="isEditing() ? 'Update coupon criteria, discount and image' : 'Configure hotel discount criteria, validity windows and promotional banner'"
+  [icon]="isEditing() ? 'edit' : 'sell'"
+  width="56rem"
+  submitLabel="SAVE"
+  submitIcon="check"
+  (submitted)="onSaveCoupon()">
+
+  <div class="coupon-form-grid">
+    <!-- Row 1: Region Type *, Star Rating *, Coupon Code * -->
+    <div class="form-row three-cols">
+      <lib-select-field
+        label="Region Type"
+        [options]="regionOptions"
+        [formControl]="form.controls.regionType"
+        [required]="true" />
+
+      <lib-select-field
+        label="Star Rating"
+        [options]="starRatingOptions"
+        [formControl]="form.controls.starRating"
+        [required]="true" />
+
+      <div class="code-input-wrapper">
+        <lib-text-field
+          label="Coupon Code"
+          placeholder="e.g. SUMMER500"
+          [formControl]="form.controls.couponCode"
+          [required]="true" />
+        <button
+          type="button"
+          class="gen-btn"
+          (click)="generateNewCode()"
+          title="Auto-generate code">
+          <span class="icon">autorenew</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Row 2: Check In Date *, Check Out Date *, Coupon Type * -->
+    <div class="form-row three-cols">
+      <lib-datepicker-field
+        label="Check In Date"
+        placeholder="Check In Date"
+        [formControl]="form.controls.checkInDate"
+        [required]="true" />
+
+      <lib-datepicker-field
+        label="Check Out Date"
+        placeholder="Check Out Date"
+        [formControl]="form.controls.checkOutDate"
+        [required]="true" />
+
+      <lib-select-field
+        label="Coupon Type"
+        [options]="couponTypeOptions"
+        [formControl]="form.controls.couponType"
+        [required]="true" />
+    </div>
+
+    <!-- Row 3: Value *, Coupon Use Limit *, Show On List* -->
+    <div class="form-row three-cols">
+      <lib-text-field
+        label="Value"
+        type="number"
+        placeholder="Value"
+        [formControl]="form.controls.value"
+        [required]="true"
+        [hint]="form.controls.couponType.value === 'Percentage' ? 'Percentage (e.g. 15 for 15%)' : 'Fixed discount in ₹'" />
+
+      <lib-text-field
+        label="Coupon Use Limit"
+        type="number"
+        placeholder="Coupon Use Limit"
+        [formControl]="form.controls.couponUseLimit"
+        [required]="true"
+        hint="Max total times coupon can be redeemed" />
+
+      <lib-select-field
+        label="Show On List"
+        [options]="showOnListOptions"
+        [formControl]="form.controls.showOnList"
+        [required]="true" />
+    </div>
+
+    <!-- Row 4: Coupan Max Limit *, Status *, Valid From Date * -->
+    <div class="form-row three-cols">
+      <lib-text-field
+        label="Coupan Max Limit"
+        type="number"
+        placeholder="Coupon Max Limit"
+        [formControl]="form.controls.couponMaxLimit"
+        [required]="true"
+        hint="Max cap for discount in ₹" />
+
+      <lib-select-field
+        label="Status"
+        [options]="statusOptions"
+        [formControl]="form.controls.status"
+        [required]="true" />
+
+      <lib-datepicker-field
+        label="Valid From Date"
+        placeholder="Valid From Date"
+        [formControl]="form.controls.validFromDate"
+        [required]="true" />
+    </div>
+
+    <!-- Row 5: Valid To Date *, Coupon Image (Extra Field requested by user) -->
+    <div class="form-row two-cols">
+      <lib-datepicker-field
+        label="Valid To Date"
+        placeholder="Valid To Date"
+        [formControl]="form.controls.validToDate"
+        [required]="true" />
+
+      <lib-file-upload-field
+        label="Coupon Image"
+        accept="image/*"
+        [formControl]="form.controls.imageUrl"
+        [fileName]="formImageFileName()"
+        (fileNameChange)="formImageFileName.set($event)"
+        hint="Upload banner or promotional image for the coupon card" />
+    </div>
+
+    <!-- Row 6: Coupon Text (Full width) -->
+    <div class="form-row">
+      <lib-text-field
+        label="Coupon Text"
+        placeholder="Coupon Text / Headline (e.g. Flat ₹500 off on 4-star & 5-star domestic hotels)"
+        [formControl]="form.controls.couponText"
+        hint="Promotional headline visible to customers on hotel booking checkout" />
+    </div>
+  </div>
+
+</lib-form-modal>

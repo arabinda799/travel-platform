@@ -1,4 +1,5 @@
 import {
+  ChangeDetectionStrategy,
   Component,
   computed,
   forwardRef,
@@ -14,7 +15,6 @@ import { Popover, PopoverModule } from 'primeng/popover';
 import { DatePickerModule } from 'primeng/datepicker';
 import { ButtonComponent } from '../button/button';
 import {
-  calculatePresetRange,
   DATE_RANGE_PRESETS,
   DateRangePreset,
   DateRangePresetId,
@@ -29,6 +29,7 @@ import {
   imports: [FormsModule, PopoverModule, DatePickerModule, ButtonComponent],
   templateUrl: './date-range-picker.html',
   styleUrl: './date-range-picker.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,

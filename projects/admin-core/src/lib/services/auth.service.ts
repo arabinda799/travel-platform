@@ -10,6 +10,7 @@ export interface AuthUser {
 }
 
 const AUTH_STORAGE_KEY = 'easyflys_auth_user';
+const AUTH_TOKEN_KEY = 'easyflys_auth_token';
 
 @Injectable({
   providedIn: 'root',
@@ -17,8 +18,10 @@ const AUTH_STORAGE_KEY = 'easyflys_auth_user';
 export class AuthService {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly currentUserSignal = signal<AuthUser | null>(this.loadUser());
+  private readonly tokenSignal = signal<string | null>(this.loadToken());
 
   readonly currentUser = this.currentUserSignal.asReadonly();
+  readonly token = this.tokenSignal.asReadonly();
   readonly isAuthenticated = computed(() => this.currentUserSignal() !== null);
   readonly userRole = computed(() => this.currentUserSignal()?.role ?? null);
 
@@ -32,25 +35,26 @@ export class AuthService {
     } catch {
       // ignore
     }
-    // Default mock platform admin user during development
-    return {
-      id: 'usr-1',
-      name: 'Arabinda Jena',
-      email: 'admin@easyflys.com',
-      role: 'platform_admin',
-    };
+    return null;
   }
 
-  login(user: AuthUser, remember = false): void {
+  private loadToken(): string | null {
+    if (!isPlatformBrowser(this.platformId)) return null;
+    try {
+      return sessionStorage.getItem(AUTH_TOKEN_KEY) ?? localStorage.getItem(AUTH_TOKEN_KEY);
+    } catch {
+      return null;
+    }
+  }
+
+  login(user: AuthUser, token: string | null = null, remember = false): void {
     this.currentUserSignal.set(user);
+    this.tokenSignal.set(token);
     if (!isPlatformBrowser(this.platformId)) return;
     try {
-      const serialized = JSON.stringify(user);
-      if (remember) {
-        localStorage.setItem(AUTH_STORAGE_KEY, serialized);
-      } else {
-        sessionStorage.setItem(AUTH_STORAGE_KEY, serialized);
-      }
+      const storage = remember ? localStorage : sessionStorage;
+      storage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
+      if (token) storage.setItem(AUTH_TOKEN_KEY, token);
     } catch {
       // ignore
     }
@@ -58,10 +62,13 @@ export class AuthService {
 
   logout(): void {
     this.currentUserSignal.set(null);
+    this.tokenSignal.set(null);
     if (!isPlatformBrowser(this.platformId)) return;
     try {
-      localStorage.removeItem(AUTH_STORAGE_KEY);
-      sessionStorage.removeItem(AUTH_STORAGE_KEY);
+      [localStorage, sessionStorage].forEach(s => {
+        s.removeItem(AUTH_STORAGE_KEY);
+        s.removeItem(AUTH_TOKEN_KEY);
+      });
     } catch {
       // ignore
     }

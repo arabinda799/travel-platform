@@ -1,4 +1,4 @@
-import { Component, input, model, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, model, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonComponent, ButtonVariant } from '../../button/button';
@@ -10,6 +10,7 @@ import { ModalHeaderComponent } from '../../modal/modal-header/modal-header';
   imports: [DialogModule, ButtonComponent, FormsModule, ModalHeaderComponent],
   templateUrl: './form-modal.html',
   styleUrl: './form-modal.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FormModalComponent {
   readonly visible = model<boolean>(false);

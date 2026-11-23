@@ -1,0 +1,93 @@
+<div class="auth-page">
+  <div class="auth-card">
+
+    <div class="auth-brand">
+      <span class="icon brand-icon">flight_takeoff</span>
+      <span class="brand-text">Easy<span class="brand-accent">Flys</span></span>
+    </div>
+
+    <div class="auth-header">
+      <h1 class="auth-title">Create account</h1>
+      <p class="auth-subtitle">Join the EasyFlys platform</p>
+    </div>
+
+    @if (error()) {
+      <div class="auth-error">
+        <span class="icon">error</span>
+        {{ error() }}
+      </div>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="auth-form" novalidate>
+
+      <div class="auth-row-fields">
+        <lib-text-field
+          formControlName="firstName"
+          label="First name"
+          placeholder="Arabinda"
+          prefixIcon="person"
+          [required]="true"
+          [error]="fieldError('firstName')">
+        </lib-text-field>
+
+        <lib-text-field
+          formControlName="lastName"
+          label="Last name"
+          placeholder="Jena"
+          [required]="true"
+          [error]="fieldError('lastName')">
+        </lib-text-field>
+      </div>
+
+      <lib-text-field
+        formControlName="email"
+        label="Email address"
+        type="email"
+        placeholder="you@easyflys.com"
+        prefixIcon="mail"
+        autocomplete="email"
+        [required]="true"
+        [error]="fieldError('email')">
+      </lib-text-field>
+
+      <lib-text-field
+        formControlName="password"
+        label="Password"
+        [type]="showPassword() ? 'text' : 'password'"
+        placeholder="Min. 8 chars, upper, lower, number"
+        prefixIcon="lock"
+        [suffixIcon]="showPassword() ? 'visibility_off' : 'visibility'"
+        autocomplete="new-password"
+        [required]="true"
+        [error]="fieldError('password')">
+      </lib-text-field>
+
+      <lib-text-field
+        formControlName="confirmPassword"
+        label="Confirm password"
+        [type]="showConfirm() ? 'text' : 'password'"
+        placeholder="Re-enter your password"
+        prefixIcon="lock_reset"
+        [suffixIcon]="showConfirm() ? 'visibility_off' : 'visibility'"
+        autocomplete="new-password"
+        [required]="true"
+        [error]="fieldError('confirmPassword')">
+      </lib-text-field>
+
+      <lib-button
+        type="submit"
+        variant="primary"
+        [loading]="loading()"
+        class="auth-submit-btn">
+        Create Account
+      </lib-button>
+
+    </form>
+
+    <p class="auth-footer-text">
+      Already have an account?
+      <a routerLink="/auth/login" class="auth-link">Sign in</a>
+    </p>
+
+  </div>
+</div>

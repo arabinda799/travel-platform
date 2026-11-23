@@ -1,4 +1,4 @@
-import { Component, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, input, output } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { Tooltip } from 'primeng/tooltip';
 import { Badge } from 'primeng/badge';
@@ -10,9 +10,11 @@ import { NavItem } from '../../../interfaces/nav-item';
   imports: [RouterLink, RouterLinkActive, Tooltip, Badge],
   templateUrl: './sidebar.html',
   styleUrl: './sidebar.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SidebarComponent {
   readonly sidebarService = inject(SidebarService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   // Dynamic Navigation Items
   readonly items = input<NavItem[]>([]);
@@ -47,5 +49,6 @@ export class SidebarComponent {
       this.sidebarService.toggleCollapse();
     }
     item.expanded = !item.expanded;
+    this.cdr.markForCheck();
   }
 }

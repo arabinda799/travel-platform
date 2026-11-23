@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild, afterNextRender, computed, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, ViewChild, computed, inject, input, output, signal } from '@angular/core';
 import { SidebarService } from '../sidebar/sidebar.service';
 import { Menu } from 'primeng/menu';
 import { Badge } from 'primeng/badge';
@@ -10,6 +10,7 @@ import { MenuItem } from 'primeng/api';
   imports: [Menu, Badge, Avatar],
   templateUrl: './header.html',
   styleUrl: './header.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HeaderComponent {
   readonly sidebarService = inject(SidebarService);

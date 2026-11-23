@@ -1,4 +1,4 @@
-import { Component, input, model, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, model, output } from '@angular/core';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonComponent, ButtonVariant } from '../button/button';
 import { ModalHeaderComponent } from './modal-header/modal-header';
@@ -8,6 +8,7 @@ import { ModalHeaderComponent } from './modal-header/modal-header';
   imports: [DialogModule, ButtonComponent, ModalHeaderComponent],
   templateUrl: './confirm-dialog.html',
   styleUrl: './confirm-dialog.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ConfirmDialogComponent {
   readonly visible = model<boolean>(false);

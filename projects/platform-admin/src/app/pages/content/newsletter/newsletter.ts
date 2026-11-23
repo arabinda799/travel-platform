@@ -1,9 +1,8 @@
-import { ChangeDetectionStrategy, Component,
-  computed,
-  inject,
-  signal,
-  TemplateRef,
-  viewChild, } from '@angular/core';
+import {
+  ChangeDetectionStrategy, Component, DestroyRef, OnInit,
+  computed, inject, signal, TemplateRef, viewChild,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import {
@@ -21,8 +20,8 @@ import {
   TableColumn,
   BreadcrumbItem,
 } from 'admin-core';
-import { NewsletterService, NewsletterSubscriber } from './newsletter.service';
 import { exportToCsv } from '../../../shared/utils/export.util';
+import { NewsletterSubscriber, NewsletterService } from './newsletter.service';
 
 @Component({
   selector: 'app-newsletter',
@@ -43,11 +42,12 @@ import { exportToCsv } from '../../../shared/utils/export.util';
   ],
   templateUrl: './newsletter.html',
   styleUrl: './newsletter.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class NewsletterComponent {
+export class NewsletterComponent implements OnInit {
   private readonly newsletterService = inject(NewsletterService);
   private readonly messageService = inject(MessageService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly breadcrumbs: BreadcrumbItem[] = [
     { label: 'Content', route: '/content/sliders' },
@@ -55,23 +55,21 @@ export class NewsletterComponent {
   ];
 
   readonly subscribers = this.newsletterService.subscribers;
+  readonly loading = this.newsletterService.loading;
+  readonly isSaving = signal<boolean>(false);
   readonly searchQuery = signal('');
   readonly selectedSubscribers = signal<NewsletterSubscriber[]>([]);
-  readonly loading = signal(false);
 
-  // Filter sidebar
   readonly filterVisible = signal(false);
   readonly selectedStatusFilter = signal<string | null>(null);
   readonly selectedDateRangeFilter = signal<[Date, Date] | null>(null);
   readonly appliedStatusFilter = signal<string | null>(null);
   readonly appliedDateRangeFilter = signal<[Date, Date] | null>(null);
 
-  // Modal state
   readonly modalVisible = signal(false);
   readonly isEditing = signal(false);
   readonly editingId = signal<string | null>(null);
 
-  // Delete dialog
   readonly confirmDeleteVisible = signal(false);
   readonly itemToDelete = signal<NewsletterSubscriber | null>(null);
 
@@ -86,7 +84,6 @@ export class NewsletterComponent {
     status: new FormControl<'Subscribed' | 'Unsubscribed'>('Subscribed', Validators.required),
   });
 
-  // Templates
   readonly nameTpl = viewChild<TemplateRef<unknown>>('nameTpl');
   readonly emailTpl = viewChild<TemplateRef<unknown>>('emailTpl');
   readonly statusTpl = viewChild<TemplateRef<unknown>>('statusTpl');
@@ -109,14 +106,8 @@ export class NewsletterComponent {
 
   readonly filteredSubscribers = computed(() => {
     let list = this.subscribers();
-
     const q = this.searchQuery().toLowerCase().trim();
-    if (q) {
-      list = list.filter(item =>
-        item.email.toLowerCase().includes(q) ||
-        item.name.toLowerCase().includes(q)
-      );
-    }
+    if (q) list = list.filter(item => item.email.toLowerCase().includes(q) || item.name.toLowerCase().includes(q));
 
     const sf = this.appliedStatusFilter();
     if (sf) list = list.filter(item => item.status === sf);
@@ -124,9 +115,7 @@ export class NewsletterComponent {
     const dateRange = this.appliedDateRangeFilter();
     if (dateRange?.[0]) {
       const start = new Date(dateRange[0]).setHours(0, 0, 0, 0);
-      const end = dateRange[1]
-        ? new Date(dateRange[1]).setHours(23, 59, 59, 999)
-        : new Date(dateRange[0]).setHours(23, 59, 59, 999);
+      const end = dateRange[1] ? new Date(dateRange[1]).setHours(23, 59, 59, 999) : new Date(dateRange[0]).setHours(23, 59, 59, 999);
       list = list.filter(item => {
         const dateStr = item.createdDate.split('/')[0].trim();
         const t = new Date(dateStr).getTime();
@@ -136,6 +125,10 @@ export class NewsletterComponent {
 
     return list;
   });
+
+  ngOnInit(): void {
+    this.newsletterService.load();
+  }
 
   onSearch(query: string): void { this.searchQuery.set(query); }
 
@@ -163,11 +156,7 @@ export class NewsletterComponent {
   openEditModal(subscriber: NewsletterSubscriber): void {
     this.isEditing.set(true);
     this.editingId.set(subscriber.id);
-    this.form.patchValue({
-      name: subscriber.name,
-      email: subscriber.email,
-      status: subscriber.status,
-    });
+    this.form.patchValue({ name: subscriber.name, email: subscriber.email, status: subscriber.status });
     this.modalVisible.set(true);
   }
 
@@ -178,22 +167,23 @@ export class NewsletterComponent {
       return;
     }
     const { name, email, status } = this.form.getRawValue();
-    if (this.isEditing() && this.editingId()) {
-      this.newsletterService.updateSubscriber(this.editingId()!, {
-        name: (name ?? '').trim(),
-        email: (email ?? '').trim().toLowerCase(),
-        status: status ?? 'Subscribed',
-      });
-      this.messageService.add({ severity: 'success', summary: 'Subscriber Updated', detail: 'Newsletter subscriber record updated.' });
-    } else {
-      this.newsletterService.addSubscriber({
-        name: (name ?? '').trim(),
-        email: (email ?? '').trim().toLowerCase(),
-        status: status ?? 'Subscribed',
-      });
-      this.messageService.add({ severity: 'success', summary: 'Subscriber Added', detail: 'New email subscriber registered successfully.' });
-    }
-    this.modalVisible.set(false);
+    this.isSaving.set(true);
+    const id = this.editingId();
+    const obs$ = id
+      ? this.newsletterService.updateSubscriber(id, { name: (name ?? '').trim(), email: (email ?? '').trim().toLowerCase(), status: status ?? 'Subscribed' })
+      : this.newsletterService.addSubscriber({ name: (name ?? '').trim(), email: (email ?? '').trim().toLowerCase(), status: status ?? 'Subscribed' });
+
+    obs$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.messageService.add({ severity: 'success', summary: id ? 'Subscriber Updated' : 'Subscriber Added', detail: id ? 'Newsletter subscriber record updated.' : 'New email subscriber registered successfully.' });
+        this.isSaving.set(false);
+        this.modalVisible.set(false);
+      },
+      error: (err: { error?: { message?: string } }) => {
+        this.messageService.add({ severity: 'error', summary: 'Save Failed', detail: err?.error?.message || 'Could not save subscriber.' });
+        this.isSaving.set(false);
+      },
+    });
   }
 
   confirmDeleteSingle(subscriber: NewsletterSubscriber): void {
@@ -209,17 +199,27 @@ export class NewsletterComponent {
 
   executeDelete(): void {
     const single = this.itemToDelete();
-    if (single) {
-      this.newsletterService.deleteSubscriber(single.id);
-      this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `${single.email} removed from newsletter.` });
-    } else {
-      const ids = this.selectedSubscribers().map(s => s.id);
-      this.newsletterService.bulkDelete(ids);
-      this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `${ids.length} subscribers removed.` });
-      this.selectedSubscribers.set([]);
-    }
-    this.confirmDeleteVisible.set(false);
-    this.itemToDelete.set(null);
+    const obs$ = single
+      ? this.newsletterService.deleteSubscriber(single.id)
+      : this.newsletterService.bulkDelete(this.selectedSubscribers().map(s => s.id));
+
+    obs$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        if (single) {
+          this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `${single.email} removed from newsletter.` });
+        } else {
+          const count = this.selectedSubscribers().length;
+          this.selectedSubscribers.set([]);
+          this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `${count} subscribers removed.` });
+        }
+        this.confirmDeleteVisible.set(false);
+        this.itemToDelete.set(null);
+      },
+      error: () => {
+        this.messageService.add({ severity: 'error', summary: 'Delete Failed', detail: 'Could not delete subscriber(s).' });
+        this.confirmDeleteVisible.set(false);
+      },
+    });
   }
 
   exportData(selectedOnly = false): void {

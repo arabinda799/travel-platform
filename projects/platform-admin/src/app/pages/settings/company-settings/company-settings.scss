@@ -611,7 +611,7 @@ app-maintenance-tab[hidden],
 }
 
 .maintenance-icon {
-  font-size: 1.75rem;
+  font-size: var(--fs-4xl);
   color: var(--warning);
 
   .maintenance-toggle-card:not(.active) & {

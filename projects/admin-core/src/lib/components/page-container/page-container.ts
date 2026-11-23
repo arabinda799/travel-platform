@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { BreadcrumbItem } from '../../interfaces/breadcrumb-item';
 import { SkeletonLoaderComponent } from '../skeleton-loader/skeleton-loader';
@@ -8,6 +8,7 @@ import { SkeletonLoaderComponent } from '../skeleton-loader/skeleton-loader';
   imports: [RouterLink, SkeletonLoaderComponent],
   templateUrl: './page-container.html',
   styleUrl: './page-container.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PageContainerComponent {
   readonly title = input.required<string>();

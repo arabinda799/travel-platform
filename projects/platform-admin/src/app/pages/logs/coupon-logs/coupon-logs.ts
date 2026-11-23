@@ -1,4 +1,8 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal, TemplateRef, viewChild } from '@angular/core';
+import {
+  ChangeDetectionStrategy, Component, DestroyRef, OnInit,
+  computed, inject, signal, TemplateRef, viewChild,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import {
@@ -21,11 +25,12 @@ import { exportToCsv } from '../../../shared/utils/export.util';
   ],
   templateUrl: './coupon-logs.html',
   styleUrl: './coupon-logs.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class CouponLogsComponent {
+export class CouponLogsComponent implements OnInit {
   private readonly service = inject(CouponLogsService);
   private readonly messageService = inject(MessageService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly breadcrumbs: BreadcrumbItem[] = [
     { label: 'Logs', route: '/system/logs/coupon' },
@@ -33,19 +38,16 @@ export class CouponLogsComponent {
   ];
 
   readonly logs = this.service.logs;
+  readonly loading = this.service.loading;
   readonly searchQuery = signal('');
   readonly selectedItems = signal<CouponLog[]>([]);
-  readonly loading = signal(false);
-
   readonly filterVisible = signal(false);
   readonly selectedStatusFilter = signal<string | null>(null);
   readonly selectedTypeFilter = signal<string | null>(null);
   readonly appliedStatusFilter = signal<string | null>(null);
   readonly appliedTypeFilter = signal<string | null>(null);
-
   readonly detailVisible = signal(false);
   readonly activeLog = signal<CouponLog | null>(null);
-
   readonly confirmDeleteVisible = signal(false);
   readonly itemToDelete = signal<CouponLog | null>(null);
 
@@ -100,6 +102,8 @@ export class CouponLogsComponent {
     return list;
   });
 
+  ngOnInit(): void { this.service.load(); }
+
   onSearch(q: string): void { this.searchQuery.set(q); }
 
   onApplyFilters(): void {
@@ -109,26 +113,18 @@ export class CouponLogsComponent {
   }
 
   onResetFilters(): void {
-    this.selectedStatusFilter.set(null);
-    this.selectedTypeFilter.set(null);
-    this.appliedStatusFilter.set(null);
-    this.appliedTypeFilter.set(null);
+    this.selectedStatusFilter.set(null); this.selectedTypeFilter.set(null);
+    this.appliedStatusFilter.set(null); this.appliedTypeFilter.set(null);
     this.filterVisible.set(false);
   }
 
-  openDetail(log: CouponLog): void {
-    this.activeLog.set(log);
-    this.detailVisible.set(true);
-  }
+  openDetail(log: CouponLog): void { this.activeLog.set(log); this.detailVisible.set(true); }
 
   formatDiscount(log: CouponLog): string {
     return log.discountType === 'Flat' ? `₹${log.discountAmount}` : `${log.discountAmount}%`;
   }
 
-  confirmDeleteSingle(log: CouponLog): void {
-    this.itemToDelete.set(log);
-    this.confirmDeleteVisible.set(true);
-  }
+  confirmDeleteSingle(log: CouponLog): void { this.itemToDelete.set(log); this.confirmDeleteVisible.set(true); }
 
   confirmBulkDelete(): void {
     if (this.selectedItems().length === 0) return;
@@ -138,17 +134,24 @@ export class CouponLogsComponent {
 
   executeDelete(): void {
     const single = this.itemToDelete();
-    if (single) {
-      this.service.delete(single.id);
-      this.messageService.add({ severity: 'success', summary: 'Deleted', detail: 'Coupon log entry removed.' });
-    } else {
-      const ids = this.selectedItems().map(l => l.id);
-      this.service.bulkDelete(ids);
-      this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `${ids.length} log entries removed.` });
-      this.selectedItems.set([]);
-    }
-    this.confirmDeleteVisible.set(false);
-    this.itemToDelete.set(null);
+    const obs$ = single ? this.service.delete(single.id) : this.service.bulkDelete(this.selectedItems().map(l => l.id));
+    obs$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        if (single) {
+          this.messageService.add({ severity: 'success', summary: 'Deleted', detail: 'Coupon log entry removed.' });
+        } else {
+          const count = this.selectedItems().length;
+          this.selectedItems.set([]);
+          this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `${count} log entries removed.` });
+        }
+        this.confirmDeleteVisible.set(false);
+        this.itemToDelete.set(null);
+      },
+      error: () => {
+        this.messageService.add({ severity: 'error', summary: 'Delete Failed', detail: 'Could not delete log entry.' });
+        this.confirmDeleteVisible.set(false);
+      },
+    });
   }
 
   exportData(selectedOnly = false): void {
@@ -158,14 +161,10 @@ export class CouponLogsComponent {
       return;
     }
     exportToCsv('coupon_logs', rows, [
-      { field: 'couponCode', header: 'Coupon Code' },
-      { field: 'usedBy', header: 'Used By' },
-      { field: 'email', header: 'Email' },
-      { field: 'bookingId', header: 'Booking ID' },
-      { field: 'discountAmount', header: 'Discount Amount' },
-      { field: 'discountType', header: 'Discount Type' },
-      { field: 'status', header: 'Status' },
-      { field: 'usedAt', header: 'Used At' },
+      { field: 'couponCode', header: 'Coupon Code' }, { field: 'usedBy', header: 'Used By' },
+      { field: 'email', header: 'Email' }, { field: 'bookingId', header: 'Booking ID' },
+      { field: 'discountAmount', header: 'Discount Amount' }, { field: 'discountType', header: 'Discount Type' },
+      { field: 'status', header: 'Status' }, { field: 'usedAt', header: 'Used At' },
     ]);
     this.messageService.add({ severity: 'success', summary: 'Exported', detail: `${rows.length} records exported.` });
   }

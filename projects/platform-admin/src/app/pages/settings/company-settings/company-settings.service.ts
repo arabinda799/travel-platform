@@ -1,4 +1,6 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, inject } from '@angular/core';
+import { Observable, take, tap } from 'rxjs';
+import { ApiService } from 'admin-core';
 
 export interface CompanySettingsData {
   // Company Info
@@ -84,8 +86,6 @@ export interface CompanySettingsData {
   maintenanceMsg: string;
 }
 
-const STORAGE_KEY = 'easyflys_company_settings';
-
 export const INITIAL_COMPANY_SETTINGS: CompanySettingsData = {
   companyName: 'EasyFlys Technologies Pvt. Ltd.',
   legalName: 'EasyFlys Technologies Private Limited',
@@ -129,12 +129,7 @@ export const INITIAL_COMPANY_SETTINGS: CompanySettingsData = {
   metaKeywords: 'travel, booking, flights, hotels, holiday packages',
   metaDescription: 'Book flights, hotels, and customizable holiday packages worldwide.',
   metaRobots: 'INDEX, FOLLOW',
-  logos: {
-    dark: '',
-    light: '',
-    favicon: '',
-    login: '',
-  },
+  logos: { dark: '', light: '', favicon: '', login: '' },
 
   smtpHost: 'smtp.easyflys.com',
   smtpPort: 465,
@@ -168,44 +163,34 @@ export const INITIAL_COMPANY_SETTINGS: CompanySettingsData = {
   maintenanceMsg: 'We are currently performing scheduled maintenance. We will be back shortly.',
 };
 
-@Injectable({
-  providedIn: 'root',
-})
+@Injectable({ providedIn: 'root' })
 export class CompanySettingsService {
-  private readonly settingsSignal = signal<CompanySettingsData>(this.loadFromSession());
-  readonly settings = this.settingsSignal.asReadonly();
+  private readonly api = inject(ApiService);
 
-  private loadFromSession(): CompanySettingsData {
-    if (typeof window === 'undefined') return INITIAL_COMPANY_SETTINGS;
-    try {
-      const data = localStorage.getItem(STORAGE_KEY) || sessionStorage.getItem(STORAGE_KEY);
-      if (data) {
-        return { ...INITIAL_COMPANY_SETTINGS, ...JSON.parse(data) };
-      }
-    } catch (e) {
-      console.error('Error loading company settings from storage', e);
-    }
-    return INITIAL_COMPANY_SETTINGS;
+  private readonly _settings = signal<CompanySettingsData>(INITIAL_COMPANY_SETTINGS);
+  private readonly _loading = signal(false);
+
+  readonly settings = this._settings.asReadonly();
+  readonly loading = this._loading.asReadonly();
+
+  load(): Observable<CompanySettingsData> {
+    this._loading.set(true);
+    return this.api.get<CompanySettingsData>('/settings').pipe(
+      take(1),
+      tap({
+        next: data => {
+          this._settings.set({ ...INITIAL_COMPANY_SETTINGS, ...data });
+          this._loading.set(false);
+        },
+        error: () => this._loading.set(false),
+      }),
+    );
   }
 
-  private saveToSession(data: CompanySettingsData): void {
-    if (typeof window === 'undefined') return;
-    try {
-      const serialized = JSON.stringify(data);
-      localStorage.setItem(STORAGE_KEY, serialized);
-      sessionStorage.setItem(STORAGE_KEY, serialized);
-    } catch (e) {
-      console.error('Error persisting company settings to storage', e);
-    }
-  }
-
-  updateSettings(data: Partial<CompanySettingsData>): CompanySettingsData {
-    const updated: CompanySettingsData = {
-      ...this.settingsSignal(),
-      ...data,
-    };
-    this.settingsSignal.set(updated);
-    this.saveToSession(updated);
-    return updated;
+  updateSettings(data: Partial<CompanySettingsData>): Observable<CompanySettingsData> {
+    return this.api.put<CompanySettingsData>('/settings', { ...this._settings(), ...data }).pipe(
+      take(1),
+      tap(updated => this._settings.set({ ...INITIAL_COMPANY_SETTINGS, ...updated })),
+    );
   }
 }

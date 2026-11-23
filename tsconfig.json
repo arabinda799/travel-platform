@@ -5,8 +5,7 @@
   "compilerOptions": {
     "paths": {
       "admin-core": [
-        "./projects/admin-core/src/public-api",
-        "./dist/admin-core"
+        "./projects/admin-core/src/public-api"
       ]
     },
     "noImplicitOverride": true,

@@ -1,12 +1,16 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
+  OnInit,
   computed,
   inject,
   signal,
   TemplateRef,
   viewChild,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { forkJoin } from 'rxjs';
 import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
@@ -26,7 +30,7 @@ import {
   SelectOption,
 } from 'admin-core';
 import { TenantUser, TenantUserService, TenantUserStatus } from './tenant-user.service';
-import { TenantCompany, CompanyService } from '../company-list/company.service';
+import { CompanyService } from '../company-list/company.service';
 import { RoleService } from '../../users/role-list/role.service';
 
 const STATUS_OPTIONS: SelectOption<TenantUserStatus>[] = [
@@ -57,12 +61,13 @@ const STATUS_OPTIONS: SelectOption<TenantUserStatus>[] = [
   styleUrl: './tenant-user-list.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class TenantUserListComponent {
+export class TenantUserListComponent implements OnInit {
   private readonly userService = inject(TenantUserService);
   private readonly companyService = inject(CompanyService);
   private readonly roleService = inject(RoleService);
   private readonly messageService = inject(MessageService);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly users = this.userService.users;
   readonly searchQuery = signal<string>('');
@@ -92,6 +97,9 @@ export class TenantUserListComponent {
   readonly actionsTpl = viewChild<TemplateRef<any>>('actionsTpl');
 
   readonly statusOptions = STATUS_OPTIONS;
+
+  readonly tenantMap = computed(() => new Map(this.companyService.companies().map(c => [c.id, c])));
+  readonly roleMap = computed(() => new Map(this.roleService.roles().map(r => [r.id, r])));
 
   readonly tenantOptions = computed<SelectOption<string>[]>(() =>
     this.companyService.companies()
@@ -161,21 +169,10 @@ export class TenantUserListComponent {
     { field: 'actions', header: 'Action', width: '9.5rem', align: 'center', frozen: true, frozenAlign: 'right', bodyTemplate: this.actionsTpl() },
   ]);
 
-  getTenantName(tenantId: string): string {
-    return this.companyService.companies().find(c => c.id === tenantId)?.companyName ?? '—';
-  }
-
-  getTenantCode(tenantId: string): string {
-    return this.companyService.companies().find(c => c.id === tenantId)?.companyCode ?? '';
-  }
-
-  getRoleName(roleId: string): string {
-    return this.roleService.roles().find(r => r.id === roleId)?.name ?? '—';
-  }
-
-  getRolePermCount(roleId: string): number {
-    return this.roleService.roles().find(r => r.id === roleId)?.permissionIds.length ?? 0;
-  }
+  getTenantName(tenantId: string): string { return this.tenantMap().get(tenantId)?.companyName ?? '—'; }
+  getTenantCode(tenantId: string): string { return this.tenantMap().get(tenantId)?.companyCode ?? ''; }
+  getRoleName(roleId: string): string { return this.roleMap().get(roleId)?.name ?? '—'; }
+  getRolePermCount(roleId: string): number { return this.roleMap().get(roleId)?.permissionIds.length ?? 0; }
 
   getEffectivePermCount(user: TenantUser): number {
     return this.getRolePermCount(user.roleId) - user.disabledPermissionIds.length;
@@ -193,6 +190,8 @@ export class TenantUserListComponent {
     this.appliedStatusFilter.set(this.selectedStatusFilter());
     this.filterVisible.set(false);
   }
+
+  ngOnInit(): void { this.userService.load(); }
 
   resetFilters(): void {
     this.selectedTenantFilter.set(null); this.selectedRoleFilter.set(null); this.selectedStatusFilter.set(null);
@@ -234,14 +233,26 @@ export class TenantUserListComponent {
     const fullName = `${payload.firstName} ${payload.lastName}`;
 
     if (this.isEditing() && this.editingId()) {
-      this.userService.update(this.editingId()!, payload);
-      this.messageService.add({ severity: 'success', summary: 'Updated', detail: `${fullName} updated.` });
-      this.modalVisible.set(false);
+      this.userService.update(this.editingId()!, payload)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: () => {
+            this.messageService.add({ severity: 'success', summary: 'Updated', detail: `${fullName} updated.` });
+            this.modalVisible.set(false);
+          },
+          error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to update user.' }),
+        });
     } else {
-      const created = this.userService.add(payload);
-      this.messageService.add({ severity: 'success', summary: 'Created', detail: `${fullName} created. Configure permission overrides now.` });
-      this.modalVisible.set(false);
-      this.router.navigate(['/tenants/users', created.id, 'permissions']);
+      this.userService.add(payload)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: created => {
+            this.messageService.add({ severity: 'success', summary: 'Created', detail: `${fullName} created. Configure permission overrides now.` });
+            this.modalVisible.set(false);
+            this.router.navigate(['/tenants/users', created.id, 'permissions']);
+          },
+          error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to create user.' }),
+        });
     }
   }
 
@@ -251,10 +262,17 @@ export class TenantUserListComponent {
   }
 
   onBulkStatusConfirm(newStatus: string): void {
-    this.selectedUsers().forEach(u => this.userService.update(u.id, { status: newStatus as TenantUserStatus }));
-    this.selectedUsers.set([]);
-    this.statusModalVisible.set(false);
-    this.messageService.add({ severity: 'info', summary: 'Status Updated', detail: `Updated ${this.selectedUsers().length} user(s).` });
+    const selected = this.selectedUsers();
+    forkJoin(selected.map(u => this.userService.update(u.id, { status: newStatus as TenantUserStatus })))
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.selectedUsers.set([]);
+          this.statusModalVisible.set(false);
+          this.messageService.add({ severity: 'info', summary: 'Status Updated', detail: `Updated ${selected.length} user(s) to ${newStatus}.` });
+        },
+        error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Bulk status update failed.' }),
+      });
   }
 
   openPermissions(user: TenantUser): void {
@@ -273,15 +291,22 @@ export class TenantUserListComponent {
 
   executeDelete(): void {
     const single = this.itemToDelete();
-    if (single) {
-      this.userService.delete(single.id);
-      this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `${single.firstName} ${single.lastName} deleted.` });
-    } else {
-      const ids = this.selectedUsers().map(u => u.id);
-      this.userService.deleteMultiple(ids);
-      this.selectedUsers.set([]);
-      this.messageService.add({ severity: 'success', summary: 'Bulk Deleted', detail: `${ids.length} users deleted.` });
-    }
-    this.confirmDeleteVisible.set(false);
+    const obs = single
+      ? this.userService.delete(single.id)
+      : this.userService.deleteMultiple(this.selectedUsers().map(u => u.id));
+
+    obs.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        if (single) {
+          this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `${single.firstName} ${single.lastName} deleted.` });
+        } else {
+          const count = this.selectedUsers().length;
+          this.selectedUsers.set([]);
+          this.messageService.add({ severity: 'success', summary: 'Bulk Deleted', detail: `${count} users deleted.` });
+        }
+        this.confirmDeleteVisible.set(false);
+      },
+      error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Delete failed.' }),
+    });
   }
 }

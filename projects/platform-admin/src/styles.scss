@@ -1,6 +1,12 @@
 /* You can add global styles to this file, and also import other style files */
 @use "../../admin-core/src/lib/styles/theme";
 
+// ─── Warning / amber color tokens ─────────────────────────────────────────────
+:root {
+  --color-warning: #f59e0b;
+  --color-warning-fg: #d97706;
+}
+
 // ─── Shared Log Detail Modal Styles ───────────────────────────────────────────
 .log-detail {
   display: flex;

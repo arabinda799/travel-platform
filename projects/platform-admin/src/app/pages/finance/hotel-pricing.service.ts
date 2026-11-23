@@ -1,4 +1,6 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
+import { Observable, take, tap } from 'rxjs';
+import { ApiService } from 'admin-core';
 
 export type PricingTarget = 'B2B' | 'B2C' | 'Corporate' | 'All';
 export type HotelMarkupType = 'Per Night' | 'Per Stay' | 'Percentage' | 'Fixed';
@@ -36,251 +38,121 @@ export interface HotelDiscount {
   updatedDate: string;
 }
 
-const INITIAL_MARKUPS: HotelMarkup[] = [
-  {
-    id: 'mk-1',
-    markupFor: 'B2B',
-    regionTypes: ['Domestic'],
-    hotelMarkupType: 'Per Night',
-    displayMarkup: 'In Tax',
-    value: 250,
-    status: 'Active',
-    createdDate: '2026-01-10T11:30:00.000Z',
-    updatedDate: '2026-02-01T09:15:00.000Z',
-  },
-  {
-    id: 'mk-2',
-    markupFor: 'B2B',
-    regionTypes: ['International', 'GCC & Middle East'],
-    hotelMarkupType: 'Percentage',
-    displayMarkup: 'In Room Rate',
-    value: 8.5,
-    status: 'Active',
-    createdDate: '2026-01-18T14:45:00.000Z',
-    updatedDate: '2026-02-05T12:00:00.000Z',
-  },
-  {
-    id: 'mk-3',
-    markupFor: 'B2C',
-    regionTypes: ['Domestic'],
-    hotelMarkupType: 'Percentage',
-    displayMarkup: 'In Tax',
-    value: 12,
-    status: 'Active',
-    createdDate: '2026-01-22T16:20:00.000Z',
-    updatedDate: '2026-02-08T15:30:00.000Z',
-  },
-  {
-    id: 'mk-4',
-    markupFor: 'Corporate',
-    regionTypes: ['Domestic', 'Asia-Pacific'],
-    hotelMarkupType: 'Fixed',
-    displayMarkup: 'Separate Line Item',
-    value: 500,
-    status: 'Active',
-    createdDate: '2026-02-01T10:15:00.000Z',
-    updatedDate: '2026-02-12T11:45:00.000Z',
-  },
-  {
-    id: 'mk-5',
-    markupFor: 'All',
-    regionTypes: ['Europe', 'North America'],
-    hotelMarkupType: 'Percentage',
-    displayMarkup: 'In Room Rate',
-    value: 10,
-    status: 'Inactive',
-    createdDate: '2026-02-05T13:00:00.000Z',
-    updatedDate: '2026-02-14T17:10:00.000Z',
-  },
-];
-
-const INITIAL_DISCOUNTS: HotelDiscount[] = [
-  {
-    id: 'dc-1',
-    markupFor: 'B2B',
-    regionTypes: ['Domestic'],
-    value: 5,
-    maxLimit: 1500,
-    status: 'Active',
-    createdDate: '2026-01-12T10:00:00.000Z',
-    updatedDate: '2026-02-02T11:20:00.000Z',
-  },
-  {
-    id: 'dc-2',
-    markupFor: 'B2B',
-    regionTypes: ['International', 'GCC & Middle East'],
-    value: 7.5,
-    maxLimit: 3000,
-    status: 'Active',
-    createdDate: '2026-01-19T15:30:00.000Z',
-    updatedDate: '2026-02-06T14:10:00.000Z',
-  },
-  {
-    id: 'dc-3',
-    markupFor: 'B2C',
-    regionTypes: ['Domestic'],
-    value: 10,
-    maxLimit: 2000,
-    status: 'Active',
-    createdDate: '2026-01-25T12:15:00.000Z',
-    updatedDate: '2026-02-09T16:40:00.000Z',
-  },
-  {
-    id: 'dc-4',
-    markupFor: 'Corporate',
-    regionTypes: ['Domestic', 'Asia-Pacific'],
-    value: 350,
-    maxLimit: null,
-    status: 'Active',
-    createdDate: '2026-02-03T09:45:00.000Z',
-    updatedDate: '2026-02-13T10:30:00.000Z',
-  },
-  {
-    id: 'dc-5',
-    markupFor: 'All',
-    regionTypes: ['Europe'],
-    value: 6,
-    maxLimit: 2500,
-    status: 'Inactive',
-    createdDate: '2026-02-07T14:00:00.000Z',
-    updatedDate: '2026-02-15T12:00:00.000Z',
-  },
-];
-
-@Injectable({
-  providedIn: 'root',
-})
+@Injectable({ providedIn: 'root' })
 export class HotelPricingService {
-  private readonly STORAGE_MARKUP_KEY = 'platform_admin_hotel_markups';
-  private readonly STORAGE_DISCOUNT_KEY = 'platform_admin_hotel_discounts';
+  private readonly api = inject(ApiService);
 
-  private readonly _markups = signal<HotelMarkup[]>(this.loadMarkups());
-  private readonly _discounts = signal<HotelDiscount[]>(this.loadDiscounts());
+  private readonly _markups = signal<HotelMarkup[]>([]);
+  private readonly _discounts = signal<HotelDiscount[]>([]);
+  private readonly _loading = signal(false);
+  private readonly _error = signal<string | null>(null);
 
   readonly markups = this._markups.asReadonly();
   readonly discounts = this._discounts.asReadonly();
+  readonly loading = this._loading.asReadonly();
+  readonly error = this._error.asReadonly();
 
-  private loadMarkups(): HotelMarkup[] {
-    try {
-      const stored = localStorage.getItem(this.STORAGE_MARKUP_KEY);
-      if (stored) return JSON.parse(stored);
-    } catch {
-      // Fallback
-    }
-    return INITIAL_MARKUPS;
+  // ─── Markups ──────────────────────────────────────────────────────────────
+
+  loadMarkups(): void {
+    this._loading.set(true);
+    this.api.get<HotelMarkup[]>('/hotel-markups').pipe(take(1)).subscribe({
+      next: data => { this._markups.set(data); this._loading.set(false); },
+      error: (err: unknown) => {
+        this._error.set((err as { error?: { message?: string } })?.error?.message ?? 'Failed to load markups');
+        this._loading.set(false);
+      },
+    });
   }
 
-  private loadDiscounts(): HotelDiscount[] {
-    try {
-      const stored = localStorage.getItem(this.STORAGE_DISCOUNT_KEY);
-      if (stored) return JSON.parse(stored);
-    } catch {
-      // Fallback
-    }
-    return INITIAL_DISCOUNTS;
+  loadDiscounts(): void {
+    this.api.get<HotelDiscount[]>('/hotel-discounts').pipe(take(1)).subscribe({
+      next: data => this._discounts.set(data),
+      error: () => {},
+    });
   }
 
-  private persistMarkups(list: HotelMarkup[]): void {
-    try {
-      localStorage.setItem(this.STORAGE_MARKUP_KEY, JSON.stringify(list));
-    } catch {
-      // Storage error handle
-    }
+  addMarkup(data: Omit<HotelMarkup, 'id' | 'createdDate' | 'updatedDate'>): Observable<HotelMarkup> {
+    return this.api.post<HotelMarkup>('/hotel-markups', data).pipe(
+      take(1),
+      tap(created => this._markups.update(list => [created, ...list])),
+    );
   }
 
-  private persistDiscounts(list: HotelDiscount[]): void {
-    try {
-      localStorage.setItem(this.STORAGE_DISCOUNT_KEY, JSON.stringify(list));
-    } catch {
-      // Storage error handle
-    }
+  updateMarkup(id: string, updates: Partial<HotelMarkup>): Observable<HotelMarkup> {
+    return this.api.patch<HotelMarkup>(`/hotel-markups/${id}`, updates).pipe(
+      take(1),
+      tap(updated => this._markups.update(list => list.map(m => m.id === id ? updated : m))),
+    );
   }
 
-  // Hotel Markup Operations
-  addMarkup(data: Omit<HotelMarkup, 'id' | 'createdDate' | 'updatedDate'>): HotelMarkup {
-    const newMarkup: HotelMarkup = {
-      ...data,
-      id: `mk-${Date.now()}`,
-      createdDate: new Date().toISOString(),
-      updatedDate: new Date().toISOString(),
-    };
-    const updated = [newMarkup, ...this._markups()];
-    this._markups.set(updated);
-    this.persistMarkups(updated);
-    return newMarkup;
+  updateMultipleMarkupStatus(ids: string[], status: 'Active' | 'Inactive'): Observable<HotelMarkup[]> {
+    return this.api.patch<HotelMarkup[]>('/hotel-markups/bulk-status', { ids, status }).pipe(
+      take(1),
+      tap(updated => {
+        const map = new Map(updated.map(m => [m.id, m]));
+        this._markups.update(list => list.map(m => map.get(m.id) ?? m));
+      }),
+    );
   }
 
-  updateMarkup(id: string, updates: Partial<HotelMarkup>): HotelMarkup {
-    const list = this._markups();
-    const idx = list.findIndex((m) => m.id === id);
-    if (idx === -1) throw new Error(`Markup with ID ${id} not found`);
-
-    const updatedItem: HotelMarkup = {
-      ...list[idx],
-      ...updates,
-      updatedDate: new Date().toISOString(),
-    };
-    const updated = [...list];
-    updated[idx] = updatedItem;
-    this._markups.set(updated);
-    this.persistMarkups(updated);
-    return updatedItem;
+  deleteMarkup(id: string): Observable<void> {
+    return this.api.delete<void>(`/hotel-markups/${id}`).pipe(
+      take(1),
+      tap(() => this._markups.update(list => list.filter(m => m.id !== id))),
+    );
   }
 
-  deleteMarkup(id: string): void {
-    const updated = this._markups().filter((m) => m.id !== id);
-    this._markups.set(updated);
-    this.persistMarkups(updated);
+  bulkDeleteMarkups(ids: string[]): Observable<void> {
+    return this.api.post<void>('/hotel-markups/bulk-delete', { ids }).pipe(
+      take(1),
+      tap(() => {
+        const set = new Set(ids);
+        this._markups.update(list => list.filter(m => !set.has(m.id)));
+      }),
+    );
   }
 
-  updateMultipleMarkupStatus(ids: string[], status: 'Active' | 'Inactive'): void {
-    const set = new Set(ids);
-    const updated = this._markups().map((m) => (set.has(m.id) ? { ...m, status, updatedDate: new Date().toISOString() } : m));
-    this._markups.set(updated);
-    this.persistMarkups(updated);
+  // ─── Discounts ────────────────────────────────────────────────────────────
+
+  addDiscount(data: Omit<HotelDiscount, 'id' | 'createdDate' | 'updatedDate'>): Observable<HotelDiscount> {
+    return this.api.post<HotelDiscount>('/hotel-discounts', data).pipe(
+      take(1),
+      tap(created => this._discounts.update(list => [created, ...list])),
+    );
   }
 
-  // Hotel Discount Operations
-  addDiscount(data: Omit<HotelDiscount, 'id' | 'createdDate' | 'updatedDate'>): HotelDiscount {
-    const newDiscount: HotelDiscount = {
-      ...data,
-      id: `dc-${Date.now()}`,
-      createdDate: new Date().toISOString(),
-      updatedDate: new Date().toISOString(),
-    };
-    const updated = [newDiscount, ...this._discounts()];
-    this._discounts.set(updated);
-    this.persistDiscounts(updated);
-    return newDiscount;
+  updateDiscount(id: string, updates: Partial<HotelDiscount>): Observable<HotelDiscount> {
+    return this.api.patch<HotelDiscount>(`/hotel-discounts/${id}`, updates).pipe(
+      take(1),
+      tap(updated => this._discounts.update(list => list.map(d => d.id === id ? updated : d))),
+    );
   }
 
-  updateDiscount(id: string, updates: Partial<HotelDiscount>): HotelDiscount {
-    const list = this._discounts();
-    const idx = list.findIndex((d) => d.id === id);
-    if (idx === -1) throw new Error(`Discount with ID ${id} not found`);
-
-    const updatedItem: HotelDiscount = {
-      ...list[idx],
-      ...updates,
-      updatedDate: new Date().toISOString(),
-    };
-    const updated = [...list];
-    updated[idx] = updatedItem;
-    this._discounts.set(updated);
-    this.persistDiscounts(updated);
-    return updatedItem;
+  updateMultipleDiscountStatus(ids: string[], status: 'Active' | 'Inactive'): Observable<HotelDiscount[]> {
+    return this.api.patch<HotelDiscount[]>('/hotel-discounts/bulk-status', { ids, status }).pipe(
+      take(1),
+      tap(updated => {
+        const map = new Map(updated.map(d => [d.id, d]));
+        this._discounts.update(list => list.map(d => map.get(d.id) ?? d));
+      }),
+    );
   }
 
-  deleteDiscount(id: string): void {
-    const updated = this._discounts().filter((d) => d.id !== id);
-    this._discounts.set(updated);
-    this.persistDiscounts(updated);
+  deleteDiscount(id: string): Observable<void> {
+    return this.api.delete<void>(`/hotel-discounts/${id}`).pipe(
+      take(1),
+      tap(() => this._discounts.update(list => list.filter(d => d.id !== id))),
+    );
   }
 
-  updateMultipleDiscountStatus(ids: string[], status: 'Active' | 'Inactive'): void {
-    const set = new Set(ids);
-    const updated = this._discounts().map((d) => (set.has(d.id) ? { ...d, status, updatedDate: new Date().toISOString() } : d));
-    this._discounts.set(updated);
-    this.persistDiscounts(updated);
+  bulkDeleteDiscounts(ids: string[]): Observable<void> {
+    return this.api.post<void>('/hotel-discounts/bulk-delete', { ids }).pipe(
+      take(1),
+      tap(() => {
+        const set = new Set(ids);
+        this._discounts.update(list => list.filter(d => !set.has(d.id)));
+      }),
+    );
   }
 }

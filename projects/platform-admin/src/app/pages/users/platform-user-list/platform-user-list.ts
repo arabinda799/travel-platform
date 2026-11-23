@@ -1,12 +1,16 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
+  OnInit,
   computed,
   inject,
   signal,
   TemplateRef,
   viewChild,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { forkJoin } from 'rxjs';
 import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
@@ -56,11 +60,12 @@ const STATUS_OPTIONS: SelectOption<PlatformUserStatus>[] = [
   styleUrl: './platform-user-list.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class PlatformUserListComponent {
+export class PlatformUserListComponent implements OnInit {
   private readonly userService = inject(PlatformUserService);
   private readonly roleService = inject(RoleService);
   private readonly messageService = inject(MessageService);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly users = this.userService.users;
   readonly searchQuery = signal<string>('');
@@ -95,16 +100,15 @@ export class PlatformUserListComponent {
     status: new FormControl<PlatformUserStatus>('ACTIVE', Validators.required),
   });
 
-  // Template refs
   readonly nameTpl = viewChild<TemplateRef<any>>('nameTpl');
-  readonly roleTpl = viewChild<TemplateRef<any>>('roleTpl');
   readonly permTpl = viewChild<TemplateRef<any>>('permTpl');
   readonly statusTpl = viewChild<TemplateRef<any>>('statusTpl');
   readonly actionsTpl = viewChild<TemplateRef<any>>('actionsTpl');
 
   readonly statusOptions = STATUS_OPTIONS;
 
-  // Roles for select dropdown
+  readonly roleMap = computed(() => new Map(this.roleService.roles().map(r => [r.id, r])));
+
   readonly roleOptions = computed<SelectOption<string>[]>(() =>
     this.roleService.roles()
       .filter(r => r.status === 'ACTIVE' && r.scope === 'PLATFORM')
@@ -151,13 +155,8 @@ export class PlatformUserListComponent {
     { field: 'actions', header: 'Action', width: '9.5rem', align: 'center', frozen: true, frozenAlign: 'right', bodyTemplate: this.actionsTpl() },
   ]);
 
-  getRoleName(roleId: string): string {
-    return this.roleService.roles().find(r => r.id === roleId)?.name ?? '—';
-  }
-
-  getRolePermCount(roleId: string): number {
-    return this.roleService.roles().find(r => r.id === roleId)?.permissionIds.length ?? 0;
-  }
+  getRoleName(roleId: string): string { return this.roleMap().get(roleId)?.name ?? '—'; }
+  getRolePermCount(roleId: string): number { return this.roleMap().get(roleId)?.permissionIds.length ?? 0; }
 
   getEffectivePermCount(user: PlatformUser): number {
     return this.getRolePermCount(user.roleId) - user.disabledPermissionIds.length;
@@ -165,6 +164,10 @@ export class PlatformUserListComponent {
 
   getOverrideCount(user: PlatformUser): number {
     return user.disabledPermissionIds.length;
+  }
+
+  ngOnInit(): void {
+    this.userService.load();
   }
 
   onSearch(query: string): void { this.searchQuery.set(query); }
@@ -215,14 +218,26 @@ export class PlatformUserListComponent {
     const fullName = `${payload.firstName} ${payload.lastName}`;
 
     if (this.isEditing() && this.editingId()) {
-      this.userService.update(this.editingId()!, payload);
-      this.messageService.add({ severity: 'success', summary: 'Updated', detail: `${fullName} updated.` });
-      this.modalVisible.set(false);
+      this.userService.update(this.editingId()!, payload)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: () => {
+            this.messageService.add({ severity: 'success', summary: 'Updated', detail: `${fullName} updated.` });
+            this.modalVisible.set(false);
+          },
+          error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to update user.' }),
+        });
     } else {
-      const created = this.userService.add(payload);
-      this.messageService.add({ severity: 'success', summary: 'Created', detail: `${fullName} created. Configure permission overrides now.` });
-      this.modalVisible.set(false);
-      this.router.navigate(['/users/platform', created.id, 'permissions']);
+      this.userService.add(payload)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: created => {
+            this.messageService.add({ severity: 'success', summary: 'Created', detail: `${fullName} created. Configure permission overrides now.` });
+            this.modalVisible.set(false);
+            this.router.navigate(['/users/platform', created.id, 'permissions']);
+          },
+          error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to create user.' }),
+        });
     }
   }
 
@@ -233,10 +248,17 @@ export class PlatformUserListComponent {
 
   onBulkStatusConfirm(newStatus: string): void {
     const selected = this.selectedUsers();
-    selected.forEach(u => this.userService.update(u.id, { status: newStatus as PlatformUserStatus }));
-    this.selectedUsers.set([]);
-    this.statusModalVisible.set(false);
-    this.messageService.add({ severity: 'info', summary: 'Status Updated', detail: `Updated ${selected.length} user(s) to ${newStatus}.` });
+    if (!selected.length) return;
+    forkJoin(selected.map(u => this.userService.update(u.id, { status: newStatus as PlatformUserStatus })))
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.selectedUsers.set([]);
+          this.statusModalVisible.set(false);
+          this.messageService.add({ severity: 'info', summary: 'Status Updated', detail: `Updated ${selected.length} user(s) to ${newStatus}.` });
+        },
+        error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Bulk status update failed.' }),
+      });
   }
 
   openPermissions(user: PlatformUser): void {
@@ -255,15 +277,22 @@ export class PlatformUserListComponent {
 
   executeDelete(): void {
     const single = this.itemToDelete();
-    if (single) {
-      this.userService.delete(single.id);
-      this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `${single.firstName} ${single.lastName} deleted.` });
-    } else {
-      const ids = this.selectedUsers().map(u => u.id);
-      this.userService.deleteMultiple(ids);
-      this.selectedUsers.set([]);
-      this.messageService.add({ severity: 'success', summary: 'Bulk Deleted', detail: `${ids.length} users deleted.` });
-    }
-    this.confirmDeleteVisible.set(false);
+    const obs = single
+      ? this.userService.delete(single.id)
+      : this.userService.deleteMultiple(this.selectedUsers().map(u => u.id));
+
+    obs.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        if (single) {
+          this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `${single.firstName} ${single.lastName} deleted.` });
+        } else {
+          const count = this.selectedUsers().length;
+          this.selectedUsers.set([]);
+          this.messageService.add({ severity: 'success', summary: 'Bulk Deleted', detail: `${count} users deleted.` });
+        }
+        this.confirmDeleteVisible.set(false);
+      },
+      error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Delete failed.' }),
+    });
   }
 }

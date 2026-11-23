@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angular/forms';
 import { startWith } from 'rxjs/operators';
 import { MessageService } from 'primeng/api';
@@ -59,9 +59,10 @@ export interface LogoConfig {
   styleUrl: './company-settings.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class CompanySettingsComponent {
+export class CompanySettingsComponent implements OnInit {
   private readonly settingsService = inject(CompanySettingsService);
   private readonly messageService = inject(MessageService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly breadcrumbs: BreadcrumbItem[] = [
     { label: 'Dashboard', route: '/dashboard' },
@@ -300,12 +301,13 @@ export class CompanySettingsComponent {
     };
   });
 
-  constructor() {
-    this.hydrateFromService();
+  ngOnInit(): void {
+    this.settingsService.load()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(s => this.hydrateFromService(s));
   }
 
-  private hydrateFromService(): void {
-    const s = this.settingsService.settings();
+  private hydrateFromService(s = this.settingsService.settings()): void {
     this.companyForm.patchValue({
       companyName: s.companyName,
       legalName: s.legalName,
@@ -539,16 +541,25 @@ export class CompanySettingsComponent {
 
       maintenanceMode: Boolean(m.maintenanceMode),
       maintenanceMsg: (m.maintenanceMsg || '').trim(),
+    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Saved',
+          detail: 'Company settings updated successfully.',
+          life: 4000,
+        });
+      },
+      error: () => {
+        this.saving.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Save Failed',
+          detail: 'Could not save settings. Please try again.',
+          life: 4000,
+        });
+      },
     });
-
-    setTimeout(() => {
-      this.saving.set(false);
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Saved',
-        detail: 'Company settings updated successfully.',
-        life: 4000,
-      });
-    }, 400);
   }
 }

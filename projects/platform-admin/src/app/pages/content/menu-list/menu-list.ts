@@ -1,5 +1,10 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy, Component, DestroyRef, OnInit,
+  computed, inject, signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule, ReactiveFormsModule, FormGroup, FormControl } from '@angular/forms';
+import { MessageService } from 'primeng/api';
 import {
   PageContainerComponent,
   BreadcrumbItem,
@@ -8,7 +13,8 @@ import {
   TextFieldComponent,
   SelectFieldComponent,
 } from 'admin-core';
-import { MenuListService, MenuLabel, MenuPageEntry, PageItem } from './menu-list.service';
+import { MenuListService, MenuPageEntry } from './menu-list.service';
+import { PageListService } from '../page-list/page-list.service';
 
 @Component({
   selector: 'app-menu-list',
@@ -26,17 +32,20 @@ import { MenuListService, MenuLabel, MenuPageEntry, PageItem } from './menu-list
   styleUrl: './menu-list.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class MenuListComponent {
+export class MenuListComponent implements OnInit {
   private readonly service = inject(MenuListService);
+  private readonly pageService = inject(PageListService);
+  private readonly messageService = inject(MessageService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly breadcrumbs: BreadcrumbItem[] = [
     { label: 'Content', route: '/content/blogs' },
     { label: 'Menus' },
   ];
 
-  readonly menuLabels = signal<MenuLabel[]>([]);
-  readonly menuItems = signal<Record<string, MenuPageEntry[]>>({});
-  readonly allPages = signal<PageItem[]>([]);
+  readonly menuLabels = this.service.labels;
+  readonly menuItems = this.service.items;
+  readonly allPages = this.pageService.pages;
   readonly selectedMenuId = signal<string>('');
   readonly activeMenuId = signal<string>('');
   readonly labelsModalVisible = signal(false);
@@ -71,25 +80,21 @@ export class MenuListComponent {
     label4: new FormControl(''),
   });
 
-  constructor() {
-    const pages = this.service.loadPages();
-    this.allPages.set(pages);
-    const labels = this.service.loadMenuLabels();
-    this.menuLabels.set(labels);
-    const items = this.service.loadMenuItems(pages);
-    this.menuItems.set(items);
-    const firstId = labels[0]?.id ?? '';
-    this.selectedMenuId.set(firstId);
-    this.activeMenuId.set(firstId);
-    this.menuSelectValue = firstId;
+  ngOnInit(): void {
+    this.pageService.load();
+    this.service.loadLabels();
   }
 
   selectCurrentMenu(): void {
-    this.activeMenuId.set(this.selectedMenuId());
+    const id = this.selectedMenuId();
+    this.activeMenuId.set(id);
     this.leftChecked.set(new Set());
     this.rightChecked.set(new Set());
     this.leftSelectAll.set(false);
     this.rightSelectAll.set(false);
+    if (id && !this.menuItems()[id]) {
+      this.service.loadItems(id);
+    }
   }
 
   onMenuSelectChange(value: string | null): void {
@@ -134,9 +139,12 @@ export class MenuListComponent {
   addPages(): void {
     const menuId = this.activeMenuId();
     if (!menuId) return;
-    const existing = [...(this.menuItems()[menuId] ?? [])];
     const checkedIds = this.leftChecked();
     const toAdd = this.availablePages().filter(p => checkedIds.has(p.id));
+    const pageIds = toAdd.map(p => p.id);
+    if (pageIds.length === 0) return;
+
+    const existing = [...(this.menuItems()[menuId] ?? [])];
     const newEntries: MenuPageEntry[] = toAdd.map((p, i) => ({
       id: `${Date.now()}-${i}`,
       pageId: p.id,
@@ -144,9 +152,15 @@ export class MenuListComponent {
       slug: p.slug,
       order: existing.length + i,
     }));
-    const updated = { ...this.menuItems(), [menuId]: [...existing, ...newEntries] };
-    this.menuItems.set(updated);
-    this.service.saveMenuItems(updated);
+    this.service.updateItemsLocal(menuId, [...existing, ...newEntries]);
+
+    this.service.saveMenuItems(menuId, [...existing.map(e => e.pageId), ...pageIds])
+      .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        error: () => {
+          this.messageService.add({ severity: 'error', summary: 'Save Failed', detail: 'Could not save menu items.' });
+        },
+      });
+
     this.leftChecked.set(new Set());
     this.leftSelectAll.set(false);
   }
@@ -155,10 +169,16 @@ export class MenuListComponent {
     const menuId = this.activeMenuId();
     if (!menuId) return;
     const checkedIds = this.rightChecked();
-    const filtered = (this.menuItems()[menuId] ?? []).filter(e => !checkedIds.has(e.id));
-    const updated = { ...this.menuItems(), [menuId]: filtered };
-    this.menuItems.set(updated);
-    this.service.saveMenuItems(updated);
+    const remaining = (this.menuItems()[menuId] ?? []).filter(e => !checkedIds.has(e.id));
+    this.service.updateItemsLocal(menuId, remaining);
+
+    this.service.saveMenuItems(menuId, remaining.map(e => e.pageId))
+      .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        error: () => {
+          this.messageService.add({ severity: 'error', summary: 'Save Failed', detail: 'Could not save menu items.' });
+        },
+      });
+
     this.rightChecked.set(new Set());
     this.rightSelectAll.set(false);
   }
@@ -176,12 +196,17 @@ export class MenuListComponent {
 
   onUpdateLabels(): void {
     const v = this.labelsForm.getRawValue();
-    const updated = this.menuLabels().map((l, i) => ({
-      ...l,
-      name: [v.label1, v.label2, v.label3, v.label4][i] ?? l.name,
-    }));
-    this.menuLabels.set(updated);
-    this.service.saveMenuLabels(updated);
+    const names = [v.label1, v.label2, v.label3, v.label4];
+    const labels = this.menuLabels();
+
+    names.forEach((name, i) => {
+      const label = labels[i];
+      if (label && name && name !== label.name) {
+        this.service.updateLabel(label.id, name)
+          .pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
+      }
+    });
+
     this.labelsModalVisible.set(false);
   }
 
@@ -203,9 +228,15 @@ export class MenuListComponent {
     const entries = [...(this.menuItems()[menuId] ?? [])];
     const [moved] = entries.splice(this.dragStartIndex, 1);
     entries.splice(index, 0, moved);
-    const updated = { ...this.menuItems(), [menuId]: entries };
-    this.menuItems.set(updated);
-    this.service.saveMenuItems(updated);
+    this.service.updateItemsLocal(menuId, entries);
+
+    this.service.saveMenuItems(menuId, entries.map(e => e.pageId))
+      .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        error: () => {
+          this.messageService.add({ severity: 'error', summary: 'Save Failed', detail: 'Could not reorder menu items.' });
+        },
+      });
+
     this.dragOverIndex.set(-1);
     this.dragStartIndex = -1;
   }

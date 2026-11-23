@@ -1,4 +1,4 @@
-import { Component, input, model, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, model, output } from '@angular/core';
 import { DialogModule } from 'primeng/dialog';
 import { ModalHeaderComponent } from './modal-header/modal-header';
 
@@ -7,6 +7,7 @@ import { ModalHeaderComponent } from './modal-header/modal-header';
   imports: [DialogModule, ModalHeaderComponent],
   templateUrl: './modal.html',
   styleUrl: './modal.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ModalComponent {
   readonly visible = model<boolean>(false);

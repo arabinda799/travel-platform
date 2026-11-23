@@ -1,4 +1,4 @@
-import { Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { Tooltip } from 'primeng/tooltip';
 import { shouldTruncate, truncateText, getTruncateTooltip } from '../../utils/string-truncate';
 
@@ -10,6 +10,7 @@ import { shouldTruncate, truncateText, getTruncateTooltip } from '../../utils/st
   selector: 'lib-truncate-cell',
   standalone: true,
   imports: [Tooltip],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (isTruncated()) {
       <span
