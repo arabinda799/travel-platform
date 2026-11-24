@@ -41,6 +41,11 @@ testem.log
 /typings
 __screenshots__/
 
+# Database
+*.sqlite
+*.sqlite-journal
+*.db
+
 # System files
 .DS_Store
 Thumbs.db
