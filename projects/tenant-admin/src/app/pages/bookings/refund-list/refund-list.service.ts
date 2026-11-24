@@ -34,20 +34,12 @@ export class RefundListService extends BaseApiCrudService<RefundRecord> {
     this.load();
   }
 
-  override deleteMultiple(ids: (string | number)[]): Observable<void> {
-    const req$ = super.deleteMultiple(ids);
-    req$.subscribe();
-    return req$;
-  }
-
   updateMultipleStatus(ids: (number | string)[], status: RefundRecord['refundStatus']): Observable<RefundRecord[]> {
-    const req$ = this.api.patch<RefundRecord[]>(`${this.endpoint}/bulk-status`, { ids, status }).pipe(
+    return this.api.patch<RefundRecord[]>(`${this.endpoint}/bulk-status`, { ids, status }).pipe(
       tap(() => {
         const idSet = new Set(ids.map(String));
         this._items.update(list => list.map(r => (idSet.has(String(r.id)) ? { ...r, refundStatus: status } : r)));
       })
     );
-    req$.subscribe();
-    return req$;
   }
 }

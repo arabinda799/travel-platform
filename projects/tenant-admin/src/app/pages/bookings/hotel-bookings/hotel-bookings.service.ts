@@ -32,24 +32,16 @@ export class HotelBookingsService extends BaseApiCrudService<TenantHotelBooking>
     this.load();
   }
 
-  override deleteMultiple(ids: (string | number)[]): Observable<void> {
-    const req$ = super.deleteMultiple(ids);
-    req$.subscribe();
-    return req$;
-  }
-
   updateStatus(id: number | string, status: TenantHotelBooking['status']): Observable<TenantHotelBooking> {
     return this.update(id, { status } as Partial<TenantHotelBooking>);
   }
 
   updateMultipleStatus(ids: (number | string)[], status: TenantHotelBooking['status']): Observable<TenantHotelBooking[]> {
-    const req$ = this.api.patch<TenantHotelBooking[]>(`${this.endpoint}/bulk-status`, { ids, status }).pipe(
+    return this.api.patch<TenantHotelBooking[]>(`${this.endpoint}/bulk-status`, { ids, status }).pipe(
       tap(() => {
         const idSet = new Set(ids.map(String));
         this._items.update(list => list.map(b => (idSet.has(String(b.id)) ? { ...b, status } : b)));
       })
     );
-    req$.subscribe();
-    return req$;
   }
 }

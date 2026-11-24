@@ -70,7 +70,7 @@ export class PaymentGatewaysService {
 
   loadGateways(): void {
     this._loading.set(true);
-    this.api.get<any>('/payment-gateways').pipe(take(1)).subscribe({
+    this.api.get<any>('/feature/payment-gateways/admin').pipe(take(1)).subscribe({
       next: res => {
         const data = Array.isArray(res) ? res : (res?.data ?? []);
         this._gateways.set(data);
@@ -86,7 +86,7 @@ export class PaymentGatewaysService {
 
   loadFeeRules(gatewayId?: string): void {
     const params = gatewayId ? { gatewayId } : undefined;
-    this.api.get<any>('/convenience-fees', params).pipe(take(1)).subscribe({
+    this.api.get<any>('/feature/convenience-fees/admin', params).pipe(take(1)).subscribe({
       next: res => {
         const data = Array.isArray(res) ? res : (res?.data ?? []);
         this._feeRules.set(data);
@@ -100,14 +100,14 @@ export class PaymentGatewaysService {
   }
 
   createGateway(data: Omit<PaymentGateway, 'id' | 'createdDate' | 'updatedDate'>): Observable<PaymentGateway> {
-    return this.api.post<PaymentGateway>('/payment-gateways', data).pipe(
+    return this.api.post<PaymentGateway>('/feature/payment-gateways/admin', data).pipe(
       take(1),
       tap(created => this._gateways.update(list => [created, ...list])),
     );
   }
 
   updateGateway(id: string, updates: Partial<PaymentGateway>): Observable<PaymentGateway> {
-    return this.api.patch<PaymentGateway>(`/payment-gateways/${id}`, updates).pipe(
+    return this.api.patch<PaymentGateway>(`/feature/payment-gateways/admin/${id}`, updates).pipe(
       take(1),
       tap(updated => this._gateways.update(list => list.map(g => g.id === id ? updated : g))),
     );
@@ -118,7 +118,7 @@ export class PaymentGatewaysService {
   }
 
   updateMultipleStatus(ids: string[], status: 'Active' | 'Inactive'): Observable<PaymentGateway[]> {
-    return this.api.patch<PaymentGateway[]>('/payment-gateways/bulk-status', { ids, status }).pipe(
+    return this.api.patch<PaymentGateway[]>('/feature/payment-gateways/admin/bulk-status', { ids, status }).pipe(
       take(1),
       tap(updated => {
         const updatedMap = new Map(updated.map(g => [g.id, g]));
@@ -131,8 +131,8 @@ export class PaymentGatewaysService {
 
   saveFeeRule(ruleData: Omit<ConvenienceFeeRule, 'createdDate' | 'updatedDate' | 'id'> & { id?: string }): Observable<ConvenienceFeeRule> {
     const request$ = ruleData.id
-      ? this.api.patch<ConvenienceFeeRule>(`/convenience-fees/${ruleData.id}`, ruleData)
-      : this.api.post<ConvenienceFeeRule>('/convenience-fees', ruleData);
+      ? this.api.patch<ConvenienceFeeRule>(`/feature/convenience-fees/admin/${ruleData.id}`, ruleData)
+      : this.api.post<ConvenienceFeeRule>('/feature/convenience-fees/admin', ruleData);
     return request$.pipe(
       take(1),
       tap(saved => {
@@ -145,7 +145,7 @@ export class PaymentGatewaysService {
   }
 
   deleteFeeRule(id: string): Observable<void> {
-    return this.api.delete<void>(`/convenience-fees/${id}`).pipe(
+    return this.api.delete<void>(`/feature/convenience-fees/admin/${id}`).pipe(
       take(1),
       tap(() => this._feeRules.update(list => list.filter(r => r.id !== id))),
     );

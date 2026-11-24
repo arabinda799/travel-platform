@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, take, tap } from 'rxjs';
 import { BaseApiCrudService } from 'admin-core';
 
 export type PlatformUserStatus = 'ACTIVE' | 'INACTIVE' | 'BLOCKED' | 'PENDING';
@@ -18,90 +18,9 @@ export interface PlatformUser {
   lastLoginAt: string | null;
 }
 
-const INITIAL_STAFF_USERS: PlatformUser[] = [
-  {
-    id: 'staff-1',
-    firstName: 'Super',
-    lastName: 'Admin',
-    email: 'superadmin@easyflys.com',
-    phone: '+91 90000 00001',
-    roleId: 'role-super-admin',
-    status: 'ACTIVE',
-    disabledPermissionIds: [],
-    isPrimary: true,
-    createdAt: '2026-01-01 / 10:00 AM',
-    lastLoginAt: '2026-11-23 / 11:30 AM',
-  },
-  {
-    id: 'staff-2',
-    firstName: 'Amit',
-    lastName: 'Kumar',
-    email: 'amit.kumar@easyflys.com',
-    phone: '+91 90000 00002',
-    roleId: 'role-tenant-admin',
-    status: 'ACTIVE',
-    disabledPermissionIds: [],
-    isPrimary: false,
-    createdAt: '2026-01-10 / 02:15 PM',
-    lastLoginAt: '2026-11-23 / 09:12 AM',
-  },
-  {
-    id: 'staff-3',
-    firstName: 'Sneha',
-    lastName: 'Reddy',
-    email: 'sneha.r@easyflys.com',
-    phone: '+91 90000 00003',
-    roleId: 'role-hotel-ops',
-    status: 'ACTIVE',
-    disabledPermissionIds: [],
-    isPrimary: false,
-    createdAt: '2026-01-15 / 11:45 AM',
-    lastLoginAt: '2026-11-22 / 05:40 PM',
-  },
-  {
-    id: 'staff-4',
-    firstName: 'Vikram',
-    lastName: 'Malhotra',
-    email: 'vikram.m@easyflys.com',
-    phone: '+91 90000 00004',
-    roleId: 'role-finance-mgr',
-    status: 'ACTIVE',
-    disabledPermissionIds: [],
-    isPrimary: false,
-    createdAt: '2026-02-01 / 10:20 AM',
-    lastLoginAt: '2026-11-23 / 01:10 PM',
-  },
-  {
-    id: 'staff-5',
-    firstName: 'Priya',
-    lastName: 'Sharma',
-    email: 'priya.s@easyflys.com',
-    phone: '+91 90000 00005',
-    roleId: 'role-support-exec',
-    status: 'ACTIVE',
-    disabledPermissionIds: [],
-    isPrimary: false,
-    createdAt: '2026-02-15 / 03:00 PM',
-    lastLoginAt: '2026-11-23 / 02:05 PM',
-  },
-  {
-    id: 'staff-6',
-    firstName: 'Rohan',
-    lastName: 'Gupta',
-    email: 'rohan.gupta@easyflys.com',
-    phone: '+91 90000 00006',
-    roleId: 'role-support-exec',
-    status: 'INACTIVE',
-    disabledPermissionIds: [],
-    isPrimary: false,
-    createdAt: '2026-03-01 / 12:30 PM',
-    lastLoginAt: '2026-10-15 / 04:15 PM',
-  },
-];
-
 @Injectable({ providedIn: 'root' })
 export class PlatformUserService extends BaseApiCrudService<PlatformUser> {
-  protected readonly endpoint = '/tenant-users';
+  protected readonly endpoint = '/tenant/users';
   readonly users = this.items;
 
   constructor() {
@@ -110,15 +29,30 @@ export class PlatformUserService extends BaseApiCrudService<PlatformUser> {
   }
 
   override add(payload: Partial<PlatformUser>): Observable<PlatformUser> {
-    return super.add({ ...payload, tenantId: 'easyfly' });
+    return super.add(payload);
   }
 
   override update(id: string, payload: Partial<PlatformUser>): Observable<PlatformUser> {
     return super.update(id, payload);
   }
 
+  loadById(id: string): Observable<PlatformUser> {
+    return this.api.get<PlatformUser>(`${this.endpoint}/${id}`).pipe(
+      take(1),
+      tap(user => {
+        this._items.update(list => {
+          const idx = list.findIndex(u => u.id === id);
+          return idx >= 0 ? list.map((u, i) => i === idx ? user : u) : [user, ...list];
+        });
+      }),
+    );
+  }
+
   updateDisabledPermissions(id: string, disabledPermissionIds: string[]): Observable<PlatformUser> {
-    return this.update(id, { disabledPermissionIds });
+    return this.api.patch<PlatformUser>(`${this.endpoint}/${id}/permissions`, { disabledPermissionIds }).pipe(
+      take(1),
+      tap(updated => this._items.update(list => list.map(u => u.id === id ? updated : u))),
+    );
   }
 
   override delete(id: string): Observable<void> {

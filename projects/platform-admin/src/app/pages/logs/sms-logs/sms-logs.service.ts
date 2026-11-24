@@ -26,14 +26,14 @@ export class SmsLogsService {
 
   load(): void {
     this._loading.set(true);
-    this.api.get<SmsLog[]>('/sms-logs').subscribe({
+    this.api.get<SmsLog[]>('/shared/logs/sms').subscribe({
       next: (data) => { this._logs.set(data); this._loading.set(false); },
       error: () => this._loading.set(false),
     });
   }
 
   resend(id: string): Observable<SmsLog> {
-    return this.api.patch<SmsLog>(`/sms-logs/${id}/resend`, {}).pipe(
+    return this.api.patch<SmsLog>(`/shared/logs/sms/${id}/resend`, {}).pipe(
       tap((updated) => {
         this._logs.update(list => list.map(l => l.id === id ? updated : l));
       })
@@ -41,13 +41,13 @@ export class SmsLogsService {
   }
 
   delete(id: string): Observable<void> {
-    return this.api.delete<void>(`/sms-logs/${id}`).pipe(
+    return this.api.delete<void>(`/shared/logs/sms/${id}`).pipe(
       tap(() => this._logs.update(list => list.filter(l => l.id !== id)))
     );
   }
 
   bulkDelete(ids: string[]): Observable<void> {
-    return this.api.post<void>('/sms-logs/bulk-delete', { ids }).pipe(
+    return this.api.post<void>('/shared/logs/sms/bulk-delete', { ids }).pipe(
       tap(() => {
         const set = new Set(ids);
         this._logs.update(list => list.filter(l => !set.has(l.id)));

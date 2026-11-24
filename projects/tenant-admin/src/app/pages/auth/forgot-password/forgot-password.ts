@@ -1,7 +1,7 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { ButtonComponent, TextFieldComponent } from 'admin-core';
+import { ApiService, ButtonComponent, TextFieldComponent } from 'admin-core';
 
 @Component({
   selector: 'app-forgot-password',
@@ -12,6 +12,7 @@ import { ButtonComponent, TextFieldComponent } from 'admin-core';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ForgotPasswordComponent {
+  private readonly api = inject(ApiService);
   readonly loading = signal(false);
   readonly submitted = signal(false);
 
@@ -32,10 +33,15 @@ export class ForgotPasswordComponent {
     if (this.form.invalid) return;
 
     this.loading.set(true);
-    // Mock reset request — replace with real API call
-    setTimeout(() => {
-      this.loading.set(false);
-      this.submitted.set(true);
-    }, 800);
+    this.api.post('/tenant/auth/forgot-password', { email: this.form.value.email }).subscribe({
+      next: () => {
+        this.loading.set(false);
+        this.submitted.set(true);
+      },
+      error: () => {
+        this.loading.set(false);
+        this.submitted.set(true);
+      },
+    });
   }
 }

@@ -192,7 +192,11 @@ export class TenantUserListComponent implements OnInit {
     this.filterVisible.set(false);
   }
 
-  ngOnInit(): void { this.userService.load(); }
+  ngOnInit(): void {
+    this.userService.load();
+    this.companyService.load();
+    this.roleService.load();
+  }
 
   onLazyLoad(e: TableLazyEvent): void {
     const page = Math.floor((e.first ?? 0) / (e.rows ?? 50)) + 1;

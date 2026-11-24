@@ -201,22 +201,26 @@ export class HotelQueryListComponent {
 
   confirmBulkDelete(): void {
     const selectedIds = this.selectedQueries.map(q => q.id);
-    if (selectedIds.length) {
-      this.hotelQueryService.deleteMultiple(selectedIds);
-    }
-    this.selectedQueries = [];
     this.deleteConfirmVisible.set(false);
-    this.loadData({ ...this.currentLazyEvent, first: 0 });
+    if (!selectedIds.length) return;
+    this.hotelQueryService.deleteMultiple(selectedIds).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.selectedQueries = [];
+        this.loadData({ ...this.currentLazyEvent, first: 0 });
+      },
+    });
   }
 
   onStatusModalConfirm(newStatus: string): void {
     const selectedIds = this.selectedQueries.map(q => q.id);
-    if (selectedIds.length) {
-      this.hotelQueryService.updateMultipleStatus(selectedIds, newStatus as HotelQuery['queryStatus']);
-    }
-    this.selectedQueries = [];
     this.statusModalVisible.set(false);
-    this.loadData(this.currentLazyEvent);
+    if (!selectedIds.length) return;
+    this.hotelQueryService.updateMultipleStatus(selectedIds, newStatus as HotelQuery['queryStatus']).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.selectedQueries = [];
+        this.loadData(this.currentLazyEvent);
+      },
+    });
   }
 
   onExport(_format: 'csv' | 'excel' | 'pdf'): void {

@@ -198,22 +198,26 @@ export class AmendmentListComponent {
 
   confirmBulkDelete(): void {
     const selectedIds = this.selectedAmendments.map(a => a.id);
-    if (selectedIds.length) {
-      this.amendmentService.deleteMultiple(selectedIds);
-    }
-    this.selectedAmendments = [];
     this.deleteConfirmVisible.set(false);
-    this.loadData({ ...this.currentLazyEvent, first: 0 });
+    if (!selectedIds.length) return;
+    this.amendmentService.deleteMultiple(selectedIds).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.selectedAmendments = [];
+        this.loadData({ ...this.currentLazyEvent, first: 0 });
+      },
+    });
   }
 
   onStatusModalConfirm(newStatus: string): void {
     const selectedIds = this.selectedAmendments.map(a => a.id);
-    if (selectedIds.length) {
-      this.amendmentService.updateMultipleStatus(selectedIds, newStatus as Amendment['amendmentStatus']);
-    }
-    this.selectedAmendments = [];
     this.statusModalVisible.set(false);
-    this.loadData(this.currentLazyEvent);
+    if (!selectedIds.length) return;
+    this.amendmentService.updateMultipleStatus(selectedIds, newStatus as Amendment['amendmentStatus']).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.selectedAmendments = [];
+        this.loadData(this.currentLazyEvent);
+      },
+    });
   }
 
   onExport(_format: 'csv' | 'excel' | 'pdf'): void {

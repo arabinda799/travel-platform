@@ -34,7 +34,7 @@ export abstract class BaseApiCrudService<T extends { id: string | number }> {
     this._loading.set(true);
     this._error.set(null);
     const queryParams = { page: this._page(), limit: this._limit(), ...params };
-    this.api.get<PaginatedResponse<T> | T[]>(this.endpoint, queryParams)
+    this.api.get<any>(this.endpoint, queryParams)
       .pipe(take(1))
       .subscribe({
         next: (res: any) => {
@@ -43,7 +43,10 @@ export abstract class BaseApiCrudService<T extends { id: string | number }> {
             this._total.set(res.length);
           } else if (res && Array.isArray(res.data)) {
             this._items.set(res.data);
-            this._total.set(typeof res.total === 'number' ? res.total : res.data.length);
+            const total = typeof res?.meta?.total === 'number'
+              ? res.meta.total
+              : (typeof res?.total === 'number' ? res.total : res.data.length);
+            this._total.set(total);
           } else {
             this._items.set([]);
             this._total.set(0);
@@ -66,14 +69,18 @@ export abstract class BaseApiCrudService<T extends { id: string | number }> {
   add(payload: object): Observable<T> {
     return this.api.post<T>(this.endpoint, payload).pipe(
       take(1),
-      tap(created => this._items.update(list => [created, ...list])),
+      tap(item => {
+        this._items.update(list => [item, ...list]);
+      }),
     );
   }
 
   update(id: string | number, payload: object): Observable<T> {
     return this.api.patch<T>(`${this.endpoint}/${id}`, payload).pipe(
       take(1),
-      tap(updated => this._items.update(list => list.map(i => String(i.id) === String(id) ? updated : i))),
+      tap(item => {
+        this._items.update(list => list.map(i => String(i.id) === String(id) ? item : i));
+      }),
     );
   }
 
@@ -86,7 +93,8 @@ export abstract class BaseApiCrudService<T extends { id: string | number }> {
 
   deleteMultiple(ids: (string | number)[]): Observable<void> {
     const idSet = new Set(ids.map(id => String(id)));
-    return this.api.post<void>(`${this.endpoint}/bulk-delete`, { ids }).pipe(
+    // Real travel-api supports DELETE .../bulk { ids }
+    return this.api.delete<void>(`${this.endpoint}/bulk`, { ids }).pipe(
       take(1),
       tap(() => this._items.update(list => list.filter(i => !idSet.has(String(i.id))))),
     );

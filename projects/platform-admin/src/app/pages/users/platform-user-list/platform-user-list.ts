@@ -169,6 +169,7 @@ export class PlatformUserListComponent implements OnInit {
 
   ngOnInit(): void {
     this.userService.load();
+    this.roleService.load();
   }
 
   onLazyLoad(e: TableLazyEvent): void {

@@ -21,7 +21,7 @@ import {
   TableColumn,
   BreadcrumbItem,
 } from 'admin-core';
-import { exportToCsv } from '../../../shared/utils/export.util';
+import { exportToCsv } from 'admin-core';
 import { PageListService, PageItem } from './page-list.service';
 
 @Component({

@@ -12,7 +12,7 @@ import {
   TableColumn, BreadcrumbItem,
 } from 'admin-core';
 import { CouponLog, CouponLogsService } from './coupon-logs.service';
-import { exportToCsv } from '../../../shared/utils/export.util';
+import { exportToCsv } from 'admin-core';
 
 @Component({
   selector: 'app-coupon-logs',

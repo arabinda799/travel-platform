@@ -58,7 +58,7 @@ export class ResetPasswordComponent {
 
     this.loading.set(true);
     this.errorMessage.set('');
-    this.api.post<{ message: string }>('/auth/reset-password', { token, newPassword: this.form.value.newPassword })
+    this.api.post<{ message: string }>('/platform/auth/reset-password', { token, newPassword: this.form.value.newPassword })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => { this.loading.set(false); this.submitted.set(true); },

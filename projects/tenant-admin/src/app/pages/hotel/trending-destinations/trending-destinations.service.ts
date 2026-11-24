@@ -16,7 +16,7 @@ export interface TrendingDestination {
 
 @Injectable({ providedIn: 'root' })
 export class TrendingDestinationsService extends BaseApiCrudService<TrendingDestination> {
-  protected readonly endpoint = '/trending-destinations';
+  protected readonly endpoint = '/hotel/trending/admin';
   readonly destinations = this.items;
 
   constructor() {

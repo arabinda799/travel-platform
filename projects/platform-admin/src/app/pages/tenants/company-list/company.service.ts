@@ -64,7 +64,7 @@ export const DEFAULT_SMTP: TenantSmtp = {
 
 @Injectable({ providedIn: 'root' })
 export class CompanyService extends BaseApiCrudService<TenantCompany> {
-  protected readonly endpoint = '/tenants';
+  protected readonly endpoint = '/platform/tenants';
 
   readonly companies = this.items;
 

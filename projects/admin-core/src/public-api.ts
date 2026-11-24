@@ -64,7 +64,6 @@ export * from './lib/config/admin-app.config';
 
 // Services & Auth
 export * from './lib/services/api.service';
-export * from './lib/services/base-crud.service';
 export * from './lib/services/base-api-crud.service';
 export * from './lib/services/error-handler.service';
 export * from './lib/services/auth.service';

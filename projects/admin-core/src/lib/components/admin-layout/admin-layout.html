@@ -3,9 +3,7 @@
   <p-toast position="top-right" [baseZIndex]="99999" />
 
   <!-- Sidebar -->
-  <lib-sidebar 
-    [items]="navItems()"
-    (logout)="onSignOut()">
+  <lib-sidebar [items]="navItems()" (logout)="onSignOut()">
     <ng-content select="[sidebar-brand]" sidebar-brand></ng-content>
     <ng-content select="[sidebar-nav]" sidebar-nav></ng-content>
     <ng-content select="[sidebar-footer]" sidebar-footer></ng-content>
@@ -14,15 +12,9 @@
   <!-- Right Section: Header + Main Content + Footer -->
   <div class="admin-main-wrapper">
     <!-- Header -->
-    <lib-header
-      [userName]="userName()"
-      [userInitials]="userInitials()"
-      [userRole]="userRole()"
-      [userEmail]="userEmail()"
-      [notificationCount]="notificationCount()"
-      (profileSelected)="onProfileSelected()"
-      (auditLogsSelected)="onAuditLogsSelected()"
-      (signOut)="onSignOut()">
+    <lib-header [userName]="userName()" [userInitials]="userInitials()" [userRole]="userRole()"
+      [userEmail]="userEmail()" [notificationCount]="notificationCount()" (profileSelected)="onProfileSelected()"
+      (auditLogsSelected)="onAuditLogsSelected()" (signOut)="onSignOut()">
       <ng-content select="[header-left]" header-left></ng-content>
       <ng-content select="[header-center]" header-center></ng-content>
       <ng-content select="[header-right]" header-right></ng-content>
@@ -35,8 +27,7 @@
     </main>
 
     <!-- Footer Strip -->
-    <lib-footer
-      [systemStatus]="systemStatus()">
+    <lib-footer [systemStatus]="systemStatus()">
       <ng-content select="[footer-left]" footer-left></ng-content>
       <ng-content select="[footer-center]" footer-center></ng-content>
       <ng-content select="[footer-right]" footer-right></ng-content>

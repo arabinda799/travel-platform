@@ -142,11 +142,11 @@ export class SlidersComponent implements OnInit {
 
     if (query) {
       list = list.filter(item =>
-        item.mainTitle.toLowerCase().includes(query) ||
-        item.smallSubtitle.toLowerCase().includes(query) ||
-        item.rightItalicText.toLowerCase().includes(query) ||
-        item.serviceType.toLowerCase().includes(query) ||
-        item.platform.toLowerCase().includes(query)
+        (item.mainTitle || '').toLowerCase().includes(query) ||
+        (item.smallSubtitle || '').toLowerCase().includes(query) ||
+        (item.rightItalicText || '').toLowerCase().includes(query) ||
+        (item.serviceType || '').toLowerCase().includes(query) ||
+        (item.platform || '').toLowerCase().includes(query)
       );
     }
 

@@ -18,7 +18,7 @@ export interface Customer {
 
 @Injectable({ providedIn: 'root' })
 export class CustomerService extends BaseApiCrudService<Customer> {
-  protected readonly endpoint = '/customers';
+  protected readonly endpoint = '/shared/customers';
 
   readonly customers = this.items;
 

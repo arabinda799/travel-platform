@@ -208,7 +208,7 @@ for (const [moduleKey, actions] of Object.entries(SEED_MAP)) {
 
 @Injectable({ providedIn: 'root' })
 export class RoleService extends BaseApiCrudService<Role> {
-  protected readonly endpoint = '/roles';
+  protected readonly endpoint = '/platform/roles';
 
   readonly roles = this.items;
 
@@ -225,6 +225,9 @@ export class RoleService extends BaseApiCrudService<Role> {
   }
 
   updatePermissions(id: string, permissionIds: string[]): Observable<Role> {
-    return this.update(id, { permissionIds });
+    return this.api.patch<Role>(`${this.endpoint}/${id}/permissions`, { permissionIds }).pipe(
+      take(1),
+      tap(updated => this._items.update(list => list.map(r => r.id === id ? updated : r))),
+    );
   }
 }

@@ -20,6 +20,6 @@ export interface BlogPost {
 
 @Injectable({ providedIn: 'root' })
 export class BlogService extends BaseApiCrudService<BlogPost> {
-  protected readonly endpoint = '/blog-posts';
+  protected readonly endpoint = '/feature/blogs/admin';
   readonly posts = this.items;
 }

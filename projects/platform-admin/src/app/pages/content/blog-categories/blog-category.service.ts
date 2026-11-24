@@ -17,6 +17,6 @@ export interface BlogCategory {
 
 @Injectable({ providedIn: 'root' })
 export class BlogCategoryService extends BaseApiCrudService<BlogCategory> {
-  protected readonly endpoint = '/blog-categories';
+  protected readonly endpoint = '/feature/blogs/categories/admin';
   readonly categories = this.items;
 }

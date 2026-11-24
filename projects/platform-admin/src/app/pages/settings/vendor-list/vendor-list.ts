@@ -17,7 +17,7 @@ import {
 import {
   Vendor, VendorAuthType, VendorMode, VendorServiceType, VendorListService,
 } from './vendor-list.service';
-import { exportToCsv } from '../../../shared/utils/export.util';
+import { exportToCsv } from 'admin-core';
 
 function jsonValidator(control: AbstractControl): ValidationErrors | null {
   if (!control.value) return null;

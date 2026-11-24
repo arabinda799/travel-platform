@@ -60,9 +60,17 @@ export class LoginComponent {
 
     const { email, password, rememberMe } = this.form.getRawValue();
 
-    this.api.post<LoginResponse>('auth/login', { email, password }).subscribe({
+    this.api.post<any>('/tenant/auth/login', { email, password }).subscribe({
       next: (res) => {
-        this.authService.login(res.user, res.token, rememberMe ?? false);
+        const user = {
+          id: res.user.id,
+          name: `${res.user.firstName || ''} ${res.user.lastName || ''}`.trim() || res.user.email,
+          email: res.user.email,
+          role: 'tenant_admin' as const,
+          tenantId: res.user.tenantId,
+          refreshToken: res.refreshToken,
+        };
+        this.authService.login(user, res.accessToken, rememberMe ?? false);
         this.router.navigate(['/dashboard']);
       },
       error: (err) => {

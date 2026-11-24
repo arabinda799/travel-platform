@@ -108,7 +108,7 @@ export class RoleListComponent implements OnInit {
     name: new FormControl('', Validators.required),
     description: new FormControl(''),
     type: new FormControl<RoleType>('CUSTOM', Validators.required),
-    scope: new FormControl<RoleScope>('PLATFORM', Validators.required),
+    scope: new FormControl<RoleScope>('TENANT', Validators.required),
     status: new FormControl<RoleStatus>('ACTIVE', Validators.required),
   });
 
@@ -180,7 +180,7 @@ export class RoleListComponent implements OnInit {
   openAddModal(): void {
     this.isEditing.set(false);
     this.editingId.set(null);
-    this.form.reset({ name: '', description: '', type: 'CUSTOM', scope: 'PLATFORM', status: 'ACTIVE' });
+    this.form.reset({ name: '', description: '', type: 'CUSTOM', scope: 'TENANT', status: 'ACTIVE' });
     this.modalVisible.set(true);
   }
 

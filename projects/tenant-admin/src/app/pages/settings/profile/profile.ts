@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ReactiveFormsModule, FormGroup, FormControl, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { MessageService } from 'primeng/api';
@@ -9,6 +9,7 @@ import {
   TextFieldComponent,
   SelectFieldComponent,
   FormModalComponent,
+  ApiService,
 } from 'admin-core';
 
 export interface AdminProfile {
@@ -25,8 +26,6 @@ export interface AdminProfile {
   lastLoginIp: string;
   createdAt: string;
 }
-
-const STORAGE_KEY = 'platform_admin_profile';
 
 function confirmPasswordValidator(control: AbstractControl): ValidationErrors | null {
   const parent = control.parent;
@@ -52,13 +51,30 @@ function confirmPasswordValidator(control: AbstractControl): ValidationErrors | 
 })
 export class ProfileComponent {
   private readonly messageService = inject(MessageService);
+  private readonly api = inject(ApiService);
+  private readonly destroyRef = inject(DestroyRef);
+  readonly changingPassword = signal(false);
 
   readonly breadcrumbs: BreadcrumbItem[] = [
     { label: 'Settings', route: '/system/settings/company' },
     { label: 'Profile' },
   ];
 
-  readonly profile = signal<AdminProfile>(this.loadProfile());
+  readonly profile = signal<AdminProfile>({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    role: 'Tenant Admin',
+    department: 'Operations',
+    timezone: 'Asia/Kolkata',
+    twoFactorEnabled: false,
+    avatarUrl: '',
+    lastLoginAt: '',
+    lastLoginIp: '',
+    createdAt: '',
+  });
+
   readonly saving = signal(false);
   readonly changePasswordVisible = signal(false);
   readonly showCurrentPw = signal(false);
@@ -124,14 +140,7 @@ export class ProfileComponent {
   });
 
   constructor() {
-    const p = this.profile();
-    this.profileForm.patchValue({
-      firstName: p.firstName,
-      lastName: p.lastName,
-      email: p.email,
-      phone: p.phone,
-      timezone: p.timezone,
-    });
+    this.loadProfile();
 
     this.changePasswordForm.controls.newPassword.valueChanges.pipe(takeUntilDestroyed()).subscribe(val => {
       this.updatePwStrength(val ?? '');
@@ -139,27 +148,34 @@ export class ProfileComponent {
     });
   }
 
-  private loadProfile(): AdminProfile {
-    try {
-      const raw = sessionStorage.getItem(STORAGE_KEY);
-      if (raw) return JSON.parse(raw) as AdminProfile;
-    } catch { /* ignore */ }
-    const initial: AdminProfile = {
-      firstName: 'Arabinda',
-      lastName: 'Jena',
-      email: 'arabinda.jena@finqy.ai',
-      phone: '+91 98765 43210',
-      role: 'Super Admin',
-      department: 'Platform Engineering',
-      timezone: 'Asia/Kolkata',
-      twoFactorEnabled: false,
-      avatarUrl: '',
-      lastLoginAt: '19 Nov 2026 / 09:45 AM',
-      lastLoginIp: '103.145.72.11',
-      createdAt: '01 Jan 2026 / 10:00 AM',
-    };
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(initial));
-    return initial;
+  private loadProfile(): void {
+    this.api.get<any>('/tenant/auth/profile').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (user: any) => {
+        const p: AdminProfile = {
+          firstName: user.firstName ?? '',
+          lastName: user.lastName ?? '',
+          email: user.email ?? '',
+          phone: user.mobileNo ? `${user.dialCode ? user.dialCode + ' ' : ''}${user.mobileNo}` : '',
+          role: 'Tenant Admin',
+          department: 'Operations',
+          timezone: 'Asia/Kolkata',
+          twoFactorEnabled: false,
+          avatarUrl: user.profilePic ?? '',
+          lastLoginAt: user.updatedAt ?? user.createdAt ?? '',
+          lastLoginIp: '',
+          createdAt: user.createdAt ?? '',
+        };
+        this.profile.set(p);
+        this.profileForm.patchValue({
+          firstName: p.firstName,
+          lastName: p.lastName,
+          email: p.email,
+          phone: p.phone,
+          timezone: p.timezone,
+        });
+      },
+      error: () => {},
+    });
   }
 
   private updatePwStrength(pw: string): void {
@@ -180,20 +196,27 @@ export class ProfileComponent {
     }
     this.saving.set(true);
     const v = this.profileForm.getRawValue();
-    const updated: AdminProfile = {
-      ...this.profile(),
+    this.api.patch<any>('/tenant/auth/profile', {
       firstName: v.firstName!.trim(),
       lastName: v.lastName!.trim(),
-      email: v.email!.trim(),
-      phone: (v.phone ?? '').trim(),
-      timezone: v.timezone!,
-    };
-    this.profile.set(updated);
-    try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(updated)); } catch { /* ignore */ }
-    setTimeout(() => {
-      this.saving.set(false);
-      this.messageService.add({ severity: 'success', summary: 'Profile Updated', detail: 'Your profile changes have been saved.' });
-    }, 300);
+      mobileNo: (v.phone ?? '').trim(),
+    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.profile.update(curr => ({
+          ...curr,
+          firstName: v.firstName!.trim(),
+          lastName: v.lastName!.trim(),
+          phone: (v.phone ?? '').trim(),
+          timezone: v.timezone!,
+        }));
+        this.messageService.add({ severity: 'success', summary: 'Profile Updated', detail: 'Your profile changes have been saved.' });
+      },
+      error: (err: { error?: { message?: string } }) => {
+        this.saving.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Update Failed', detail: err?.error?.message ?? 'Could not update profile.' });
+      },
+    });
   }
 
   openChangePassword(): void {
@@ -216,9 +239,21 @@ export class ProfileComponent {
       this.messageService.add({ severity: 'warn', summary: 'Same Password', detail: 'New password must differ from the current one.' });
       return;
     }
-    // In production: call auth API to change password
-    this.changePasswordVisible.set(false);
-    this.messageService.add({ severity: 'success', summary: 'Password Changed', detail: 'Your password has been updated successfully.' });
+    this.changingPassword.set(true);
+    this.api.post<{ message: string }>('/tenant/auth/change-password', { currentPassword, newPassword })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.changingPassword.set(false);
+          this.changePasswordVisible.set(false);
+          this.messageService.add({ severity: 'success', summary: 'Password Changed', detail: 'Your password has been updated successfully.' });
+        },
+        error: (err: { error?: { message?: string } }) => {
+          this.changingPassword.set(false);
+          const msg = err?.error?.message ?? 'Could not change password. Check your current password.';
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
+        },
+      });
   }
 
   onAvatarUpload(event: Event): void {
@@ -227,9 +262,7 @@ export class ProfileComponent {
     const reader = new FileReader();
     reader.onload = e => {
       const url = e.target?.result as string;
-      const updated = { ...this.profile(), avatarUrl: url };
-      this.profile.set(updated);
-      try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(updated)); } catch { /* ignore */ }
+      this.profile.update(curr => ({ ...curr, avatarUrl: url }));
     };
     reader.readAsDataURL(file);
   }

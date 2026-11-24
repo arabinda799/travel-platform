@@ -24,7 +24,7 @@ export interface Vendor {
 
 @Injectable({ providedIn: 'root' })
 export class VendorListService extends BaseApiCrudService<Vendor> {
-  protected readonly endpoint = '/vendors';
+  protected readonly endpoint = '/vendor/admin';
 
   readonly vendors = this.items;
 

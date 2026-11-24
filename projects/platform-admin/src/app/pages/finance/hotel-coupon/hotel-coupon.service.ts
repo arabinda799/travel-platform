@@ -29,7 +29,7 @@ export interface HotelCoupon {
 
 @Injectable({ providedIn: 'root' })
 export class HotelCouponService extends BaseApiCrudService<HotelCoupon> {
-  protected readonly endpoint = '/hotel-coupons';
+  protected readonly endpoint = '/hotel/coupons/admin';
 
   readonly coupons = this.items;
 

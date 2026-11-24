@@ -20,7 +20,7 @@ export interface PlatformUser {
 
 @Injectable({ providedIn: 'root' })
 export class PlatformUserService extends BaseApiCrudService<PlatformUser> {
-  protected readonly endpoint = '/platform-users';
+  protected readonly endpoint = '/platform/users';
 
   // Alias so existing component code using users() needs no changes
   readonly users = this.items;

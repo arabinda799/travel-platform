@@ -32,7 +32,7 @@ export class ForgotPasswordComponent {
     this.form.markAllAsTouched();
     if (this.form.invalid) return;
     this.loading.set(true);
-    this.api.post('/auth/forgot-password', { email: this.form.value.email }).subscribe({
+    this.api.post('/platform/auth/forgot-password', { email: this.form.value.email }).subscribe({
       next: () => { this.loading.set(false); this.submitted.set(true); },
       error: () => { this.loading.set(false); this.submitted.set(true); },
     });

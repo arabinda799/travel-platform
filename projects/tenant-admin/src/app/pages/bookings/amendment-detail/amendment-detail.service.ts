@@ -1,4 +1,7 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
+import { Observable } from 'rxjs';
+import { tap } from 'rxjs/operators';
+import { ApiService } from 'admin-core';
 
 export interface GstBreakupRow {
   serviceDescription: string;
@@ -10,28 +13,21 @@ export interface GstBreakupRow {
 }
 
 export interface AmendmentDetailData {
-  // Amendment Info
   amendmentId: string;
   amendmentStatus: 'Approved' | 'Pending' | 'Rejected' | 'In Review';
   amendmentType: 'Cancellation' | 'Date Change' | 'Room Upgrade' | 'Guest Name Change' | 'Meal Plan Change' | 'Occupancy Change';
   remark: string;
   confirmationNumber: string;
   createdOn: string;
-
-  // Company Info
   companyName: string;
   companyId: string;
   companyEmail: string;
   mobileNumber: string;
-
-  // Fare Information (read-only)
   publishedFare: number;
   offeredFare: number;
   agentCommission: number;
   gstAmount: number;
   tds: number;
-
-  // Editable Cancellation Fields
   cancellationCharge: number;
   cancellationServiceCharge: number;
   cancellationChargeGst: number;
@@ -39,15 +35,11 @@ export interface AmendmentDetailData {
   tdsReturn: boolean;
   changeBookingCurrencyRate: boolean;
   currentCurrencyRate: number;
-
-  // Booking Basic
   bookingId: string;
   hotelName: string;
   hotelConfirmationNo: string;
   amount: number;
   bookingStatus: string;
-
-  // Fare Breakup
   applyMarkUp: number;
   applyDiscount: number;
   publishedPrice: number;
@@ -55,60 +47,44 @@ export interface AmendmentDetailData {
   tdsBreakup: number;
   convenienceFee: number;
   totalAmount: number;
-
-  // GST
   gstRows: GstBreakupRow[];
 }
 
-const MOCK: AmendmentDetailData = {
-  amendmentId: '305',
-  amendmentStatus: 'Approved',
-  amendmentType: 'Cancellation',
-  remark: 'CANCEL WITH FULL REFUND',
-  confirmationNumber: '68432059468',
-  createdOn: '18 Nov 2026, 11:58 AM',
-  companyName: 'ibis Mall Avenue Dubai',
-  companyId: 'IND756759',
-  companyEmail: 'ibis@easyflys.com',
-  mobileNumber: '9207200012',
-  publishedFare: 180620,
-  offeredFare: 180620,
-  agentCommission: 0,
-  gstAmount: 0,
-  tds: 0,
-  cancellationCharge: 0,
-  cancellationServiceCharge: 0,
-  cancellationChargeGst: 0,
-  refundAmount: 180620,
-  tdsReturn: false,
-  changeBookingCurrencyRate: true,
-  currentCurrencyRate: 1,
-  bookingId: '6424674325428',
-  hotelName: 'ibis Mall Avenue Dubai',
-  hotelConfirmationNo: '68432059468',
-  amount: 180620,
-  bookingStatus: 'Cancelled',
-  applyMarkUp: 0,
-  applyDiscount: 0,
-  publishedPrice: 180620,
-  commEarned: 0,
-  tdsBreakup: 0,
-  convenienceFee: 0,
-  totalAmount: 180620,
-  gstRows: [
-    { serviceDescription: 'Service Charges', taxableValue: 0, cgst: 0, sgst: 0, igst: 0, total: 0 },
-  ],
-};
-
 @Injectable({ providedIn: 'root' })
 export class AmendmentDetailService {
-  private readonly store = signal<AmendmentDetailData>(MOCK);
+  private readonly api = inject(ApiService);
 
-  getById(_id: string): AmendmentDetailData {
-    return { ...this.store() };
+  private readonly _amendment = signal<AmendmentDetailData | null>(null);
+  private readonly _loading = signal<boolean>(false);
+
+  readonly amendment = this._amendment.asReadonly();
+  readonly loading = this._loading.asReadonly();
+
+  loadById(id: string): Observable<AmendmentDetailData> {
+    this._loading.set(true);
+    return this.api.get<AmendmentDetailData>(`/hotel-amendments/${id}`).pipe(
+      tap({
+        next: (data) => { this._amendment.set(data); this._loading.set(false); },
+        error: () => this._loading.set(false),
+      })
+    );
   }
 
-  update(partial: Partial<AmendmentDetailData>): void {
-    this.store.update(s => ({ ...s, ...partial }));
+  update(id: string, partial: Partial<AmendmentDetailData>): Observable<AmendmentDetailData> {
+    return this.api.patch<AmendmentDetailData>(`/hotel-amendments/${id}`, partial).pipe(
+      tap((updated) => this._amendment.set(updated))
+    );
+  }
+
+  approve(id: string): Observable<AmendmentDetailData> {
+    return this.api.patch<AmendmentDetailData>(`/hotel-amendments/${id}/approve`, {}).pipe(
+      tap((updated) => this._amendment.set(updated))
+    );
+  }
+
+  reject(id: string): Observable<AmendmentDetailData> {
+    return this.api.patch<AmendmentDetailData>(`/hotel-amendments/${id}/reject`, {}).pipe(
+      tap((updated) => this._amendment.set(updated))
+    );
   }
 }

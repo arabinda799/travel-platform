@@ -32,20 +32,12 @@ export class AmendmentListService extends BaseApiCrudService<Amendment> {
     this.load();
   }
 
-  override deleteMultiple(ids: (string | number)[]): Observable<void> {
-    const req$ = super.deleteMultiple(ids);
-    req$.subscribe();
-    return req$;
-  }
-
   updateMultipleStatus(ids: (number | string)[], status: Amendment['amendmentStatus']): Observable<Amendment[]> {
-    const req$ = this.api.patch<Amendment[]>(`${this.endpoint}/bulk-status`, { ids, status }).pipe(
+    return this.api.patch<Amendment[]>(`${this.endpoint}/bulk-status`, { ids, status }).pipe(
       tap(() => {
         const idSet = new Set(ids.map(String));
         this._items.update(list => list.map(a => (idSet.has(String(a.id)) ? { ...a, amendmentStatus: status } : a)));
       })
     );
-    req$.subscribe();
-    return req$;
   }
 }

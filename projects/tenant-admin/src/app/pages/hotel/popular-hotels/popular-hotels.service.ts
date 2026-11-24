@@ -15,7 +15,7 @@ export interface PopularHotel {
 
 @Injectable({ providedIn: 'root' })
 export class PopularHotelsService extends BaseApiCrudService<PopularHotel> {
-  protected readonly endpoint = '/popular-hotels';
+  protected readonly endpoint = '/hotel/popular/admin';
   readonly hotels = this.items;
 
   constructor() {

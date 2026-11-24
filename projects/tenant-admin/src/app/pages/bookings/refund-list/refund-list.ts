@@ -211,22 +211,26 @@ export class RefundListComponent {
 
   confirmBulkDelete(): void {
     const selectedIds = this.selectedRefunds.map(r => r.id);
-    if (selectedIds.length) {
-      this.refundService.deleteMultiple(selectedIds);
-    }
-    this.selectedRefunds = [];
     this.deleteConfirmVisible.set(false);
-    this.loadData({ ...this.currentLazyEvent, first: 0 });
+    if (!selectedIds.length) return;
+    this.refundService.deleteMultiple(selectedIds).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.selectedRefunds = [];
+        this.loadData({ ...this.currentLazyEvent, first: 0 });
+      },
+    });
   }
 
   onStatusModalConfirm(newStatus: string): void {
     const selectedIds = this.selectedRefunds.map(r => r.id);
-    if (selectedIds.length) {
-      this.refundService.updateMultipleStatus(selectedIds, newStatus as RefundRecord['refundStatus']);
-    }
-    this.selectedRefunds = [];
     this.statusModalVisible.set(false);
-    this.loadData(this.currentLazyEvent);
+    if (!selectedIds.length) return;
+    this.refundService.updateMultipleStatus(selectedIds, newStatus as RefundRecord['refundStatus']).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.selectedRefunds = [];
+        this.loadData(this.currentLazyEvent);
+      },
+    });
   }
 
   onExport(_format: 'csv' | 'excel' | 'pdf'): void {

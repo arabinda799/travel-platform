@@ -30,7 +30,7 @@ export class MenuListService {
 
   loadLabels(): void {
     this._loading.set(true);
-    this.api.get<MenuLabel[] | { data: MenuLabel[] }>('/menu-labels').subscribe({
+    this.api.get<MenuLabel[] | { data: MenuLabel[] }>('/feature/menu-labels/admin').subscribe({
       next: (res) => {
         const data = Array.isArray(res) ? res : res.data ?? [];
         this._labels.set(data);
@@ -41,7 +41,7 @@ export class MenuListService {
   }
 
   loadItems(labelId: string): void {
-    this.api.get<MenuPageEntry[] | { data: MenuPageEntry[] }>(`/menu-items?labelId=${labelId}`).subscribe({
+    this.api.get<MenuPageEntry[] | { data: MenuPageEntry[] }>(`/feature/menu-items/admin?labelId=${labelId}`).subscribe({
       next: (res) => {
         const data = Array.isArray(res) ? res : res.data ?? [];
         this._items.update(curr => ({ ...curr, [labelId]: data }));
@@ -51,7 +51,7 @@ export class MenuListService {
   }
 
   addLabel(name: string): Observable<MenuLabel> {
-    return this.api.post<MenuLabel>('/menu-labels', { name }).pipe(
+    return this.api.post<MenuLabel>('/feature/menu-labels/admin', { name }).pipe(
       tap((newLabel) => {
         this._labels.update(curr => [...curr, newLabel]);
       })
@@ -59,7 +59,7 @@ export class MenuListService {
   }
 
   updateLabel(id: string, name: string): Observable<MenuLabel> {
-    return this.api.patch<MenuLabel>(`/menu-labels/${id}`, { name }).pipe(
+    return this.api.patch<MenuLabel>(`/feature/menu-labels/admin/${id}`, { name }).pipe(
       tap((updated) => {
         this._labels.update(curr => curr.map(l => l.id === id ? { ...l, name: updated.name } : l));
       })
@@ -67,7 +67,7 @@ export class MenuListService {
   }
 
   deleteLabel(id: string): Observable<void> {
-    return this.api.delete<void>(`/menu-labels/${id}`).pipe(
+    return this.api.delete<void>(`/feature/menu-labels/admin/${id}`).pipe(
       tap(() => {
         this._labels.update(curr => curr.filter(l => l.id !== id));
         this._items.update(curr => {
@@ -92,7 +92,7 @@ export class MenuListService {
       };
     });
 
-    return this.api.post<MenuPageEntry[]>('/menu-items/batch', { labelId, items: entries }).pipe(
+    return this.api.put<MenuPageEntry[]>('/feature/menu-items/admin/batch', { items: entries }).pipe(
       tap((saved) => {
         const data = Array.isArray(saved) ? saved : [];
         this._items.update(curr => ({ ...curr, [labelId]: data }));
@@ -101,7 +101,7 @@ export class MenuListService {
   }
 
   deleteMenuItem(id: string, labelId: string): Observable<void> {
-    return this.api.delete<void>(`/menu-items/${id}`).pipe(
+    return this.api.delete<void>(`/feature/menu-items/admin/${id}`).pipe(
       tap(() => {
         this._items.update(curr => ({
           ...curr,

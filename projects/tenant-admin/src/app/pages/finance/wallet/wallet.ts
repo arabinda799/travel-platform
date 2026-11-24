@@ -16,6 +16,7 @@ import {
   StatusBadgeComponent,
   FormModalComponent,
 } from 'admin-core';
+import { FinanceService } from '../finance.service';
 
 export interface WalletTransaction {
   id: string;
@@ -50,6 +51,12 @@ export interface WalletTransaction {
 })
 export class WalletComponent {
   private readonly messageService = inject(MessageService);
+  private readonly financeService = inject(FinanceService);
+
+  constructor() {
+    this.financeService.loadWallet();
+    this.financeService.loadTransactions();
+  }
 
   readonly amountTpl = viewChild<TemplateRef<any>>('amountTpl');
   readonly balanceTpl = viewChild<TemplateRef<any>>('balanceTpl');
@@ -61,9 +68,9 @@ export class WalletComponent {
     { label: 'Agency Wallet' },
   ];
 
-  readonly balance = signal<number>(1480000);
-  readonly creditLimit = signal<number>(500000);
-  readonly holdAmount = signal<number>(32500);
+  readonly balance = computed(() => this.financeService.wallet().balance);
+  readonly creditLimit = computed(() => this.financeService.wallet().creditLimit);
+  readonly holdAmount = computed(() => this.financeService.wallet().holdAmount);
 
   readonly availableBalance = computed(() => this.balance() - this.holdAmount());
 
@@ -72,63 +79,10 @@ export class WalletComponent {
   readonly paymentMethod = signal<'NetBanking' | 'UPI' | 'NEFT/RTGS'>('UPI');
   readonly searchQuery = signal<string>('');
 
-  readonly transactions = signal<WalletTransaction[]>([
-    {
-      id: 'TX-90123',
-      txRef: 'WT-20261123-01',
-      type: 'Credit',
-      description: 'Online Wallet Top-up via Razorpay',
-      category: 'Wallet Top-up',
-      amount: 250000,
-      balanceAfter: 1480000,
-      date: '2026-11-23 14:15',
-      status: 'Completed',
-    },
-    {
-      id: 'TX-90122',
-      txRef: 'WT-20261123-02',
-      type: 'Debit',
-      description: 'Booking payment deduction: Taj Palace (EF-HTL-90412)',
-      category: 'Booking Deduction',
-      amount: 103200,
-      balanceAfter: 1230000,
-      date: '2026-11-23 11:30',
-      status: 'Completed',
-    },
-    {
-      id: 'TX-90121',
-      txRef: 'WT-20261122-01',
-      type: 'Credit',
-      description: 'Agent B2B Commission payout credited',
-      category: 'Commission Credit',
-      amount: 14720,
-      balanceAfter: 1333200,
-      date: '2026-11-22 18:45',
-      status: 'Completed',
-    },
-    {
-      id: 'TX-90120',
-      txRef: 'WT-20261121-03',
-      type: 'Credit',
-      description: 'Refund credited for cancelled stay: EF-HTL-77419',
-      category: 'Refund Reversal',
-      amount: 32000,
-      balanceAfter: 1318480,
-      date: '2026-11-21 16:10',
-      status: 'Completed',
-    },
-    {
-      id: 'TX-90119',
-      txRef: 'WT-20261120-05',
-      type: 'Debit',
-      description: 'Booking payment deduction: The Leela (EF-HTL-89102)',
-      category: 'Booking Deduction',
-      amount: 184000,
-      balanceAfter: 1286480,
-      date: '2026-11-20 10:20',
-      status: 'Completed',
-    },
-  ]);
+  readonly transactions = computed<WalletTransaction[]>(() => {
+    const list = this.financeService.transactions();
+    return (list ?? []) as any[];
+  });
 
   readonly filteredTransactions = computed(() => {
     const q = this.searchQuery().toLowerCase().trim();
@@ -189,25 +143,22 @@ export class WalletComponent {
       return;
     }
 
-    const newTx: WalletTransaction = {
-      id: `TX-${Date.now().toString().slice(-5)}`,
-      txRef: `WT-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-TOP`,
-      type: 'Credit',
-      description: `Wallet recharge via ${this.paymentMethod()}`,
-      category: 'Wallet Top-up',
-      amount: amt,
-      balanceAfter: this.balance() + amt,
-      date: new Date().toLocaleString(),
-      status: 'Completed',
-    };
-
-    this.balance.update(b => b + amt);
-    this.transactions.update(txs => [newTx, ...txs]);
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Wallet Top-up',
-      detail: `₹${amt.toLocaleString('en-IN')} successfully credited to wallet.`,
+    this.financeService.topupWallet(amt, this.paymentMethod()).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Wallet Top-up',
+          detail: `₹${amt.toLocaleString('en-IN')} successfully credited to wallet.`,
+        });
+        this.closeTopUp();
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Top-up Failed',
+          detail: 'Could not complete wallet top-up',
+        });
+      },
     });
-    this.closeTopUp();
   }
 }

@@ -34,20 +34,12 @@ export class HotelQueryListService extends BaseApiCrudService<HotelQuery> {
     this.load();
   }
 
-  override deleteMultiple(ids: (string | number)[]): Observable<void> {
-    const req$ = super.deleteMultiple(ids);
-    req$.subscribe();
-    return req$;
-  }
-
   updateMultipleStatus(ids: (number | string)[], status: HotelQuery['queryStatus']): Observable<HotelQuery[]> {
-    const req$ = this.api.patch<HotelQuery[]>(`${this.endpoint}/bulk-status`, { ids, status }).pipe(
+    return this.api.patch<HotelQuery[]>(`${this.endpoint}/bulk-status`, { ids, status }).pipe(
       tap(() => {
         const idSet = new Set(ids.map(String));
         this._items.update(list => list.map(q => (idSet.has(String(q.id)) ? { ...q, queryStatus: status } : q)));
       })
     );
-    req$.subscribe();
-    return req$;
   }
 }

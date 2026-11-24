@@ -22,68 +22,9 @@ export interface Vendor {
   lastSync: string;
 }
 
-const INITIAL_VENDORS: Vendor[] = [
-  {
-    id: 'vnd-1',
-    name: 'Hotelbeds B2B Wholesaler',
-    code: 'HBD-GLOBAL',
-    services: ['HOTEL'],
-    mode: 'LIVE',
-    apiUrl: 'https://api.hotelbeds.com/hotel-api/1.0',
-    authType: 'API_KEY',
-    credentials: { apiKey: 'hb_live_98124', secret: '••••••••' },
-    latencyMs: 142,
-    healthStatus: 'Healthy',
-    isActive: true,
-    lastSync: '2026-11-23 / 11:30 AM',
-  },
-  {
-    id: 'vnd-2',
-    name: 'TBO Holidays India',
-    code: 'TBO-IN',
-    services: ['HOTEL', 'FLIGHT', 'HOLIDAY'],
-    mode: 'LIVE',
-    apiUrl: 'https://api.tboholidays.com/v2',
-    authType: 'BASIC_AUTH',
-    credentials: { username: 'easyfly_tbo', password: '••••••••' },
-    latencyMs: 185,
-    healthStatus: 'Healthy',
-    isActive: true,
-    lastSync: '2026-11-23 / 11:00 AM',
-  },
-  {
-    id: 'vnd-3',
-    name: 'RateHawk Worldwide',
-    code: 'RATEHAWK-EU',
-    services: ['HOTEL'],
-    mode: 'LIVE',
-    apiUrl: 'https://api.worldota.net/api/b2b/v3',
-    authType: 'BEARER_TOKEN',
-    credentials: { token: 'wh_bearer_982410' },
-    latencyMs: 220,
-    healthStatus: 'Healthy',
-    isActive: true,
-    lastSync: '2026-11-23 / 10:45 AM',
-  },
-  {
-    id: 'vnd-4',
-    name: 'Agoda Direct Connect',
-    code: 'AGODA-B2B',
-    services: ['HOTEL'],
-    mode: 'TEST',
-    apiUrl: 'https://sandbox.agoda.com/api/v1',
-    authType: 'API_KEY',
-    credentials: { apiKey: 'agoda_test_demo' },
-    latencyMs: 310,
-    healthStatus: 'Degraded',
-    isActive: false,
-    lastSync: '2026-11-22 / 04:00 PM',
-  },
-];
-
 @Injectable({ providedIn: 'root' })
 export class VendorListService extends BaseApiCrudService<Vendor> {
-  protected readonly endpoint = '/vendors';
+  protected readonly endpoint = '/vendor/admin';
   readonly vendors = this.items;
 
   constructor() {

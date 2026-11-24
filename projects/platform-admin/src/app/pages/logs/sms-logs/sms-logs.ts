@@ -11,7 +11,7 @@ import {
   TableColumn, BreadcrumbItem,
 } from 'admin-core';
 import { SmsLog, SmsLogsService } from './sms-logs.service';
-import { exportToCsv } from '../../../shared/utils/export.util';
+import { exportToCsv } from 'admin-core';
 
 @Component({
   selector: 'app-sms-logs',

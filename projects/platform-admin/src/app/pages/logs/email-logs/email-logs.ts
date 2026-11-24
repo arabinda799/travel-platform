@@ -11,7 +11,7 @@ import {
   TableColumn, BreadcrumbItem,
 } from 'admin-core';
 import { EmailLog, EmailLogsService } from './email-logs.service';
-import { exportToCsv } from '../../../shared/utils/export.util';
+import { exportToCsv } from 'admin-core';
 
 @Component({
   selector: 'app-email-logs',

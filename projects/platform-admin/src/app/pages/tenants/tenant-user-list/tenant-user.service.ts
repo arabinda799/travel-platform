@@ -21,7 +21,7 @@ export interface TenantUser {
 
 @Injectable({ providedIn: 'root' })
 export class TenantUserService extends BaseApiCrudService<TenantUser> {
-  protected readonly endpoint = '/tenant-users';
+  protected readonly endpoint = '/tenant/users';
 
   readonly users = this.items;
 

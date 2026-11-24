@@ -86,8 +86,6 @@ export interface CompanySettingsData {
   maintenanceMsg: string;
 }
 
-const STORAGE_KEY = 'tenant_admin_company_settings';
-
 export const INITIAL_COMPANY_SETTINGS: CompanySettingsData = {
   companyName: 'EasyFlys Technologies Pvt. Ltd.',
   legalName: 'EasyFlys Technologies Private Limited',
@@ -168,39 +166,23 @@ export const INITIAL_COMPANY_SETTINGS: CompanySettingsData = {
 @Injectable({ providedIn: 'root' })
 export class CompanySettingsService {
   private readonly api = inject(ApiService);
-  private readonly _settings = signal<CompanySettingsData>(this.loadFromStorage());
+  private readonly _settings = signal<CompanySettingsData>(INITIAL_COMPANY_SETTINGS);
   private readonly _loading = signal(false);
 
   readonly settings = this._settings.asReadonly();
   readonly loading = this._loading.asReadonly();
 
-  private loadFromStorage(): CompanySettingsData {
-    try {
-      const raw = sessionStorage.getItem(STORAGE_KEY);
-      if (raw) return { ...INITIAL_COMPANY_SETTINGS, ...JSON.parse(raw) };
-    } catch { /* ignore */ }
-    this.persist(INITIAL_COMPANY_SETTINGS);
-    return INITIAL_COMPANY_SETTINGS;
-  }
-
-  private persist(data: CompanySettingsData): void {
-    try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch { /* ignore */ }
-  }
-
   load(): Observable<CompanySettingsData> {
     this._loading.set(true);
-    return this.api.get<any>('/tenant-config/branding').pipe(
+    return this.api.get<any>('/tenant/settings').pipe(
       tap(backendConfig => {
-        const merged = { ...this._settings(), ...backendConfig };
+        const merged = { ...INITIAL_COMPANY_SETTINGS, ...backendConfig };
         this._settings.set(merged);
-        this.persist(merged);
         this._loading.set(false);
       }),
       catchError(() => {
-        const data = this.loadFromStorage();
-        this._settings.set(data);
         this._loading.set(false);
-        return of(data);
+        return of(this._settings());
       }),
     );
   }
@@ -208,12 +190,10 @@ export class CompanySettingsService {
   updateSettings(data: Partial<CompanySettingsData>): Observable<CompanySettingsData> {
     const updated = { ...this._settings(), ...data };
     this._settings.set(updated);
-    this.persist(updated);
-    return this.api.patch<any>('/tenant-config/branding', data).pipe(
+    return this.api.patch<any>('/tenant/settings', data).pipe(
       tap(saved => {
         const merged = { ...this._settings(), ...saved };
         this._settings.set(merged);
-        this.persist(merged);
       }),
       catchError(() => of(updated)),
     );

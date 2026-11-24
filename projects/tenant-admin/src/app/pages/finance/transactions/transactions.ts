@@ -15,6 +15,7 @@ import {
   DateRangePickerComponent,
   DateRangeSelection,
 } from 'admin-core';
+import { FinanceService } from '../finance.service';
 
 export interface FinanceTransaction {
   id: string;
@@ -47,6 +48,11 @@ export interface FinanceTransaction {
 })
 export class TransactionsComponent {
   private readonly messageService = inject(MessageService);
+  private readonly financeService = inject(FinanceService);
+
+  constructor() {
+    this.financeService.loadTransactions();
+  }
 
   readonly amountTpl = viewChild<TemplateRef<any>>('amountTpl');
   readonly statusTpl = viewChild<TemplateRef<any>>('statusTpl');
@@ -60,74 +66,10 @@ export class TransactionsComponent {
   readonly dateRange = signal<[Date, Date] | null>(null);
   readonly searchQuery = signal<string>('');
 
-  readonly transactions = signal<FinanceTransaction[]>([
-    {
-      id: 'TX-1001',
-      txRef: 'TRX-20261123-01',
-      orderId: 'EF-HTL-90412',
-      type: 'Debit',
-      category: 'Booking Deduction',
-      amount: 103200,
-      paymentGateway: 'Wallet',
-      date: '2026-11-23 11:30',
-      status: 'Completed',
-    },
-    {
-      id: 'TX-1002',
-      txRef: 'TRX-20261123-02',
-      orderId: 'WT-TOP-8812',
-      type: 'Credit',
-      category: 'Wallet Top-up',
-      amount: 250000,
-      paymentGateway: 'Razorpay',
-      date: '2026-11-23 14:15',
-      status: 'Completed',
-    },
-    {
-      id: 'TX-1003',
-      txRef: 'TRX-20261122-01',
-      orderId: 'EF-HTL-89102',
-      type: 'Credit',
-      category: 'Commission Credit',
-      amount: 14720,
-      paymentGateway: 'Wallet',
-      date: '2026-11-22 18:45',
-      status: 'Completed',
-    },
-    {
-      id: 'TX-1004',
-      txRef: 'TRX-20261121-03',
-      orderId: 'REF-77419',
-      type: 'Credit',
-      category: 'Refund Reversal',
-      amount: 32000,
-      paymentGateway: 'Razorpay',
-      date: '2026-11-21 16:10',
-      status: 'Completed',
-    },
-    {
-      id: 'TX-1005',
-      txRef: 'TRX-20261120-05',
-      orderId: 'EF-HTL-84310',
-      type: 'Debit',
-      category: 'Booking Deduction',
-      amount: 128900,
-      paymentGateway: 'Stripe',
-      date: '2026-11-20 10:20',
-      status: 'Completed',
-    },
-    {
-      id: 'TX-1006',
-      txRef: 'TRX-20261119-02',
-      orderId: 'SET-99012',
-      type: 'Credit',
-      category: 'PG Settlement',
-      amount: 450000,
-      paymentGateway: 'Bank Transfer',
-      date: '2026-11-19 09:15',
-      status: 'Completed',
-    },
-  ]);
+  readonly transactions = computed<FinanceTransaction[]>(() => {
+    const list = this.financeService.transactions();
+    return (list ?? []) as any[];
+  });
 
   readonly filteredTransactions = computed(() => {
     const q = this.searchQuery().toLowerCase().trim();

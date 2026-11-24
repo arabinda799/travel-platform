@@ -81,67 +81,8 @@ export class WalletComponent {
 
   readonly transactions = computed<WalletTransaction[]>(() => {
     const list = this.financeService.transactions();
-    if (list && list.length > 0) return list as any[];
-    return this._fallbackTransactions;
+    return (list ?? []) as any[];
   });
-
-  private readonly _fallbackTransactions: WalletTransaction[] = [
-    {
-      id: 'TX-90123',
-      txRef: 'WT-20261123-01',
-      type: 'Credit',
-      description: 'Online Wallet Top-up via Razorpay',
-      category: 'Wallet Top-up',
-      amount: 250000,
-      balanceAfter: 1480000,
-      date: '2026-11-23 14:15',
-      status: 'Completed',
-    },
-    {
-      id: 'TX-90122',
-      txRef: 'WT-20261123-02',
-      type: 'Debit',
-      description: 'Booking payment deduction: Taj Palace (EF-HTL-90412)',
-      category: 'Booking Deduction',
-      amount: 103200,
-      balanceAfter: 1230000,
-      date: '2026-11-23 11:30',
-      status: 'Completed',
-    },
-    {
-      id: 'TX-90121',
-      txRef: 'WT-20261122-01',
-      type: 'Credit',
-      description: 'Agent B2B Commission payout credited',
-      category: 'Commission Credit',
-      amount: 14720,
-      balanceAfter: 1333200,
-      date: '2026-11-22 18:45',
-      status: 'Completed',
-    },
-    {
-      id: 'TX-90120',
-      txRef: 'WT-20261121-03',
-      type: 'Credit',
-      description: 'Refund credited for cancelled stay: EF-HTL-77419',
-      category: 'Refund Reversal',
-      amount: 32000,
-      balanceAfter: 1318480,
-      date: '2026-11-21 16:10',
-      status: 'Completed',
-    },
-    {
-      id: 'TX-90119',
-      txRef: 'WT-20261120-05',
-      type: 'Debit',
-      description: 'Booking payment deduction: The Leela (EF-HTL-89102)',
-      category: 'Booking Deduction',
-      amount: 184000,
-      balanceAfter: 1286480,
-      date: '2026-11-20 10:20',
-      status: 'Completed',
-    },
-  ];
 
   readonly filteredTransactions = computed(() => {
     const q = this.searchQuery().toLowerCase().trim();

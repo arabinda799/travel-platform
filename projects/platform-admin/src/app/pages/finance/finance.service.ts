@@ -46,7 +46,7 @@ export class FinanceService {
 
   loadWallet(): void {
     this._loading.set(true);
-    this.api.get<WalletInfo>('/finance/wallet').pipe(take(1)).subscribe({
+    this.api.get<WalletInfo>('/shared/finance/wallet').pipe(take(1)).subscribe({
       next: data => {
         this._wallet.set(data);
         this._loading.set(false);
@@ -56,7 +56,7 @@ export class FinanceService {
   }
 
   loadTransactions(): void {
-    this.api.get<any>('/finance/transactions').pipe(take(1)).subscribe({
+    this.api.get<any>('/shared/finance/transactions').pipe(take(1)).subscribe({
       next: res => {
         const list = Array.isArray(res) ? res : (res?.data ?? []);
         this._transactions.set(list);
@@ -66,7 +66,7 @@ export class FinanceService {
   }
 
   topupWallet(amount: number, paymentMode: string, reference?: string, remarks?: string): Observable<WalletInfo> {
-    return this.api.post<WalletInfo>('/finance/wallet/topup', { amount, paymentMode, reference, remarks }).pipe(
+    return this.api.post<WalletInfo>('/shared/finance/wallet/topup', { amount, paymentMode, reference, remarks }).pipe(
       take(1),
       tap(updated => {
         this._wallet.set(updated);

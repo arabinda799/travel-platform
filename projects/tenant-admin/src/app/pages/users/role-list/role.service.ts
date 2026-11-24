@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, take, tap } from 'rxjs';
 import { BaseApiCrudService } from 'admin-core';
 
 export type RoleType = 'SYSTEM' | 'CUSTOM';
@@ -161,87 +161,26 @@ for (const [moduleKey, actions] of Object.entries(SEED_MAP)) {
   }
 }
 
-const ALL_PERM_IDS = ALL_PERMISSIONS.map(p => p.id);
-const HOTEL_OPS_PERMS = ALL_PERMISSIONS.filter(p => p.moduleKey.startsWith('HOTEL') || p.moduleKey === 'DASHBOARD').map(p => p.id);
-const FINANCE_PERMS = ALL_PERMISSIONS.filter(p => p.moduleKey.includes('MARKUP') || p.moduleKey.includes('DISCOUNT') || p.moduleKey.includes('COUPON') || p.moduleKey.includes('WALLET') || p.moduleKey === 'DASHBOARD').map(p => p.id);
-const SUPPORT_PERMS = ALL_PERMISSIONS.filter(p => p.moduleKey.includes('QUERY') || p.moduleKey.includes('CUSTOMER') || p.moduleKey === 'HOTEL_BOOKING' || p.moduleKey === 'DASHBOARD').map(p => p.id);
-
-const INITIAL_ROLES: Role[] = [
-  {
-    id: 'role-super-admin',
-    key: 'PLATFORM_SUPER_ADMIN',
-    name: 'Super Admin',
-    description: 'Full unconstrained platform & agency control with all modules enabled',
-    type: 'SYSTEM',
-    scope: 'PLATFORM',
-    ownerType: 'PLATFORM',
-    ownerId: null,
-    status: 'ACTIVE',
-    permissionIds: [...ALL_PERM_IDS],
-    createdAt: '2026-01-01 / 10:00 AM',
-  },
-  {
-    id: 'role-tenant-admin',
-    key: 'TENANT_ADMIN',
-    name: 'Tenant Admin',
-    description: 'Agency master manager for bookings, finance, users, and content',
-    type: 'SYSTEM',
-    scope: 'TENANT',
-    ownerType: 'TENANT',
-    ownerId: 'tenant-easyfly',
-    status: 'ACTIVE',
-    permissionIds: [...ALL_PERM_IDS.slice(0, 110)],
-    createdAt: '2026-01-05 / 11:30 AM',
-  },
-  {
-    id: 'role-hotel-ops',
-    key: 'HOTEL_OPERATIONS',
-    name: 'Hotel Operations Lead',
-    description: 'Manage hotel vouchers, bookings, amendments, queries, and destination catalog',
-    type: 'CUSTOM',
-    scope: 'TENANT',
-    ownerType: 'TENANT',
-    ownerId: 'tenant-easyfly',
-    status: 'ACTIVE',
-    permissionIds: [...HOTEL_OPS_PERMS],
-    createdAt: '2026-01-15 / 03:20 PM',
-  },
-  {
-    id: 'role-finance-mgr',
-    key: 'FINANCE_MANAGER',
-    name: 'Finance & Pricing Lead',
-    description: 'Handle hotel markups, discount slabs, seasonal promo coupons, and ledger summaries',
-    type: 'CUSTOM',
-    scope: 'TENANT',
-    ownerType: 'TENANT',
-    ownerId: 'tenant-easyfly',
-    status: 'ACTIVE',
-    permissionIds: [...FINANCE_PERMS],
-    createdAt: '2026-02-01 / 09:45 AM',
-  },
-  {
-    id: 'role-support-exec',
-    key: 'SUPPORT_EXECUTIVE',
-    name: 'Customer Support Desk',
-    description: 'View customer inquiries, manage client accounts, and track booking statuses',
-    type: 'CUSTOM',
-    scope: 'TENANT',
-    ownerType: 'TENANT',
-    ownerId: 'tenant-easyfly',
-    status: 'ACTIVE',
-    permissionIds: [...SUPPORT_PERMS],
-    createdAt: '2026-02-10 / 02:15 PM',
-  },
-];
-
 @Injectable({ providedIn: 'root' })
 export class RoleService extends BaseApiCrudService<Role> {
-  protected readonly endpoint = '/roles';
+  protected readonly endpoint = '/tenant/roles';
   readonly roles = this.items;
 
   constructor() {
     super();
     this.load();
+  }
+
+  loadById(id: string): Observable<Role> {
+    return this.api.get<Role>(`${this.endpoint}/${id}`).pipe(
+      take(1),
+      tap(role => {
+        this._items.update(list => {
+          const idx = list.findIndex(r => r.id === id);
+          return idx >= 0 ? list.map((r, i) => i === idx ? role : r) : [role, ...list];
+        });
+      }),
+    );
   }
 
   override add(payload: Partial<Role>): Observable<Role> {
@@ -253,7 +192,10 @@ export class RoleService extends BaseApiCrudService<Role> {
   }
 
   updatePermissions(id: string, permissionIds: string[]): Observable<Role> {
-    return this.update(id, { permissionIds });
+    return this.api.patch<Role>(`${this.endpoint}/${id}/permissions`, { permissionIds }).pipe(
+      take(1),
+      tap(updated => this._items.update(list => list.map(r => r.id === id ? updated : r))),
+    );
   }
 
   override delete(id: string): Observable<void> {

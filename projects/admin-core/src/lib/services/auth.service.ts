@@ -7,6 +7,8 @@ export interface AuthUser {
   email: string;
   role: 'super_admin' | 'platform_admin' | 'tenant_admin' | 'operator';
   avatar?: string;
+  tenantId?: string;
+  refreshToken?: string;
 }
 
 const AUTH_STORAGE_KEY = 'easyflys_auth_user';

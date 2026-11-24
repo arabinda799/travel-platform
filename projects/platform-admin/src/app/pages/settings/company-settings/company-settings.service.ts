@@ -175,7 +175,7 @@ export class CompanySettingsService {
 
   load(): Observable<CompanySettingsData> {
     this._loading.set(true);
-    return this.api.get<CompanySettingsData>('/settings').pipe(
+    return this.api.get<CompanySettingsData>('/platform/settings').pipe(
       take(1),
       tap({
         next: data => {
@@ -188,7 +188,7 @@ export class CompanySettingsService {
   }
 
   updateSettings(data: Partial<CompanySettingsData>): Observable<CompanySettingsData> {
-    return this.api.put<CompanySettingsData>('/settings', { ...this._settings(), ...data }).pipe(
+    return this.api.patch<CompanySettingsData>('/platform/settings', { ...this._settings(), ...data }).pipe(
       take(1),
       tap(updated => this._settings.set({ ...INITIAL_COMPANY_SETTINGS, ...updated })),
     );

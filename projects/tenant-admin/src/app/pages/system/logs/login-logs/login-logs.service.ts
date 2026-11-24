@@ -27,7 +27,7 @@ export class LoginLogsService {
 
   load(): void {
     this._loading.set(true);
-    this.api.get<LoginLog[] | { data: LoginLog[] }>('/login-logs').subscribe({
+    this.api.get<LoginLog[] | { data: LoginLog[] }>('/shared/logs/login').subscribe({
       next: (res) => {
         const data = Array.isArray(res) ? res : res.data ?? [];
         this._logs.set(data);
@@ -38,13 +38,13 @@ export class LoginLogsService {
   }
 
   delete(id: string): Observable<void> {
-    return this.api.delete<void>(`/login-logs/${id}`).pipe(
+    return this.api.delete<void>(`/shared/logs/login/${id}`).pipe(
       tap(() => this._logs.update(list => list.filter(l => l.id !== id)))
     );
   }
 
   bulkDelete(ids: string[]): Observable<void> {
-    return this.api.post<void>('/login-logs/bulk-delete', { ids }).pipe(
+    return this.api.post<void>('/shared/logs/login/bulk-delete', { ids }).pipe(
       tap(() => {
         const set = new Set(ids);
         this._logs.update(list => list.filter(l => !set.has(l.id)));

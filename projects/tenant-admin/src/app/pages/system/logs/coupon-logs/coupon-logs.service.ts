@@ -27,7 +27,7 @@ export class CouponLogsService {
 
   load(): void {
     this._loading.set(true);
-    this.api.get<CouponLog[] | { data: CouponLog[] }>('/coupon-logs').subscribe({
+    this.api.get<CouponLog[] | { data: CouponLog[] }>('/shared/logs/coupon').subscribe({
       next: (res) => {
         const data = Array.isArray(res) ? res : res.data ?? [];
         this._logs.set(data);
@@ -38,13 +38,13 @@ export class CouponLogsService {
   }
 
   delete(id: string): Observable<void> {
-    return this.api.delete<void>(`/coupon-logs/${id}`).pipe(
+    return this.api.delete<void>(`/shared/logs/coupon/${id}`).pipe(
       tap(() => this._logs.update(list => list.filter(l => l.id !== id)))
     );
   }
 
   bulkDelete(ids: string[]): Observable<void> {
-    return this.api.post<void>('/coupon-logs/bulk-delete', { ids }).pipe(
+    return this.api.post<void>('/shared/logs/coupon/bulk-delete', { ids }).pipe(
       tap(() => {
         const set = new Set(ids);
         this._logs.update(list => list.filter(l => !set.has(l.id)));
