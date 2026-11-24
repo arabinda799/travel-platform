@@ -1,0 +1,41 @@
+<lib-page-container
+  title="Financial Transactions"
+  subtitle="Detailed audit trail of all booking charges, gateway settlements, and payouts"
+  icon="receipt_long"
+  [breadcrumbs]="breadcrumbs">
+
+  <div page-actions>
+    <lib-date-range-picker
+      [(value)]="dateRange"
+      (rangeChange)="onDateChange($event)">
+    </lib-date-range-picker>
+    <lib-button
+      label="Export CSV"
+      icon="download"
+      variant="secondary"
+      (btnClick)="exportTransactions()">
+      Export CSV
+    </lib-button>
+  </div>
+
+  <div class="transactions-table-card">
+    <lib-data-table
+      [value]="filteredTransactions()"
+      [columns]="columns()"
+      [totalRecords]="filteredTransactions().length"
+      [searchable]="true"
+      searchPlaceholder="Search transaction ID, order ref, or gateway..."
+      (search)="onSearch($event)">
+
+      <ng-template #amountTpl let-row>
+        <span [class.credit-text]="row.type === 'Credit'" [class.debit-text]="row.type === 'Debit'">
+          {{ row.type === 'Credit' ? '+' : '-' }}{{ row.amount | currency:'INR':'symbol':'1.0-0' }}
+        </span>
+      </ng-template>
+
+      <ng-template #statusTpl let-row>
+        <lib-status-badge [status]="row.status"></lib-status-badge>
+      </ng-template>
+    </lib-data-table>
+  </div>
+</lib-page-container>

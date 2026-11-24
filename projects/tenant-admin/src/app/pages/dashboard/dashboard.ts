@@ -76,14 +76,14 @@ export class TenantDashboardComponent {
   readonly revenueDateRange = signal<[Date, Date] | null>(calculatePresetRange('today'));
   readonly recentBookingsDateRange = signal<[Date, Date] | null>(calculatePresetRange('today'));
 
-  // 8 Agency Stat Cards matching platform-admin
+  // 8 Agency Stat Cards matching agency focus
   readonly stats: StatCard[] = [
     { icon: 'calendar_month', label: 'Total Bookings', value: '1,420', change: '14.2% vs last period', changeDir: 'up', colorVar: 'accent' },
     { icon: 'payments', label: 'Revenue', value: '₹84.5L', change: '11.8%', changeDir: 'up', colorVar: 'success' },
     { icon: 'hotel', label: 'Hotel Bookings', value: '864', change: '8.4%', changeDir: 'up', colorVar: 'info' },
     { icon: 'flight', label: 'Flight Bookings', value: '556', change: '19.1%', changeDir: 'up', colorVar: 'warning' },
     { icon: 'undo', label: 'Pending Refunds', value: '7', change: '2 less', changeDir: 'down', colorVar: 'danger' },
-    { icon: 'account_balance_wallet', label: 'Wallet', value: '₹14.8L', change: '8.5%', changeDir: 'up', colorVar: 'success' },
+    { icon: 'account_balance_wallet', label: 'Wallet Balance', value: '₹14.8L', change: '8.5%', changeDir: 'up', colorVar: 'success' },
     { icon: 'groups', label: 'Customers', value: '28,490', change: '15.1%', changeDir: 'up', colorVar: 'info' },
     { icon: 'price_check', label: 'Avg. Booking Value', value: '₹5,950', change: '4.1%', changeDir: 'up', colorVar: 'accent' },
   ];
@@ -220,16 +220,16 @@ export class TenantDashboardComponent {
 
   viewAllRoute(): string {
     const s = this.selectedService();
-    if (s === 'hotel') return '/bookings/hotel';
-    if (s === 'flight') return '/bookings/flight';
+    if (s === 'flight') return '/bookings/hotel';
     return '/bookings/hotel';
   }
 
   viewBooking(booking: TenantDashboardBooking): void {
     if (booking.service === 'hotel') {
-      this.router.navigate(['/bookings/hotel']);
+      this.router.navigate(['/bookings/hotel', booking.id]);
     } else {
-      this.router.navigate(['/bookings/flight']);
+      // Flight module routes to booking list
+      this.router.navigate(['/bookings/hotel']);
     }
   }
 }

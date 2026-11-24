@@ -11,7 +11,7 @@ import {
   FormModalComponent, TextFieldComponent, SelectFieldComponent,
   FileUploadFieldComponent, DatePickerFieldComponent,
   FilterSidebarComponent, StatusBadgeComponent, TableActionComponent,
-  ThumbImageComponent, TableColumn, STATUS_OPTIONS, BreadcrumbItem,
+  ThumbImageComponent, TableColumn, TableLazyEvent, STATUS_OPTIONS, BreadcrumbItem,
 } from 'admin-core';
 import {
   HotelCoupon, HotelCouponService, CouponType, CouponStatus, ShowOnList,
@@ -53,7 +53,7 @@ function formatDateToIso(date: Date | string | null | undefined): string {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HotelCouponComponent implements OnInit {
-  private readonly couponService = inject(HotelCouponService);
+  readonly couponService = inject(HotelCouponService);
   private readonly messageService = inject(MessageService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -186,6 +186,11 @@ export class HotelCouponComponent implements OnInit {
 
   ngOnInit(): void {
     this.couponService.load();
+  }
+
+  onLazyLoad(e: TableLazyEvent): void {
+    const page = Math.floor((e.first ?? 0) / (e.rows ?? 50)) + 1;
+    if (page !== this.couponService.page()) this.couponService.goToPage(page);
   }
 
   onSearch(query: string): void { this.searchQuery.set(query); }

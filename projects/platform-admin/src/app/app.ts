@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } 
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs/operators';
-import { AdminLayoutComponent, NavItem } from 'admin-core';
+import { AdminLayoutComponent, NavItem, trimImagePadding } from 'admin-core';
 import { CompanySettingsService } from './pages/settings/company-settings/company-settings.service';
 
 @Component({
@@ -57,7 +57,7 @@ export class App {
       if (!logo) {
         this.trimmedBrandLogo.set('');
       } else {
-        this.trimTransparentPadding(logo, res => this.trimmedBrandLogo.set(res));
+        trimImagePadding(logo).then(res => this.trimmedBrandLogo.set(res));
       }
     });
 
@@ -66,77 +66,9 @@ export class App {
       if (!fav) {
         this.trimmedBrandFavicon.set('');
       } else {
-        this.trimTransparentPadding(fav, res => this.trimmedBrandFavicon.set(res));
+        trimImagePadding(fav).then(res => this.trimmedBrandFavicon.set(res));
       }
     });
-  }
-
-  private trimTransparentPadding(src: string, callback: (trimmed: string) => void): void {
-    if (typeof window === 'undefined' || src.startsWith('data:image/svg')) {
-      callback(src);
-      return;
-    }
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      try {
-        const w = img.naturalWidth;
-        const h = img.naturalHeight;
-        if (!w || !h) {
-          callback(src);
-          return;
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          callback(src);
-          return;
-        }
-        ctx.drawImage(img, 0, 0);
-        const { data } = ctx.getImageData(0, 0, w, h);
-
-        let top = h;
-        let left = w;
-        let right = 0;
-        let bottom = 0;
-
-        for (let y = 0; y < h; y++) {
-          for (let x = 0; x < w; x++) {
-            const alpha = data[(y * w + x) * 4 + 3];
-            if (alpha > 15) {
-              if (x < left) left = x;
-              if (x > right) right = x;
-              if (y < top) top = y;
-              if (y > bottom) bottom = y;
-            }
-          }
-        }
-
-        if (right < left || bottom < top) {
-          callback(src);
-          return;
-        }
-
-        const cropW = right - left + 1;
-        const cropH = bottom - top + 1;
-        const out = document.createElement('canvas');
-        out.width = cropW;
-        out.height = cropH;
-        const outCtx = out.getContext('2d');
-        if (!outCtx) {
-          callback(src);
-          return;
-        }
-        outCtx.drawImage(canvas, left, top, cropW, cropH, 0, 0, cropW, cropH);
-        callback(out.toDataURL('image/png'));
-      } catch {
-        callback(src);
-      }
-    };
-    img.onerror = () => callback(src);
-    img.src = src;
   }
 
   readonly navItems: NavItem[] = [
@@ -155,6 +87,21 @@ export class App {
         { label: 'Hotel Query List', icon: 'contact_support', route: '/hotel/queries' },
       ],
     },
+    { label: 'Trending Destinations', icon: 'explore', route: '/hotel/trending-destinations' },
+    { label: 'Popular Hotels', icon: 'hotel', route: '/hotel/popular-hotels' },
+
+    // Content Section
+    { label: 'Content', isSection: true },
+    {
+      label: 'Blog',
+      icon: 'article',
+      expanded: false,
+      children: [
+        { label: 'Blog Posts', icon: 'edit_note', route: '/content/blogs' },
+        { label: 'Blog Categories', icon: 'category', route: '/content/blog-categories' },
+      ],
+    },
+
     // Users & Access Section
     { label: 'Users & Access', isSection: true },
     { label: 'Platform Users', icon: 'badge', route: '/users/platform' },

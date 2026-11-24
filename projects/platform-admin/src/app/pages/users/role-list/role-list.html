@@ -16,13 +16,15 @@
   <lib-data-table
     [value]="filteredRoles()"
     [columns]="columns()"
-    [totalRecords]="filteredRoles().length"
+    [totalRecords]="roleService.total()"
+    [rows]="50"
     [loading]="loading()"
     [checkbox]="true"
     [(selection)]="selectedRoles"
     [searchable]="true"
     searchPlaceholder="Search by name or description..."
-    (search)="onSearch($event)">
+    (search)="onSearch($event)"
+    (lazyLoad)="onLazyLoad($event)">
 
     <div table-actions class="table-actions-group">
       <lib-button

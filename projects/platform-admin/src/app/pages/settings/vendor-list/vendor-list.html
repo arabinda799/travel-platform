@@ -1,4 +1,4 @@
-<lib-page-container
+﻿<lib-page-container
   title="Vendor List"
   subtitle="Manage 3rd-party inventory suppliers, bedbanks, GDS integrations, and API credentials"
   [breadcrumbs]="[
@@ -10,7 +10,7 @@
   <!-- Top Page Action: Export CSV & Add Vendor -->
   <div page-actions class="page-actions-group">
     <lib-button
-      variant="outline"
+      variant="info"
       icon="download"
       (click)="exportData(false)">
       Export CSV
@@ -28,13 +28,15 @@
   <lib-data-table
     [value]="filteredVendors()"
     [columns]="columns()"
-    [totalRecords]="filteredVendors().length"
+    [totalRecords]="vendorService.total()"
+    [rows]="50"
     [loading]="loading()"
     [checkbox]="true"
     [(selection)]="selectedVendors"
     [searchable]="true"
     searchPlaceholder="Search vendors by name, code, endpoint, credentials..."
-    (search)="onSearch($event)">
+    (search)="onSearch($event)"
+    (lazyLoad)="onLazyLoad($event)">
 
     <!-- Table Action: Filters Button -->
     <div table-actions class="table-actions-group">
@@ -50,7 +52,7 @@
     <!-- Bulk Selection Actions -->
     <div selection-actions class="selection-actions-group">
       <lib-button
-        variant="outline"
+        variant="info"
         icon="download"
         (click)="exportData(true)">
         Export Selected ({{ selectedVendors().length }})

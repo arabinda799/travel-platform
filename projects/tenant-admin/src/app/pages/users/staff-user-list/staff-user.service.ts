@@ -1,5 +1,6 @@
-import { Injectable, signal } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
+import { BaseApiCrudService } from 'admin-core';
 
 export type PlatformUserStatus = 'ACTIVE' | 'INACTIVE' | 'BLOCKED' | 'PENDING';
 
@@ -16,8 +17,6 @@ export interface PlatformUser {
   createdAt: string;
   lastLoginAt: string | null;
 }
-
-const STORAGE_KEY = 'tenant_admin_staff_users';
 
 const INITIAL_STAFF_USERS: PlatformUser[] = [
   {
@@ -101,92 +100,32 @@ const INITIAL_STAFF_USERS: PlatformUser[] = [
 ];
 
 @Injectable({ providedIn: 'root' })
-export class PlatformUserService {
-  private readonly _items = signal<PlatformUser[]>(this.loadFromStorage());
-  private readonly _loading = signal<boolean>(false);
-  private readonly _error = signal<string | null>(null);
-
-  readonly items = this._items.asReadonly();
+export class PlatformUserService extends BaseApiCrudService<PlatformUser> {
+  protected readonly endpoint = '/tenant-users';
   readonly users = this.items;
-  readonly loading = this._loading.asReadonly();
-  readonly error = this._error.asReadonly();
 
-  private loadFromStorage(): PlatformUser[] {
-    try {
-      const raw = sessionStorage.getItem(STORAGE_KEY);
-      if (raw) return JSON.parse(raw) as PlatformUser[];
-    } catch { /* ignore */ }
-    this.persist(INITIAL_STAFF_USERS);
-    return INITIAL_STAFF_USERS;
+  constructor() {
+    super();
+    this.load();
   }
 
-  private persist(items: PlatformUser[]): void {
-    try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch { /* ignore */ }
+  override add(payload: Partial<PlatformUser>): Observable<PlatformUser> {
+    return super.add({ ...payload, tenantId: 'easyfly' });
   }
 
-  private formatNow(): string {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const d = String(now.getDate()).padStart(2, '0');
-    const time = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-    return `${y}-${m}-${d} / ${time}`;
-  }
-
-  load(): void {
-    this._items.set(this.loadFromStorage());
-  }
-
-  add(payload: Partial<PlatformUser>): Observable<PlatformUser> {
-    const newItem: PlatformUser = {
-      id: `staff-${Date.now()}`,
-      firstName: payload.firstName || '',
-      lastName: payload.lastName || '',
-      email: payload.email || '',
-      phone: payload.phone || '',
-      roleId: payload.roleId || 'role-support-exec',
-      status: payload.status || 'ACTIVE',
-      disabledPermissionIds: [],
-      isPrimary: payload.isPrimary ?? false,
-      createdAt: this.formatNow(),
-      lastLoginAt: null,
-    };
-    const updated = [newItem, ...this._items()];
-    this._items.set(updated);
-    this.persist(updated);
-    return of(newItem);
-  }
-
-  update(id: string, payload: Partial<PlatformUser>): Observable<PlatformUser> {
-    const list = this._items();
-    const idx = list.findIndex(u => u.id === id);
-    if (idx !== -1) {
-      const updatedItem = { ...list[idx], ...payload };
-      const updated = [...list];
-      updated[idx] = updatedItem;
-      this._items.set(updated);
-      this.persist(updated);
-      return of(updatedItem);
-    }
-    return of(list[0]);
+  override update(id: string, payload: Partial<PlatformUser>): Observable<PlatformUser> {
+    return super.update(id, payload);
   }
 
   updateDisabledPermissions(id: string, disabledPermissionIds: string[]): Observable<PlatformUser> {
     return this.update(id, { disabledPermissionIds });
   }
 
-  delete(id: string): Observable<void> {
-    const updated = this._items().filter(u => u.id !== id);
-    this._items.set(updated);
-    this.persist(updated);
-    return of(void 0);
+  override delete(id: string): Observable<void> {
+    return super.delete(id);
   }
 
-  deleteMultiple(ids: string[]): Observable<void> {
-    const set = new Set(ids);
-    const updated = this._items().filter(u => !set.has(u.id));
-    this._items.set(updated);
-    this.persist(updated);
-    return of(void 0);
+  override deleteMultiple(ids: string[]): Observable<void> {
+    return super.deleteMultiple(ids);
   }
 }

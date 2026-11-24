@@ -1,5 +1,6 @@
-import { Injectable, signal } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
+import { BaseApiCrudService } from 'admin-core';
 
 export interface PageItem {
   id: string;
@@ -12,8 +13,6 @@ export interface PageItem {
   createdAt: string;
   updatedAt: string;
 }
-
-const STORAGE_KEY = 'tenant_admin_pages';
 
 const INITIAL_PAGES: PageItem[] = [
   {
@@ -85,97 +84,24 @@ const INITIAL_PAGES: PageItem[] = [
 ];
 
 @Injectable({ providedIn: 'root' })
-export class PageListService {
-  private readonly _items = signal<PageItem[]>(this.loadFromStorage());
-  private readonly _loading = signal<boolean>(false);
-  private readonly _error = signal<string | null>(null);
-
-  readonly items = this._items.asReadonly();
+export class PageListService extends BaseApiCrudService<PageItem> {
+  protected readonly endpoint = '/pages';
   readonly pages = this.items;
-  readonly loading = this._loading.asReadonly();
-  readonly error = this._error.asReadonly();
 
-  private loadFromStorage(): PageItem[] {
-    try {
-      const raw = sessionStorage.getItem(STORAGE_KEY);
-      if (raw) return JSON.parse(raw) as PageItem[];
-    } catch { /* ignore */ }
-    this.persist(INITIAL_PAGES);
-    return INITIAL_PAGES;
-  }
-
-  private persist(items: PageItem[]): void {
-    try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch { /* ignore */ }
-  }
-
-  private formatNow(): string {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const d = String(now.getDate()).padStart(2, '0');
-    const time = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-    return `${y}-${m}-${d} / ${time}`;
-  }
-
-  load(): void {
-    this._items.set(this.loadFromStorage());
-  }
-
-  add(payload: Omit<PageItem, 'id' | 'createdAt' | 'updatedAt'>): Observable<PageItem> {
-    const newItem: PageItem = {
-      ...payload,
-      id: `page-${Date.now()}`,
-      createdAt: this.formatNow(),
-      updatedAt: this.formatNow(),
-    };
-    const updated = [newItem, ...this._items()];
-    this._items.set(updated);
-    this.persist(updated);
-    return of(newItem);
+  constructor() {
+    super();
+    this.load();
   }
 
   addPage(payload: Omit<PageItem, 'id' | 'createdAt' | 'updatedAt'>): Observable<PageItem> {
     return this.add(payload);
   }
 
-  update(id: string, updates: Partial<PageItem>): Observable<PageItem> {
-    const list = this._items();
-    const idx = list.findIndex(p => p.id === id);
-    if (idx !== -1) {
-      const updatedItem: PageItem = { ...list[idx], ...updates, updatedAt: this.formatNow() };
-      const updated = [...list];
-      updated[idx] = updatedItem;
-      this._items.set(updated);
-      this.persist(updated);
-      return of(updatedItem);
-    }
-    return of(list[0]);
-  }
-
   updatePage(id: string, updates: Partial<PageItem>): Observable<PageItem> {
     return this.update(id, updates);
   }
 
-  delete(id: string): Observable<void> {
-    const updated = this._items().filter(p => p.id !== id);
-    this._items.set(updated);
-    this.persist(updated);
-    return of(void 0);
-  }
-
   deletePage(id: string): Observable<void> {
     return this.delete(id);
-  }
-
-  deleteMultiple(ids: string[]): Observable<void> {
-    const set = new Set(ids);
-    const updated = this._items().filter(p => !set.has(p.id));
-    this._items.set(updated);
-    this.persist(updated);
-    return of(void 0);
-  }
-
-  bulkDelete(ids: string[]): Observable<void> {
-    return this.deleteMultiple(ids);
   }
 }

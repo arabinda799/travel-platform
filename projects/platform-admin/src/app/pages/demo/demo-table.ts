@@ -20,9 +20,11 @@ import {
   TableColumn,
   TableLazyEvent,
   BreadcrumbItem,
+  exportToCsv,
 } from 'admin-core';
 import { Menu } from 'primeng/menu';
 import { MenuItem } from 'primeng/api';
+import { HotelBookingsService } from './hotel-bookings.service';
 
 interface Booking {
   id: number;
@@ -96,6 +98,7 @@ const DUMMY_DATA: Booking[] = Array.from({ length: 87 }, (_, i) => {
 })
 export class DemoTableComponent {
   private readonly router = inject(Router);
+  protected readonly bookingsService = inject(HotelBookingsService);
 
   readonly statusTpl = viewChild<TemplateRef<any>>('statusTpl');
   readonly paymentStatusTpl = viewChild<TemplateRef<any>>('paymentStatusTpl');
@@ -210,6 +213,7 @@ export class DemoTableComponent {
   private readonly destroyRef = inject(DestroyRef);
 
   constructor() {
+    this.bookingsService.load();
     this.searchSubject
       .pipe(
         debounceTime(300),
@@ -252,7 +256,8 @@ export class DemoTableComponent {
     this.isLoading.set(true);
 
     setTimeout(() => {
-      let data = [...DUMMY_DATA];
+      const source = this.bookingsService.items();
+      let data = source.length > 0 ? [...source] : [...DUMMY_DATA];
 
       if (this.searchQuery) {
         const q = this.searchQuery.toLowerCase();
@@ -341,6 +346,7 @@ export class DemoTableComponent {
 
   bulkUpdateStatus(status: Booking['status']): void {
     const selectedIds = new Set(this.selectedBookings().map((b) => b.id));
+    this.bookingsService.updateStatus(Array.from(selectedIds), status).subscribe({ error: () => {} });
     this.bookings.update((all) =>
       all.map((b) => (selectedIds.has(b.id) ? { ...b, status } : b))
     );
@@ -351,59 +357,29 @@ export class DemoTableComponent {
     const count = this.selectedBookings().length;
     if (!count) return;
     const selectedIds = new Set(this.selectedBookings().map((b) => b.id));
+    this.bookingsService.deleteMultiple(Array.from(selectedIds)).subscribe({ error: () => {} });
     this.bookings.update((all) => all.filter((b) => !selectedIds.has(b.id)));
     this.totalRecords.update((t) => Math.max(0, t - count));
     this.selectedBookings.set([]);
   }
 
   private exportToCsv(data: Booking[], filename: string): void {
-    if (!data.length) return;
-    const headers = [
-      'Booking Ref',
-      'Guest Name',
-      'Hotel',
-      'City',
-      'Check In',
-      'Check Out',
-      'Rooms',
-      'Amount (INR)',
-      'Tax (INR)',
-      'Payment Method',
-      'Booked On',
-      'Status',
-    ];
-    const fields: (keyof Booking)[] = [
-      'bookingRef',
-      'guestName',
-      'hotel',
-      'city',
-      'checkIn',
-      'checkOut',
-      'rooms',
-      'amount',
-      'paymentMethod',
-      'paymentStatus',
-      'assignedUser',
-      'supplier',
-      'bookingDate',
-      'status',
-    ];
-
-    const rows = [
-      headers.join(','),
-      ...data.map((b) =>
-        fields.map((f) => `"${String(b[f] ?? '').replace(/"/g, '""')}"`).join(',')
-      ),
-    ];
-    const blob = new Blob([rows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${filename}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    exportToCsv(filename, data as unknown as Record<string, any>[], [
+      { field: 'bookingRef', header: 'Booking Ref' },
+      { field: 'guestName', header: 'Guest Name' },
+      { field: 'hotel', header: 'Hotel' },
+      { field: 'city', header: 'City' },
+      { field: 'checkIn', header: 'Check In' },
+      { field: 'checkOut', header: 'Check Out' },
+      { field: 'rooms', header: 'Rooms' },
+      { field: 'amount', header: 'Amount (INR)' },
+      { field: 'paymentMethod', header: 'Payment Method' },
+      { field: 'paymentStatus', header: 'Payment Status' },
+      { field: 'assignedUser', header: 'Assigned User' },
+      { field: 'supplier', header: 'Supplier' },
+      { field: 'bookingDate', header: 'Booked On' },
+      { field: 'status', header: 'Status' },
+    ]);
   }
 
   exportSelected(): void {

@@ -18,6 +18,10 @@ export const routes: Routes = [
         path: 'forgot-password',
         loadComponent: () => import('./pages/auth/forgot-password/forgot-password').then(m => m.ForgotPasswordComponent),
       },
+      {
+        path: 'reset-password',
+        loadComponent: () => import('./pages/auth/reset-password/reset-password').then(m => m.ResetPasswordComponent),
+      },
     ],
   },
   {
@@ -84,6 +88,31 @@ export const routes: Routes = [
             m => m.HotelQueryListComponent,
           ),
       },
+      {
+        path: 'hotel/trending-destinations',
+        loadComponent: () =>
+          import('./pages/hotel/trending-destinations/trending-destination-list').then(
+            m => m.TrendingDestinationListComponent,
+          ),
+      },
+      {
+        path: 'hotel/popular-hotels',
+        loadComponent: () =>
+          import('./pages/hotel/popular-hotels/popular-hotel-list').then(
+            m => m.PopularHotelListComponent,
+          ),
+      },
+
+      {
+        path: 'content/blogs',
+        loadComponent: () =>
+          import('./pages/content/blog-list/blog-list').then(m => m.BlogListComponent),
+      },
+      {
+        path: 'content/blog-categories',
+        loadComponent: () =>
+          import('./pages/content/blog-categories/blog-categories').then(m => m.BlogCategoriesComponent),
+      },
 
       {
         path: 'finance/markup/hotel',
@@ -104,6 +133,18 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./pages/finance/hotel-coupon/hotel-coupon').then(
             m => m.HotelCouponComponent,
+          ),
+      },
+      {
+        path: 'finance/wallet',
+        loadComponent: () =>
+          import('./pages/finance/wallet/wallet').then(m => m.WalletComponent),
+      },
+      {
+        path: 'finance/transactions',
+        loadComponent: () =>
+          import('./pages/finance/transactions/transactions').then(
+            m => m.TransactionsComponent,
           ),
       },
       {

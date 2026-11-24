@@ -17,11 +17,13 @@
   <lib-data-table
     [value]="filteredCompanies()"
     [columns]="columns()"
-    [totalRecords]="filteredCompanies().length"
+    [totalRecords]="companyService.total()"
+    [rows]="50"
     [loading]="loading()"
     [searchable]="true"
     searchPlaceholder="Search by name, code, domain..."
-    (search)="onSearch($event)">
+    (search)="onSearch($event)"
+    (lazyLoad)="onLazyLoad($event)">
 
     <div table-actions class="table-actions-group">
       <lib-button

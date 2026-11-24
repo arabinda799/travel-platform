@@ -141,11 +141,9 @@
           [(value)]="recentBookingsDateRange"
           (rangeChange)="onRecentBookingsDateChange($event)" />
 
-        @if (selectedService() !== 'all') {
-          <a [routerLink]="viewAllRoute()" class="btn-view-all">
-            View All
-          </a>
-        }
+        <a [routerLink]="viewAllRoute()" class="btn-view-all">
+          View All
+        </a>
       </div>
     </div>
 
@@ -192,7 +190,7 @@
             <tr>
               @if (selectedService() === 'all') {
                 <td class="col-booking-id">
-                  <a class="booking-id-link" [routerLink]="['/bookings/hotel']">{{ b.bookingRef }}</a>
+                  <a class="booking-id-link" (click)="viewBooking(b)">{{ b.bookingRef }}</a>
                 </td>
                 <td class="col-guest">
                   <div class="pax-cell">
@@ -225,7 +223,7 @@
                 </td>
               } @else if (selectedService() === 'hotel') {
                 <td class="col-booking-id">
-                  <a class="booking-id-link" [routerLink]="['/bookings/hotel']">{{ b.bookingRef }}</a>
+                  <a class="booking-id-link" (click)="viewBooking(b)">{{ b.bookingRef }}</a>
                 </td>
                 <td class="col-guest"><span class="pax-name">{{ b.guest }}</span></td>
                 <td><span class="service-name">{{ b.hotel }}</span></td>
@@ -248,7 +246,7 @@
                 </td>
               } @else {
                 <td class="col-booking-id">
-                  <a class="booking-id-link" [routerLink]="['/bookings/flight']">{{ b.bookingRef }}</a>
+                  <a class="booking-id-link" (click)="viewBooking(b)">{{ b.bookingRef }}</a>
                 </td>
                 <td class="col-guest"><span class="pax-name">{{ b.guest }}</span></td>
                 <td><span class="service-name">{{ b.airline }}</span></td>

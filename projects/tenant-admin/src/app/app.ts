@@ -1,15 +1,74 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
-import { AdminLayoutComponent, NavItem } from 'admin-core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { filter } from 'rxjs/operators';
+import { AdminLayoutComponent, NavItem, trimImagePadding } from 'admin-core';
+import { CompanySettingsService } from './pages/settings/company-settings/company-settings.service';
 
 @Component({
   imports: [RouterOutlet, AdminLayoutComponent],
   selector: 'app-root',
   templateUrl: './app.html',
+  styleUrl: './app.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class App {
+  private readonly router = inject(Router);
+  private readonly settingsService = inject(CompanySettingsService);
   readonly title = signal('EasyFlys Tenant Portal');
+
+  readonly isAuthRoute = signal(this.router.url.startsWith('/auth'));
+  readonly settings = this.settingsService.settings;
+
+  readonly brandLogo = computed(() => {
+    const s = this.settings();
+    return s.logos?.['dark'] || s.logos?.['light'] || '';
+  });
+
+  readonly brandFavicon = computed(() => {
+    const s = this.settings();
+    return s.logos?.['favicon'] || '';
+  });
+
+  readonly trimmedBrandLogo = signal<string>('');
+  readonly trimmedBrandFavicon = signal<string>('');
+
+  readonly companyName = computed(() => {
+    const s = this.settings();
+    return s.companyName || 'EasyFlys Agency';
+  });
+
+  constructor() {
+    this.router.events
+      .pipe(
+        filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+        takeUntilDestroyed(),
+      )
+      .subscribe(e => {
+        this.isAuthRoute.set(e.urlAfterRedirects.startsWith('/auth'));
+      });
+
+    // Load tenant company settings on startup so brand name + logos are available app-wide
+    this.settingsService.load().subscribe();
+
+    effect(() => {
+      const logo = this.brandLogo();
+      if (!logo) {
+        this.trimmedBrandLogo.set('');
+      } else {
+        trimImagePadding(logo).then(res => this.trimmedBrandLogo.set(res));
+      }
+    });
+
+    effect(() => {
+      const fav = this.brandFavicon();
+      if (!fav) {
+        this.trimmedBrandFavicon.set('');
+      } else {
+        trimImagePadding(fav).then(res => this.trimmedBrandFavicon.set(res));
+      }
+    });
+  }
 
   readonly navItems: NavItem[] = [
     { label: 'Dashboard', icon: 'dashboard', route: '/' },

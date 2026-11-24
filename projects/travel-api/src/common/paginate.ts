@@ -1,4 +1,4 @@
-import { Repository, FindManyOptions } from 'typeorm';
+import { Repository, FindManyOptions, ObjectLiteral } from 'typeorm';
 
 export interface PaginatedResponse<T> {
   data: T[];
@@ -8,7 +8,7 @@ export interface PaginatedResponse<T> {
   totalPages: number;
 }
 
-export async function paginate<T>(
+export async function paginate<T extends ObjectLiteral>(
   repo: Repository<T>,
   page: number,
   limit: number,

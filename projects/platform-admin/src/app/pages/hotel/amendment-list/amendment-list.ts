@@ -23,6 +23,7 @@ import {
 } from 'admin-core';
 import { Menu } from 'primeng/menu';
 import { MenuItem } from 'primeng/api';
+import { AmendmentListService } from './amendment-list.service';
 
 interface Amendment {
   id: number;
@@ -105,6 +106,7 @@ const DUMMY_AMENDMENTS: Amendment[] = Array.from({ length: 42 }, (_, i) => {
 })
 export class AmendmentListComponent {
   private readonly router = inject(Router);
+  protected readonly amendmentService = inject(AmendmentListService);
 
   readonly amendmentStatusTpl = viewChild<TemplateRef<any>>('amendmentStatusTpl');
   readonly bookingStatusTpl = viewChild<TemplateRef<any>>('bookingStatusTpl');
@@ -196,6 +198,7 @@ export class AmendmentListComponent {
   ]);
 
   constructor() {
+    this.amendmentService.load();
     this.search$.pipe(
       debounceTime(300),
       distinctUntilChanged(),
@@ -248,6 +251,7 @@ export class AmendmentListComponent {
 
   confirmBulkDelete(): void {
     const selectedIds = new Set(this.selectedAmendments.map(a => a.id));
+    this.amendmentService.deleteMultiple(Array.from(selectedIds)).subscribe({ error: () => {} });
     this.allData.update(list => list.filter(a => !selectedIds.has(a.id)));
     this.selectedAmendments = [];
     this.deleteConfirmVisible.set(false);
@@ -256,6 +260,7 @@ export class AmendmentListComponent {
 
   onStatusModalConfirm(newStatus: string): void {
     const selectedIds = new Set(this.selectedAmendments.map(a => a.id));
+    this.amendmentService.updateStatus(Array.from(selectedIds), newStatus).subscribe({ error: () => {} });
     this.allData.update(list =>
       list.map(a => (selectedIds.has(a.id) ? { ...a, amendmentStatus: newStatus as Amendment['amendmentStatus'] } : a)),
     );
@@ -275,7 +280,8 @@ export class AmendmentListComponent {
   private loadData(event: TableLazyEvent): void {
     this.isLoading.set(true);
     setTimeout(() => {
-      let filtered = [...this.allData()];
+      const source = this.amendmentService.items();
+      let filtered = source.length > 0 ? [...source] : [...this.allData()];
 
       if (this.selectedType()) {
         filtered = filtered.filter(a => a.amendmentType === this.selectedType());

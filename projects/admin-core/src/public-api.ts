@@ -31,6 +31,8 @@ export * from './lib/utils/string-truncate';
 // Slug Utility
 export * from './lib/utils/slug';
 export * from './lib/utils/date-format';
+export * from './lib/utils/export-csv';
+export * from './lib/utils/image-trim';
 
 // Filter Sidebar
 export * from './lib/components/filter-sidebar/filter-sidebar';

@@ -45,7 +45,7 @@ export class PaymentGatewaysService implements OnModuleInit {
     await this.gwRepo.delete(id);
   }
 
-  async bulkStatusGateways(dto: BulkStatusDto): Promise<void> {
+  async bulkUpdateStatus(dto: BulkStatusDto): Promise<void> {
     await this.gwRepo.update({ id: In(dto.ids) }, { status: dto.status });
   }
 
@@ -53,6 +53,10 @@ export class PaymentGatewaysService implements OnModuleInit {
 
   async findAllFeeRules(page = 1, limit = 50): Promise<PaginatedResponse<ConvenienceFeeRule>> {
     return paginate<ConvenienceFeeRule>(this.feeRepo, page, limit, { order: { createdDate: 'ASC' } });
+  }
+
+  async findFeeRulesByGateway(gatewayId: string): Promise<ConvenienceFeeRule[]> {
+    return this.feeRepo.find({ where: { gatewayId }, order: { createdDate: 'ASC' } });
   }
 
   async saveFeeRule(dto: SaveFeeRuleDto): Promise<ConvenienceFeeRule> {
@@ -63,7 +67,7 @@ export class PaymentGatewaysService implements OnModuleInit {
     return this.feeRepo.save(this.feeRepo.create(dto));
   }
 
-  async removeFeeRule(id: string): Promise<void> {
+  async deleteFeeRule(id: string): Promise<void> {
     const rule = await this.feeRepo.findOneBy({ id });
     if (!rule) throw new NotFoundException(`Fee rule ${id} not found`);
     await this.feeRepo.delete(id);

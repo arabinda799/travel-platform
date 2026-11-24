@@ -118,3 +118,86 @@ export class HotelAmendment {
   @Column({ type: 'float', default: 0 }) totalAmount: number;
   @Column({ type: 'simple-json', default: '[]' }) gstRows: { serviceDescription: string; taxableValue: number; cgst: number; sgst: number; igst: number; total: number }[];
 }
+
+@Entity('hotel_booking_records')
+export class HotelBookingRecord {
+  @PrimaryGeneratedColumn() id: number;
+  @Column({ default: '' }) bookingRef: string;
+  @Column({ default: '' }) guestName: string;
+  @Column({ default: '' }) hotel: string;
+  @Column({ default: '' }) city: string;
+  @Column({ default: '' }) checkIn: string;
+  @Column({ default: '' }) checkOut: string;
+  @Column({ default: 1 }) rooms: number;
+  @Column({ type: 'float', default: 0 }) amount: number;
+  @Column({ default: 'Credit Card (Visa)' }) paymentMethod: string;
+  @Column({ default: 'Paid' }) paymentStatus: string;
+  @Column({ default: 'Unassigned' }) assignedUser: string;
+  @Column({ default: 'Hotelbeds' }) supplier: string;
+  @Column({ default: '' }) bookingDate: string;
+  @Column({ default: 'Confirmed' }) status: string;
+}
+
+@Entity('hotel_amendment_records')
+export class HotelAmendmentRecord {
+  @PrimaryGeneratedColumn() id: number;
+  @Column({ default: '' }) amendmentId: string;
+  @Column({ default: '' }) bookingId: string;
+  @Column({ default: 'Date Change' }) amendmentType: string;
+  @Column({ default: 'Approved' }) amendmentStatus: string;
+  @Column({ default: 'Confirmed' }) bookingStatus: string;
+  @Column({ type: 'float', default: 0 }) bookingAmount: number;
+  @Column({ default: '' }) hotel: string;
+  @Column({ default: '' }) guest: string;
+  @Column({ default: '2 Adults' }) pax: string;
+  @Column({ default: '' }) checkIn: string;
+  @Column({ default: '' }) checkOut: string;
+  @Column({ default: '' }) city: string;
+  @Column({ default: 'Unassigned' }) assignedStaff: string;
+  @Column({ default: '' }) bookingDate: string;
+  @Column({ default: '' }) createdDate: string;
+}
+
+@Entity('hotel_refund_records')
+export class HotelRefundRecord {
+  @PrimaryGeneratedColumn() id: number;
+  @Column({ default: '' }) refundId: string;
+  @Column({ default: '' }) amendmentId: string;
+  @Column({ default: '' }) bookingId: string;
+  @Column({ default: 'Full Cancellation' }) amendmentType: string;
+  @Column({ default: 'Processed' }) refundStatus: string;
+  @Column({ default: 'Approved' }) amendmentStatus: string;
+  @Column({ default: 'Cancelled' }) bookingStatus: string;
+  @Column({ type: 'float', default: 0 }) bookingAmount: number;
+  @Column({ default: '' }) hotel: string;
+  @Column({ default: '' }) guest: string;
+  @Column({ default: '2 Adults' }) pax: string;
+  @Column({ default: '' }) checkIn: string;
+  @Column({ default: '' }) checkOut: string;
+  @Column({ default: '' }) city: string;
+  @Column({ default: 'Unassigned' }) assignedStaff: string;
+  @Column({ default: '' }) bookingDate: string;
+  @Column({ default: '' }) createdDate: string;
+}
+
+@Entity('hotel_query_records')
+export class HotelQueryRecord {
+  @PrimaryGeneratedColumn() id: number;
+  @Column({ default: '' }) queryId: string;
+  @Column({ default: '' }) guestName: string;
+  @Column({ default: '' }) guestEmail: string;
+  @Column({ default: '' }) guestPhone: string;
+  @Column({ default: 'Price Inquiry' }) queryType: string;
+  @Column({ default: 'Open' }) queryStatus: string;
+  @Column({ default: '' }) hotel: string;
+  @Column({ default: '' }) city: string;
+  @Column({ default: '' }) checkIn: string;
+  @Column({ default: '' }) checkOut: string;
+  @Column({ default: '2 Adults' }) pax: string;
+  @Column({ default: '' }) message: string;
+  @Column({ default: '' }) response: string;
+  @Column({ default: 'Unassigned' }) assignedStaff: string;
+  @Column({ default: 'Website' }) source: string;
+  @Column({ default: '' }) createdDate: string;
+  @Column({ default: '' }) updatedDate: string;
+}

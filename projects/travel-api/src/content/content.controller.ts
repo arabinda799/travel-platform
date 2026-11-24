@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query } from '@nestjs/common';
+import { Public } from '../auth/decorators/public.decorator';
 import { ContentService } from './content.service';
 import {
   CreateBlogCategoryDto, UpdateBlogCategoryDto,
@@ -166,4 +167,15 @@ export class ContentController {
   @Delete('menu-items/:id')
   @HttpCode(204)
   removeMenuItem(@Param('id') id: string) { this.service.removeMenuItem(id); }
+
+  @Post('menu-items/batch')
+  replaceMenuItems(@Body() body: { labelId: string; items: { pageId: string; title: string; slug: string; order: number }[] }) {
+    return this.service.replaceMenuItems(body.labelId, body.items);
+  }
+
+  @Public()
+  @Get('app/blogs')
+  getAppBlogs(@Query('tenantId') tenantId?: string) {
+    return this.service.findAllBlogPosts();
+  }
 }

@@ -22,6 +22,7 @@ import {
 } from 'admin-core';
 import { Menu } from 'primeng/menu';
 import { MenuItem } from 'primeng/api';
+import { HotelQueryListService } from './hotel-query-list.service';
 
 export interface HotelQuery {
   id: number;
@@ -128,6 +129,7 @@ const DUMMY_QUERIES: HotelQuery[] = Array.from({ length: 48 }, (_, i) => {
 })
 export class HotelQueryListComponent {
   private readonly destroyRef = inject(DestroyRef);
+  protected readonly queryService = inject(HotelQueryListService);
 
   readonly queryStatusTpl = viewChild<TemplateRef<unknown>>('queryStatusTpl');
   readonly messageTpl = viewChild<TemplateRef<unknown>>('messageTpl');
@@ -222,6 +224,7 @@ export class HotelQueryListComponent {
   ]);
 
   constructor() {
+    this.queryService.load();
     this.search$.pipe(
       debounceTime(300),
       distinctUntilChanged(),
@@ -276,6 +279,7 @@ export class HotelQueryListComponent {
 
   confirmBulkDelete(): void {
     const selectedIds = new Set(this.selectedQueries.map(q => q.id));
+    this.queryService.deleteMultiple(Array.from(selectedIds)).subscribe({ error: () => {} });
     this.allData.update(list => list.filter(q => !selectedIds.has(q.id)));
     this.selectedQueries = [];
     this.deleteConfirmVisible.set(false);
@@ -284,6 +288,7 @@ export class HotelQueryListComponent {
 
   onStatusModalConfirm(newStatus: string): void {
     const selectedIds = new Set(this.selectedQueries.map(q => q.id));
+    this.queryService.updateStatus(Array.from(selectedIds), newStatus).subscribe({ error: () => {} });
     this.allData.update(list =>
       list.map(q => (selectedIds.has(q.id) ? { ...q, queryStatus: newStatus as HotelQuery['queryStatus'] } : q)),
     );
@@ -299,7 +304,8 @@ export class HotelQueryListComponent {
   private loadData(event: TableLazyEvent): void {
     this.isLoading.set(true);
     setTimeout(() => {
-      let filtered = [...this.allData()];
+      const source = this.queryService.items();
+      let filtered = source.length > 0 ? [...source] : [...this.allData()];
 
       if (this.selectedType()) {
         filtered = filtered.filter(q => q.queryType === this.selectedType());

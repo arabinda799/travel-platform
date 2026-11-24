@@ -1,245 +1,68 @@
 <lib-page-container
-  title="Blog List"
-  subtitle="Create, edit, and manage your travel blog posts and SEO metadata"
+  title="Blog Posts"
+  subtitle="Manage blog articles published on the platform"
   [breadcrumbs]="[
     { label: 'Dashboard', route: '/dashboard' },
     { label: 'Content' },
-    { label: 'Blogs' },
-    { label: 'Blog List' }
+    { label: 'Blog Posts' }
   ]">
 
-  <!-- Top Page Action: Add New Button -->
   <div page-actions>
-    <lib-button
-      variant="primary"
-      icon="add"
-      (click)="openAddModal()">
-      Add New Blog
+    <lib-button variant="primary" icon="add" (click)="openAddModal()">
+      Add Blog Post
     </lib-button>
   </div>
 
-  <!-- Reusable Data Table Component -->
   <lib-data-table
-    [value]="filteredBlogs()"
+    [value]="filteredItems()"
     [columns]="columns()"
-    [totalRecords]="filteredBlogs().length"
-    [loading]="loading()"
-    [checkbox]="true"
-    [(selection)]="selectedBlogs"
+    [totalRecords]="service.total()"
+    [rows]="50"
+    [loading]="service.loading()"
     [searchable]="true"
-    searchPlaceholder="Search blogs by title, slug, category, author..."
-    (search)="onSearch($event)">
+    searchPlaceholder="Search by title or category..."
+    (search)="onSearch($event)"
+    (lazyLoad)="onLazyLoad($event)">
 
-    <!-- Standard Table Actions (when 0 selected): Filter Button -->
-    <div table-actions class="table-actions-group">
-      <lib-button
-        variant="outline"
-        icon="tune"
-        [badge]="activeFilterCount() ? activeFilterCount() : ''"
-        (click)="filterVisible.set(true)">
-        Filters
-      </lib-button>
-    </div>
-
-    <!-- Bulk Selection Actions (when 1+ selected): Change Status and Delete -->
-    <div selection-actions class="selection-actions-group">
-      <lib-button
-        variant="outline-warning"
-        icon="sync"
-        (click)="openBulkStatusModal()">
-        Change Status
-      </lib-button>
-
-      <lib-button
-        variant="danger"
-        icon="delete"
-        (click)="confirmBulkDelete()">
-        Delete Selected ({{ selectedBlogs().length }})
-      </lib-button>
-    </div>
-
-    <!-- Blog Image Template with Lazy Load and Spinner -->
-    <ng-template #imageTpl let-row>
-      <div class="blog-image-wrapper">
-        <lib-thumb-image [src]="row.image" [alt]="row.title" fallbackIcon="article" />
-      </div>
-    </ng-template>
-
-    <!-- Blog Title Template -->
-    <ng-template #titleTpl let-row>
-      <div class="blog-title-cell">
-        <span class="blog-title">{{ row.title }}</span>
-        <span class="blog-slug text-muted">/{{ row.slug }}</span>
-      </div>
-    </ng-template>
-
-    <!-- Status Badge Template -->
     <ng-template #statusTpl let-row>
-      <lib-status-badge [status]="row.status" />
+      <lib-status-badge [status]="row.status === 'Active' ? 'ACTIVE' : 'INACTIVE'" />
     </ng-template>
 
-    <!-- Actions Template -->
     <ng-template #actionsTpl let-row>
       <div class="table-row-actions">
-        <lib-table-action
-          action="edit"
-          tooltip="Edit Blog"
-          (clicked)="openEditModal(row)" />
-
-        <lib-table-action
-          action="delete"
-          tooltip="Delete Blog"
-          (clicked)="confirmDelete(row)" />
+        <lib-table-action action="edit" tooltip="Edit" (clicked)="openEditModal(row)" />
+        <lib-table-action action="delete" tooltip="Delete" (clicked)="confirmDelete(row)" />
       </div>
     </ng-template>
   </lib-data-table>
 
-  <!-- Filter Sidebar Drawer -->
-  <lib-filter-sidebar
-    [(visible)]="filterVisible"
-    title="Filter Blogs"
-    (apply)="applyFilters()"
-    (reset)="resetFilters()">
-
-    <div class="filter-form-fields">
-      <lib-select-field
-        label="Blog Status"
-        placeholder="All Statuses"
-        [options]="statusOptions"
-        [clearable]="true"
-        [value]="selectedStatusFilter()"
-        (valueChange)="selectedStatusFilter.set($event)" />
-
-      <lib-select-field
-        label="Blog Category"
-        placeholder="All Categories"
-        [options]="categoryOptions()"
-        [clearable]="true"
-        [value]="selectedCategoryFilter()"
-        (valueChange)="selectedCategoryFilter.set($event)" />
-
-      <lib-datepicker-field
-        label="Created Date Range"
-        placeholder="Select start & end dates"
-        selectionMode="range"
-        dateFormat="dd/mm/yy"
-        [value]="selectedDateRangeFilter()"
-        (valueChange)="selectedDateRangeFilter.set($event)" />
-    </div>
-  </lib-filter-sidebar>
-
-  <!-- Bulk Status Change Modal -->
-  <lib-status-modal
-    [(visible)]="statusModalVisible"
-    [count]="selectedBlogs().length"
-    [options]="[
-      { label: 'Active', value: 'Active', description: 'Enable blog post for public listing' },
-      { label: 'Inactive', value: 'Inactive', description: 'Hide blog post from public listing' }
-    ]"
-    (confirmed)="onBulkStatusConfirm($event)" />
-
-  <!-- Add / Edit Blog Modal -->
   <lib-form-modal
     [(visible)]="modalVisible"
-    [title]="isEditing() ? 'Edit Blog' : 'Add New Blog'"
-    width="52rem"
+    [title]="isEditing() ? 'Edit Blog Post' : 'Add Blog Post'"
     [submitLabel]="isEditing() ? 'Update' : 'Save'"
     submitIcon="save"
-    (submitted)="saveBlog()">
-
+    (submitted)="save()">
     <div class="modal-form-grid">
-      <div class="form-row-2">
-        <lib-text-field
-          label="Blog Title"
-          placeholder="Blog Title"
-          [required]="true"
-          [formControl]="form.controls.title"
-          (blurred)="onTitleBlur()" />
-
-        <lib-text-field
-          label="Blog Slug"
-          placeholder="Blog Slug"
-          [required]="true"
-          [formControl]="form.controls.slug"
-          (blurred)="onSlugBlur()" />
-      </div>
-
-      <div class="form-row-2">
-        <lib-select-field
-          label="Blog Category"
-          placeholder="Select Category"
-          [required]="true"
-          [options]="categoryOptions()"
-          [formControl]="form.controls.categoryId" />
-
-        <lib-file-upload-field
-          label="Blog Image"
-          accept="image/*"
-          [required]="true"
-          [formControl]="form.controls.image"
-          [fileName]="formImageFileName()"
-          (fileNameChange)="formImageFileName.set($event)" />
-      </div>
-
-      <lib-textarea-field
-        label="Blog Post Description"
-        placeholder="Write blog post content or HTML description..."
+      <lib-text-field label="Title" placeholder="Blog post title" [required]="true" [formControl]="form.controls.title" (input)="onTitleInput()" />
+      <lib-text-field label="Slug" placeholder="e.g. my-blog-post" [required]="true" [formControl]="form.controls.slug" />
+      <lib-text-field label="Category" placeholder="Category name" [formControl]="form.controls.categoryName" />
+      <lib-text-field label="Author" placeholder="Author name" [formControl]="form.controls.postedBy" />
+      <lib-text-field label="Image URL" placeholder="https://..." [formControl]="form.controls.image" />
+      <lib-text-field label="Description" placeholder="Blog content or excerpt" [formControl]="form.controls.description" />
+      <lib-select-field
+        label="Status"
         [required]="true"
-        [rows]="5"
-        [formControl]="form.controls.description" />
-
-      <div class="form-row-2">
-        <lib-select-field
-          label="Blog Status"
-          [required]="true"
-          [options]="statusOptions"
-          [formControl]="form.controls.status" />
-
-        <lib-text-field
-          label="Posted By"
-          placeholder="Posted By"
-          [required]="true"
-          [formControl]="form.controls.postedBy" />
-      </div>
-
-      <div class="form-row-2">
-        <lib-select-field
-          label="Meta Robots"
-          [required]="true"
-          [options]="metaRobotsOptions"
-          [formControl]="form.controls.metaRobots" />
-
-        <lib-text-field
-          label="Meta Title"
-          placeholder="Meta Title"
-          [required]="true"
-          [formControl]="form.controls.metaTitle" />
-      </div>
-
-      <lib-textarea-field
-        label="Meta Keyword"
-        placeholder="Meta Keyword"
-        [rows]="2"
-        [formControl]="form.controls.metaKeyword" />
-
-      <lib-textarea-field
-        label="Meta Description"
-        placeholder="Meta Description"
-        [rows]="2"
-        [formControl]="form.controls.metaDescription" />
+        [options]="[{ label: 'Active', value: 'Active' }, { label: 'Inactive', value: 'Inactive' }]"
+        [formControl]="form.controls.status" />
     </div>
   </lib-form-modal>
 
-  <!-- Delete Confirmation Dialog -->
   <lib-confirm-dialog
     [(visible)]="confirmDeleteVisible"
-    title="Confirm Delete"
-    [message]="
-      itemToDelete()
-        ? 'Are you sure you want to delete &quot;' + itemToDelete()!.title + '&quot;? This action cannot be undone.'
-        : 'Are you sure you want to delete ' + selectedBlogs().length + ' selected blog post(s)? This action cannot be undone.'
-    "
+    title="Delete Blog Post"
+    [message]="itemToDelete() ? 'Delete &quot;' + itemToDelete()!.title + '&quot;?' : ''"
     confirmLabel="Delete"
     severity="danger"
     (confirmed)="executeDelete()" />
+
 </lib-page-container>

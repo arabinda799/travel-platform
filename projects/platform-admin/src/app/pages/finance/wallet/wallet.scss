@@ -1,0 +1,30 @@
+.wallet-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.wallet-table-card {
+  background: var(--bg-surface, #ffffff);
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 12px;
+  padding: 20px;
+
+  .card-title-row {
+    margin-bottom: 16px;
+
+    h3 {
+      margin: 0;
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--text-primary, #1e293b);
+    }
+
+    .card-subtitle {
+      font-size: 0.85rem;
+      color: var(--text-secondary, #64748b);
+    }
+  }
+}
+

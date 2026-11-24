@@ -1,5 +1,6 @@
-import { Injectable, signal } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
+import { BaseApiCrudService } from 'admin-core';
 
 export type CouponType = 'Fixed' | 'Percentage';
 export type CouponStatus = 'Active' | 'Inactive';
@@ -25,8 +26,6 @@ export interface HotelCoupon {
   validToDate: string;
   createdAt: string;
 }
-
-const STORAGE_KEY = 'tenant_admin_hotel_coupons';
 
 const INITIAL_COUPONS: HotelCoupon[] = [
   {
@@ -112,97 +111,24 @@ const INITIAL_COUPONS: HotelCoupon[] = [
 ];
 
 @Injectable({ providedIn: 'root' })
-export class HotelCouponService {
-  private readonly _items = signal<HotelCoupon[]>(this.loadFromStorage());
-  private readonly _loading = signal<boolean>(false);
-  private readonly _error = signal<string | null>(null);
-
-  readonly items = this._items.asReadonly();
+export class HotelCouponService extends BaseApiCrudService<HotelCoupon> {
+  protected readonly endpoint = '/hotel-coupons';
   readonly coupons = this.items;
-  readonly loading = this._loading.asReadonly();
-  readonly error = this._error.asReadonly();
 
-  private loadFromStorage(): HotelCoupon[] {
-    try {
-      const raw = sessionStorage.getItem(STORAGE_KEY);
-      if (raw) return JSON.parse(raw) as HotelCoupon[];
-    } catch { /* ignore */ }
-    this.persist(INITIAL_COUPONS);
-    return INITIAL_COUPONS;
-  }
-
-  private persist(items: HotelCoupon[]): void {
-    try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch { /* ignore */ }
-  }
-
-  private formatNow(): string {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const d = String(now.getDate()).padStart(2, '0');
-    const time = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-    return `${y}-${m}-${d} / ${time}`;
-  }
-
-  load(): void {
-    this._items.set(this.loadFromStorage());
-  }
-
-  add(payload: Omit<HotelCoupon, 'id' | 'usedCount' | 'createdAt'>): Observable<HotelCoupon> {
-    const newItem: HotelCoupon = {
-      ...payload,
-      id: `cp-${Date.now()}`,
-      usedCount: 0,
-      createdAt: this.formatNow(),
-    };
-    const updated = [newItem, ...this._items()];
-    this._items.set(updated);
-    this.persist(updated);
-    return of(newItem);
+  constructor() {
+    super();
+    this.load();
   }
 
   addCoupon(payload: Omit<HotelCoupon, 'id' | 'usedCount' | 'createdAt'>): Observable<HotelCoupon> {
     return this.add(payload);
   }
 
-  update(id: string, updates: Partial<HotelCoupon>): Observable<HotelCoupon> {
-    const list = this._items();
-    const idx = list.findIndex(c => c.id === id);
-    if (idx !== -1) {
-      const updatedItem = { ...list[idx], ...updates };
-      const updated = [...list];
-      updated[idx] = updatedItem;
-      this._items.set(updated);
-      this.persist(updated);
-      return of(updatedItem);
-    }
-    return of(list[0]);
-  }
-
   updateCoupon(id: string, updates: Partial<HotelCoupon>): Observable<HotelCoupon> {
     return this.update(id, updates);
   }
 
-  delete(id: string): Observable<void> {
-    const updated = this._items().filter(c => c.id !== id);
-    this._items.set(updated);
-    this.persist(updated);
-    return of(void 0);
-  }
-
   deleteCoupon(id: string): Observable<void> {
     return this.delete(id);
-  }
-
-  deleteMultiple(ids: string[]): Observable<void> {
-    const set = new Set(ids);
-    const updated = this._items().filter(c => !set.has(c.id));
-    this._items.set(updated);
-    this.persist(updated);
-    return of(void 0);
-  }
-
-  bulkDelete(ids: string[]): Observable<void> {
-    return this.deleteMultiple(ids);
   }
 }

@@ -212,6 +212,18 @@ export class RoleService extends BaseApiCrudService<Role> {
 
   readonly roles = this.items;
 
+  loadById(id: string): Observable<Role> {
+    return this.api.get<Role>(`${this.endpoint}/${id}`).pipe(
+      take(1),
+      tap(role => {
+        this._items.update(list => {
+          const idx = list.findIndex(r => r.id === id);
+          return idx >= 0 ? list.map((r, i) => i === idx ? role : r) : [role, ...list];
+        });
+      }),
+    );
+  }
+
   updatePermissions(id: string, permissionIds: string[]): Observable<Role> {
     return this.update(id, { permissionIds });
   }

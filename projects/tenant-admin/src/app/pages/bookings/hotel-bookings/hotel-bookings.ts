@@ -29,66 +29,13 @@ import {
   TableColumn,
   TableLazyEvent,
   BreadcrumbItem,
+  exportToCsv,
 } from 'admin-core';
 import { Menu } from 'primeng/menu';
 import { MenuItem } from 'primeng/api';
+import { HotelBookingsService, TenantHotelBooking } from './hotel-bookings.service';
 
-export interface TenantHotelBooking {
-  id: number;
-  bookingRef: string;
-  guestName: string;
-  hotel: string;
-  city: string;
-  checkIn: string;
-  checkOut: string;
-  rooms: number;
-  amount: number;
-  commission: number;
-  paymentMethod: string;
-  paymentStatus: 'Paid' | 'Pending' | 'Failed' | 'Refunded';
-  assignedUser: string;
-  supplier: string;
-  bookingDate: string;
-  status: 'Confirmed' | 'Pending' | 'Cancelled' | 'Checked In' | 'Checked Out';
-}
-
-const DUMMY_HOTEL_BOOKINGS: TenantHotelBooking[] = Array.from({ length: 87 }, (_, i) => {
-  const statuses: TenantHotelBooking['status'][] = ['Confirmed', 'Pending', 'Cancelled', 'Checked In', 'Checked Out'];
-  const hotels = ['Taj Palace Delhi', 'Oberoi Mumbai', 'Leela Bangalore', 'ITC Grand Kolkata', 'Marriott Goa', 'Hyatt Jaipur'];
-  const cities = ['New Delhi', 'Mumbai', 'Bengaluru', 'Kolkata', 'Goa', 'Jaipur'];
-  const names = ['Rahul Sharma', 'Priya Patel', 'Amit Singh', 'Sneha Reddy', 'Vikram Joshi', 'Ananya Das', 'Karan Malhotra', 'Deepa Nair'];
-  const paymentMethods = ['Credit Card (Visa)', 'UPI - GPay', 'Corporate NetBanking', 'Razorpay', 'Paytm Wallet'];
-  const paymentStatuses: TenantHotelBooking['paymentStatus'][] = ['Paid', 'Pending', 'Failed', 'Refunded'];
-  const suppliers = ['Agoda B2B', 'Expedia Partner', 'TBO Holidays', 'Hotelbeds', 'Direct Contract'];
-  const users = ['Amit K.', 'Sneha R.', 'Priya S.', 'Vikram M.'];
-
-  const checkInDate = new Date(2026, 11, 1 + (i % 28));
-  const nights = 1 + (i % 4);
-  const checkOutDate = new Date(checkInDate);
-  checkOutDate.setDate(checkOutDate.getDate() + nights);
-
-  const amount = 8500 + ((i * 3420) % 75000);
-  const commission = Math.round(amount * 0.08);
-
-  return {
-    id: i + 1,
-    bookingRef: `EF-HTL-${98000 + i}`,
-    guestName: names[i % names.length],
-    hotel: hotels[i % hotels.length],
-    city: cities[i % cities.length],
-    checkIn: checkInDate.toISOString().split('T')[0],
-    checkOut: checkOutDate.toISOString().split('T')[0],
-    rooms: 1 + (i % 3),
-    amount,
-    commission,
-    paymentMethod: paymentMethods[i % paymentMethods.length],
-    paymentStatus: paymentStatuses[i % paymentStatuses.length],
-    assignedUser: users[i % users.length],
-    supplier: suppliers[i % suppliers.length],
-    bookingDate: new Date(2026, 10, 1 + (i % 28), 9 + (i % 12), ((i * 7) % 60)).toISOString(),
-    status: statuses[i % statuses.length],
-  };
-});
+export type { TenantHotelBooking };
 
 @Component({
   selector: 'app-tenant-hotel-bookings',
@@ -117,6 +64,7 @@ const DUMMY_HOTEL_BOOKINGS: TenantHotelBooking[] = Array.from({ length: 87 }, (_
 export class TenantHotelBookingsComponent {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly bookingService = inject(HotelBookingsService);
 
   readonly statusTpl = viewChild<TemplateRef<any>>('statusTpl');
   readonly paymentStatusTpl = viewChild<TemplateRef<any>>('paymentStatusTpl');
@@ -143,7 +91,7 @@ export class TenantHotelBookingsComponent {
   ];
 
   readonly bookings = signal<TenantHotelBooking[]>([]);
-  readonly totalRecords = signal(DUMMY_HOTEL_BOOKINGS.length);
+  readonly totalRecords = signal(0);
   readonly selectedBookings = signal<TenantHotelBooking[]>([]);
 
   columns: TableColumn[] = [];
@@ -306,10 +254,47 @@ export class TenantHotelBookingsComponent {
     this.simulateLoad({ first: 0, rows: 10 });
   }
 
+  private filterBookings(
+    items: TenantHotelBooking[],
+    search: string,
+    filters: {
+      status?: string | null;
+      paymentStatus?: string | null;
+      checkIn?: Date | null;
+      bookRange?: [Date, Date] | null;
+      supplier?: string | null;
+    },
+  ): TenantHotelBooking[] {
+    return items.filter(b => {
+      if (search) {
+        const q = search.toLowerCase();
+        const match =
+          b.bookingRef.toLowerCase().includes(q) ||
+          b.guestName.toLowerCase().includes(q) ||
+          b.hotel.toLowerCase().includes(q) ||
+          b.city.toLowerCase().includes(q);
+        if (!match) return false;
+      }
+      if (filters.status && b.status !== filters.status) return false;
+      if (filters.paymentStatus && b.paymentStatus !== filters.paymentStatus) return false;
+      if (filters.supplier && b.supplier !== filters.supplier) return false;
+      if (filters.checkIn) {
+        const d = new Date(b.checkIn);
+        if (d.toDateString() !== filters.checkIn.toDateString()) return false;
+      }
+      if (filters.bookRange && filters.bookRange[0] && filters.bookRange[1]) {
+        const bDate = new Date(b.bookingDate);
+        if (bDate < filters.bookRange[0] || bDate > filters.bookRange[1]) return false;
+      }
+      return true;
+    });
+  }
+
   simulateLoad(event: TableLazyEvent): void {
     this.isLoading.set(true);
     setTimeout(() => {
-      let filtered = [...DUMMY_DATA_FILTER(this.searchQuery(), {
+      const allItems = this.bookingService.bookings();
+      let filtered = [...this.filterBookings(allItems, this.searchQuery(), {
         status: this.selectedStatus(),
         paymentStatus: this.selectedPaymentStatus(),
         checkIn: this.checkInDate(),
@@ -344,56 +329,65 @@ export class TenantHotelBookingsComponent {
   }
 
   onConfirmDelete(): void {
+    const ids = this.selectedBookings().map(b => b.id);
+    if (ids.length) {
+      this.bookingService.deleteMultiple(ids);
+    }
     this.deleteConfirmVisible.set(false);
     this.selectedBookings.set([]);
+    this.simulateLoad({ first: 0, rows: 10 });
   }
 
   onConfirmStatusChange(newStatus: string): void {
+    const ids = this.selectedBookings().map(b => b.id);
+    if (ids.length) {
+      const mappedStatus: TenantHotelBooking['status'] = newStatus === 'Active' ? 'Confirmed' : 'Cancelled';
+      this.bookingService.updateMultipleStatus(ids, mappedStatus);
+    }
     this.statusModalVisible.set(false);
     this.selectedBookings.set([]);
+    this.simulateLoad({ first: 0, rows: 10 });
   }
 
-  exportToExcel(): void {}
-  exportToCSV(): void {}
+  private readonly exportColumns = [
+    { field: 'bookingRef', header: 'Booking Ref' },
+    { field: 'guestName', header: 'Guest Name' },
+    { field: 'hotel', header: 'Hotel' },
+    { field: 'city', header: 'City' },
+    { field: 'checkIn', header: 'Check In' },
+    { field: 'checkOut', header: 'Check Out' },
+    { field: 'rooms', header: 'Rooms' },
+    { field: 'amount', header: 'Amount (INR)' },
+    { field: 'paymentMethod', header: 'Payment Method' },
+    { field: 'paymentStatus', header: 'Payment Status' },
+    { field: 'assignedUser', header: 'Assigned User' },
+    { field: 'supplier', header: 'Supplier' },
+    { field: 'bookingDate', header: 'Booked On' },
+    { field: 'status', header: 'Status' },
+  ];
+
+  exportToExcel(): void {
+    const rows = this.selectedBookings().length ? this.selectedBookings() : this.bookings();
+    exportToCsv('hotel_bookings', rows as unknown as Record<string, any>[], this.exportColumns);
+  }
+
+  exportToCSV(): void {
+    const rows = this.selectedBookings().length ? this.selectedBookings() : this.bookings();
+    exportToCsv('hotel_bookings', rows as unknown as Record<string, any>[], this.exportColumns);
+  }
 
   confirmCustomDateExport(): void {
     if (this.exportDateRange && this.exportDateRange[0] && this.exportDateRange[1]) {
+      const start = this.exportDateRange[0].toISOString().split('T')[0];
+      const end = this.exportDateRange[1].toISOString().split('T')[0];
+      const allItems = this.bookingService.bookings();
+      const filtered = allItems.filter(b => b.checkIn >= start && b.checkIn <= end);
+      exportToCsv(
+        `hotel_bookings_${start}_${end}`,
+        (filtered.length ? filtered : allItems) as unknown as Record<string, any>[],
+        this.exportColumns,
+      );
       this.exportDateRangeVisible.set(false);
     }
   }
-}
-
-function DUMMY_DATA_FILTER(
-  search: string,
-  filters: {
-    status?: string | null;
-    paymentStatus?: string | null;
-    checkIn?: Date | null;
-    bookRange?: [Date, Date] | null;
-    supplier?: string | null;
-  },
-): TenantHotelBooking[] {
-  return DUMMY_HOTEL_BOOKINGS.filter(b => {
-    if (search) {
-      const q = search.toLowerCase();
-      const match =
-        b.bookingRef.toLowerCase().includes(q) ||
-        b.guestName.toLowerCase().includes(q) ||
-        b.hotel.toLowerCase().includes(q) ||
-        b.city.toLowerCase().includes(q);
-      if (!match) return false;
-    }
-    if (filters.status && b.status !== filters.status) return false;
-    if (filters.paymentStatus && b.paymentStatus !== filters.paymentStatus) return false;
-    if (filters.supplier && b.supplier !== filters.supplier) return false;
-    if (filters.checkIn) {
-      const d = new Date(b.checkIn);
-      if (d.toDateString() !== filters.checkIn.toDateString()) return false;
-    }
-    if (filters.bookRange && filters.bookRange[0] && filters.bookRange[1]) {
-      const bDate = new Date(b.bookingDate);
-      if (bDate < filters.bookRange[0] || bDate > filters.bookRange[1]) return false;
-    }
-    return true;
-  });
 }

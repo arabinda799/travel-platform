@@ -1,5 +1,6 @@
-import { Injectable, signal } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
+import { BaseApiCrudService } from 'admin-core';
 
 export interface ContactQuery {
   id: string;
@@ -12,8 +13,6 @@ export interface ContactQuery {
   status: 'New' | 'In Progress' | 'Resolved';
   createdDate: string;
 }
-
-const STORAGE_KEY = 'tenant_admin_contact_queries';
 
 const INITIAL_QUERIES: ContactQuery[] = [
   {
@@ -63,58 +62,20 @@ const INITIAL_QUERIES: ContactQuery[] = [
 ];
 
 @Injectable({ providedIn: 'root' })
-export class ContactQueriesService {
-  private readonly _queries = signal<ContactQuery[]>(this.loadFromStorage());
-  private readonly _loading = signal<boolean>(false);
-  private readonly _error = signal<string | null>(null);
+export class ContactQueriesService extends BaseApiCrudService<ContactQuery> {
+  protected readonly endpoint = '/contact-queries';
+  readonly queries = this.items;
 
-  readonly queries = this._queries.asReadonly();
-  readonly loading = this._loading.asReadonly();
-  readonly error = this._error.asReadonly();
-
-  private loadFromStorage(): ContactQuery[] {
-    try {
-      const raw = sessionStorage.getItem(STORAGE_KEY);
-      if (raw) return JSON.parse(raw) as ContactQuery[];
-    } catch { /* ignore */ }
-    this.persist(INITIAL_QUERIES);
-    return INITIAL_QUERIES;
-  }
-
-  private persist(items: ContactQuery[]): void {
-    try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch { /* ignore */ }
-  }
-
-  load(): void {
-    this._queries.set(this.loadFromStorage());
+  constructor() {
+    super();
+    this.load();
   }
 
   updateStatus(id: string, status: 'New' | 'In Progress' | 'Resolved'): Observable<ContactQuery> {
-    const list = this._queries();
-    const idx = list.findIndex(q => q.id === id);
-    if (idx !== -1) {
-      const updatedItem = { ...list[idx], status };
-      const updated = [...list];
-      updated[idx] = updatedItem;
-      this._queries.set(updated);
-      this.persist(updated);
-      return of(updatedItem);
-    }
-    return of(list[0]);
+    return this.api.patch<ContactQuery>(`${this.endpoint}/${id}/status`, { status });
   }
 
   deleteQuery(id: string): Observable<void> {
-    const updated = this._queries().filter(q => q.id !== id);
-    this._queries.set(updated);
-    this.persist(updated);
-    return of(void 0);
-  }
-
-  bulkDelete(ids: string[]): Observable<void> {
-    const set = new Set(ids);
-    const updated = this._queries().filter(q => !set.has(q.id));
-    this._queries.set(updated);
-    this.persist(updated);
-    return of(void 0);
+    return this.delete(id);
   }
 }

@@ -1,11 +1,24 @@
-<lib-admin-layout
-  [navItems]="navItems"
-  userName="Tenant Admin"
-  userRole="Agency Manager"
-  systemStatus="Tenant Portal">
-  <div sidebar-brand class="brand-container">
-    <span class="icon brand-icon">flight_takeoff</span>
-    <span class="brand-text nav-label">Easy<span style="color: var(--accent);">Flys</span></span>
-  </div>
+@if (isAuthRoute()) {
   <router-outlet></router-outlet>
-</lib-admin-layout>
+} @else {
+  <lib-admin-layout
+    [navItems]="navItems"
+    userName="Tenant Admin"
+    userRole="Agency Manager"
+    systemStatus="Tenant Portal">
+    <div sidebar-brand class="brand-container" [title]="companyName()">
+      @if (brandLogo()) {
+        <img [src]="trimmedBrandLogo() || brandLogo()" [alt]="companyName()" class="brand-logo-img brand-logo-full" />
+        @if (brandFavicon()) {
+          <img [src]="trimmedBrandFavicon() || brandFavicon()" [alt]="companyName()" class="brand-logo-img brand-logo-icon" />
+        }
+      } @else if (brandFavicon()) {
+        <img [src]="trimmedBrandFavicon() || brandFavicon()" [alt]="companyName()" class="brand-logo-img brand-logo-full" />
+      } @else {
+        <span class="icon brand-icon">flight_takeoff</span>
+        <span class="brand-text nav-label">Easy<span style="color: var(--accent);">Flys</span></span>
+      }
+    </div>
+    <router-outlet></router-outlet>
+  </lib-admin-layout>
+}

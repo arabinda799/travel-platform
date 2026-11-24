@@ -1,11 +1,13 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   OnInit,
   computed,
   inject,
   signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { PageContainerComponent, ButtonComponent } from 'admin-core';
@@ -27,6 +29,7 @@ export class TenantUserPermissionsComponent implements OnInit {
   private readonly userService = inject(TenantUserService);
   private readonly roleService = inject(RoleService);
   private readonly messageService = inject(MessageService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly userId = signal<string>('');
 
@@ -48,13 +51,37 @@ export class TenantUserPermissionsComponent implements OnInit {
   readonly rolePermCount = computed(() => this.role()?.permissionIds.length ?? 0);
   readonly disabledCount = computed(() => this.draftDisabledIds().length);
   readonly effectiveCount = computed(() => this.rolePermCount() - this.disabledCount());
+  readonly loading = signal(false);
 
   ngOnInit(): void {
     const id = this.route.snapshot.params['id'];
-    if (id) {
-      this.userId.set(id);
-      const user = this.userService.users().find(u => u.id === id);
-      if (user) this.draftDisabledIds.set([...user.disabledPermissionIds]);
+    if (!id) return;
+    this.userId.set(id);
+    const cached = this.userService.users().find(u => u.id === id);
+    if (cached) {
+      this.draftDisabledIds.set([...cached.disabledPermissionIds]);
+      this._ensureRoleLoaded(cached.roleId);
+    } else {
+      this.loading.set(true);
+      this.userService.loadById(id)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: user => {
+            this.draftDisabledIds.set([...user.disabledPermissionIds]);
+            this.loading.set(false);
+            this._ensureRoleLoaded(user.roleId);
+          },
+          error: () => {
+            this.loading.set(false);
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to load user.' });
+          },
+        });
+    }
+  }
+
+  private _ensureRoleLoaded(roleId: string): void {
+    if (!this.roleService.roles().find(r => r.id === roleId)) {
+      this.roleService.loadById(roleId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
     }
   }
 
@@ -120,14 +147,20 @@ export class TenantUserPermissionsComponent implements OnInit {
   save(): void {
     const user = this.user();
     if (!user) return;
-    this.userService.updateDisabledPermissions(user.id, this.draftDisabledIds());
     const name = `${user.firstName} ${user.lastName}`;
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Permissions Updated',
-      detail: `${name}: ${this.effectiveCount()} active, ${this.disabledCount()} restricted.`,
-    });
-    this.router.navigate(['/tenants/users']);
+    this.userService.updateDisabledPermissions(user.id, this.draftDisabledIds())
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Permissions Updated',
+            detail: `${name}: ${this.effectiveCount()} active, ${this.disabledCount()} restricted.`,
+          });
+          this.router.navigate(['/tenants/users']);
+        },
+        error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save permissions.' }),
+      });
   }
 
   goBack(): void { this.router.navigate(['/tenants/users']); }

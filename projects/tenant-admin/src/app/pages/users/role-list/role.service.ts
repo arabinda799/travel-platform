@@ -1,5 +1,6 @@
-import { Injectable, signal } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
+import { BaseApiCrudService } from 'admin-core';
 
 export type RoleType = 'SYSTEM' | 'CUSTOM';
 export type RoleScope = 'PLATFORM' | 'TENANT' | 'B2B' | 'B2C' | 'SUPPLIER' | 'VENDOR';
@@ -28,8 +29,6 @@ export interface Role {
   permissionIds: string[];
   createdAt: string;
 }
-
-// ─── Permission constants (used by role-permissions page) ────────────────────
 
 function pid(mk: string, ak: string): string {
   return `perm-${mk.toLowerCase().replace(/_/g, '-')}-${ak.toLowerCase().replace(/_/g, '-')}`;
@@ -167,8 +166,6 @@ const HOTEL_OPS_PERMS = ALL_PERMISSIONS.filter(p => p.moduleKey.startsWith('HOTE
 const FINANCE_PERMS = ALL_PERMISSIONS.filter(p => p.moduleKey.includes('MARKUP') || p.moduleKey.includes('DISCOUNT') || p.moduleKey.includes('COUPON') || p.moduleKey.includes('WALLET') || p.moduleKey === 'DASHBOARD').map(p => p.id);
 const SUPPORT_PERMS = ALL_PERMISSIONS.filter(p => p.moduleKey.includes('QUERY') || p.moduleKey.includes('CUSTOMER') || p.moduleKey === 'HOTEL_BOOKING' || p.moduleKey === 'DASHBOARD').map(p => p.id);
 
-const STORAGE_KEY = 'tenant_admin_roles';
-
 const INITIAL_ROLES: Role[] = [
   {
     id: 'role-super-admin',
@@ -238,92 +235,32 @@ const INITIAL_ROLES: Role[] = [
 ];
 
 @Injectable({ providedIn: 'root' })
-export class RoleService {
-  private readonly _items = signal<Role[]>(this.loadFromStorage());
-  private readonly _loading = signal<boolean>(false);
-  private readonly _error = signal<string | null>(null);
-
-  readonly items = this._items.asReadonly();
+export class RoleService extends BaseApiCrudService<Role> {
+  protected readonly endpoint = '/roles';
   readonly roles = this.items;
-  readonly loading = this._loading.asReadonly();
-  readonly error = this._error.asReadonly();
 
-  private loadFromStorage(): Role[] {
-    try {
-      const raw = sessionStorage.getItem(STORAGE_KEY);
-      if (raw) return JSON.parse(raw) as Role[];
-    } catch { /* ignore */ }
-    this.persist(INITIAL_ROLES);
-    return INITIAL_ROLES;
+  constructor() {
+    super();
+    this.load();
   }
 
-  private persist(items: Role[]): void {
-    try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch { /* ignore */ }
+  override add(payload: Partial<Role>): Observable<Role> {
+    return super.add(payload);
   }
 
-  private formatNow(): string {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const d = String(now.getDate()).padStart(2, '0');
-    const time = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-    return `${y}-${m}-${d} / ${time}`;
-  }
-
-  load(): void {
-    this._items.set(this.loadFromStorage());
-  }
-
-  add(payload: Partial<Role>): Observable<Role> {
-    const newItem: Role = {
-      id: `role-${Date.now()}`,
-      key: payload.key || `ROLE_${Date.now()}`,
-      name: payload.name || 'New Role',
-      description: payload.description ?? null,
-      type: payload.type || 'CUSTOM',
-      scope: payload.scope || 'TENANT',
-      ownerType: 'TENANT',
-      ownerId: 'tenant-easyfly',
-      status: payload.status || 'ACTIVE',
-      permissionIds: payload.permissionIds || [],
-      createdAt: this.formatNow(),
-    };
-    const updated = [...this._items(), newItem];
-    this._items.set(updated);
-    this.persist(updated);
-    return of(newItem);
-  }
-
-  update(id: string, payload: Partial<Role>): Observable<Role> {
-    const list = this._items();
-    const idx = list.findIndex(r => r.id === id);
-    if (idx !== -1) {
-      const updatedItem = { ...list[idx], ...payload };
-      const updated = [...list];
-      updated[idx] = updatedItem;
-      this._items.set(updated);
-      this.persist(updated);
-      return of(updatedItem);
-    }
-    return of(list[0]);
+  override update(id: string, payload: Partial<Role>): Observable<Role> {
+    return super.update(id, payload);
   }
 
   updatePermissions(id: string, permissionIds: string[]): Observable<Role> {
     return this.update(id, { permissionIds });
   }
 
-  delete(id: string): Observable<void> {
-    const updated = this._items().filter(r => r.id !== id);
-    this._items.set(updated);
-    this.persist(updated);
-    return of(void 0);
+  override delete(id: string): Observable<void> {
+    return super.delete(id);
   }
 
-  deleteMultiple(ids: string[]): Observable<void> {
-    const set = new Set(ids);
-    const updated = this._items().filter(r => !set.has(r.id));
-    this._items.set(updated);
-    this.persist(updated);
-    return of(void 0);
+  override deleteMultiple(ids: string[]): Observable<void> {
+    return super.deleteMultiple(ids);
   }
 }

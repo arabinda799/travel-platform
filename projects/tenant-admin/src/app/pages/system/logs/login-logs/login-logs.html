@@ -1,4 +1,4 @@
-<lib-page-container
+﻿<lib-page-container
   title="Login Logs"
   subtitle="Authentication activity — successful logins, failed attempts, and blocked access"
   [breadcrumbs]="breadcrumbs">
@@ -25,7 +25,7 @@
     </div>
 
     <div selection-actions class="selection-actions-group">
-      <lib-button variant="outline" icon="download" (click)="exportData(true)">
+      <lib-button variant="info" icon="download" (click)="exportData(true)">
         Export Selected ({{ selectedItems().length }})
       </lib-button>
       <lib-button variant="danger" icon="delete" (click)="confirmBulkDelete()">

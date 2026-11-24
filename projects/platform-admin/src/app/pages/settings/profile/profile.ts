@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ReactiveFormsModule, FormGroup, FormControl, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { MessageService } from 'primeng/api';
@@ -9,6 +9,7 @@ import {
   TextFieldComponent,
   SelectFieldComponent,
   FormModalComponent,
+  ApiService,
 } from 'admin-core';
 
 export interface AdminProfile {
@@ -52,6 +53,9 @@ function confirmPasswordValidator(control: AbstractControl): ValidationErrors | 
 })
 export class ProfileComponent {
   private readonly messageService = inject(MessageService);
+  private readonly api = inject(ApiService);
+  private readonly destroyRef = inject(DestroyRef);
+  readonly changingPassword = signal(false);
 
   readonly breadcrumbs: BreadcrumbItem[] = [
     { label: 'Settings', route: '/system/settings/company' },
@@ -216,9 +220,21 @@ export class ProfileComponent {
       this.messageService.add({ severity: 'warn', summary: 'Same Password', detail: 'New password must differ from the current one.' });
       return;
     }
-    // In production: call auth API to change password
-    this.changePasswordVisible.set(false);
-    this.messageService.add({ severity: 'success', summary: 'Password Changed', detail: 'Your password has been updated successfully.' });
+    this.changingPassword.set(true);
+    this.api.post<{ message: string }>('/auth/change-password', { currentPassword, newPassword })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.changingPassword.set(false);
+          this.changePasswordVisible.set(false);
+          this.messageService.add({ severity: 'success', summary: 'Password Changed', detail: 'Your password has been updated successfully.' });
+        },
+        error: (err: { error?: { message?: string } }) => {
+          this.changingPassword.set(false);
+          const msg = err?.error?.message ?? 'Could not change password. Check your current password.';
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
+        },
+      });
   }
 
   onAvatarUpload(event: Event): void {

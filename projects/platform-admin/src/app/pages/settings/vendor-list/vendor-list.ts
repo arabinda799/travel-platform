@@ -12,7 +12,7 @@ import {
   PageContainerComponent, DataTableComponent, ButtonComponent,
   FormModalComponent, TextFieldComponent, TextareaFieldComponent,
   SelectFieldComponent, FilterSidebarComponent, ConfirmDialogComponent,
-  StatusBadgeComponent, TableActionComponent, TableColumn, STATUS_OPTIONS,
+  StatusBadgeComponent, TableActionComponent, TableColumn, TableLazyEvent, STATUS_OPTIONS,
 } from 'admin-core';
 import {
   Vendor, VendorAuthType, VendorMode, VendorServiceType, VendorListService,
@@ -47,7 +47,7 @@ function jsonValidator(control: AbstractControl): ValidationErrors | null {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class VendorListComponent implements OnInit {
-  private readonly vendorService = inject(VendorListService);
+  readonly vendorService = inject(VendorListService);
   private readonly messageService = inject(MessageService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -156,6 +156,11 @@ export class VendorListComponent implements OnInit {
 
   ngOnInit(): void {
     this.vendorService.load();
+  }
+
+  onLazyLoad(e: TableLazyEvent): void {
+    const page = Math.floor((e.first ?? 0) / (e.rows ?? 50)) + 1;
+    if (page !== this.vendorService.page()) this.vendorService.goToPage(page);
   }
 
   getCredentialKeys(creds: Record<string, any> | undefined): string[] {

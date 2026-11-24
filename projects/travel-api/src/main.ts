@@ -14,7 +14,10 @@ async function bootstrap() {
     new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
   );
 
-  app.enableCors({ origin: 'http://localhost:4200', credentials: true });
+  app.enableCors({
+    origin: ['http://localhost:4200', 'http://localhost:4201'],
+    credentials: true,
+  });
 
   await app.listen(3000);
   console.log('Travel API running on http://localhost:3000/api');

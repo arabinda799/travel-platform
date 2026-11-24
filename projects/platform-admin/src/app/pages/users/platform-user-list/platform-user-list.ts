@@ -27,6 +27,7 @@ import {
   StatusBadgeComponent,
   TableActionComponent,
   TableColumn,
+  TableLazyEvent,
   SelectOption,
 } from 'admin-core';
 import { PlatformUser, PlatformUserService, PlatformUserStatus } from './platform-user.service';
@@ -61,7 +62,7 @@ const STATUS_OPTIONS: SelectOption<PlatformUserStatus>[] = [
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PlatformUserListComponent implements OnInit {
-  private readonly userService = inject(PlatformUserService);
+  readonly userService = inject(PlatformUserService);
   private readonly roleService = inject(RoleService);
   private readonly messageService = inject(MessageService);
   private readonly router = inject(Router);
@@ -69,7 +70,7 @@ export class PlatformUserListComponent implements OnInit {
 
   readonly users = this.userService.users;
   readonly searchQuery = signal<string>('');
-  readonly loading = signal<boolean>(false);
+  readonly loading = this.userService.loading;
   readonly selectedUsers = signal<PlatformUser[]>([]);
 
   // Filter state
@@ -168,6 +169,11 @@ export class PlatformUserListComponent implements OnInit {
 
   ngOnInit(): void {
     this.userService.load();
+  }
+
+  onLazyLoad(e: TableLazyEvent): void {
+    const page = Math.floor((e.first ?? 0) / (e.rows ?? 50)) + 1;
+    if (page !== this.userService.page()) this.userService.goToPage(page);
   }
 
   onSearch(query: string): void { this.searchQuery.set(query); }

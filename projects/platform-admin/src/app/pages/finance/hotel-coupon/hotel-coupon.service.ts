@@ -45,7 +45,7 @@ export class HotelCouponService extends BaseApiCrudService<HotelCoupon> {
     return this.delete(id);
   }
 
-  bulkDelete(ids: string[]): Observable<void> {
+  override bulkDelete(ids: string[]): Observable<void> {
     return this.deleteMultiple(ids);
   }
 

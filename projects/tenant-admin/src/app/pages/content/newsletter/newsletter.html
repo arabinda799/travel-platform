@@ -1,4 +1,4 @@
-<lib-page-container
+﻿<lib-page-container
   title="Newsletter Subscribers"
   subtitle="Manage newsletter subscribers, track subscriptions, and export email lists"
   [breadcrumbs]="breadcrumbs">
@@ -31,7 +31,7 @@
     </div>
 
     <div selection-actions class="selection-actions-group">
-      <lib-button variant="outline" icon="download" (click)="exportData(true)">
+      <lib-button variant="info" icon="download" (click)="exportData(true)">
         Export Selected ({{ selectedSubscribers().length }})
       </lib-button>
       <lib-button variant="danger" icon="delete" (click)="confirmBulkDelete()">

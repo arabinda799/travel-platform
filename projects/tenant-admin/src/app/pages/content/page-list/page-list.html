@@ -1,4 +1,4 @@
-<lib-page-container
+﻿<lib-page-container
   title="Page List"
   subtitle="Manage website pages, templates and publication status"
   [breadcrumbs]="breadcrumbs">
@@ -31,7 +31,7 @@
     </div>
 
     <div selection-actions class="selection-actions-group">
-      <lib-button variant="outline" icon="download" (click)="exportData(true)">
+      <lib-button variant="info" icon="download" (click)="exportData(true)">
         Export Selected ({{ selectedPages().length }})
       </lib-button>
       <lib-button variant="danger" icon="delete" (click)="confirmBulkDelete()">

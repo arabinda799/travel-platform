@@ -27,6 +27,7 @@ import {
   StatusBadgeComponent,
   TableActionComponent,
   TableColumn,
+  TableLazyEvent,
   SelectOption,
 } from 'admin-core';
 import { TenantUser, TenantUserService, TenantUserStatus } from './tenant-user.service';
@@ -62,7 +63,7 @@ const STATUS_OPTIONS: SelectOption<TenantUserStatus>[] = [
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TenantUserListComponent implements OnInit {
-  private readonly userService = inject(TenantUserService);
+  readonly userService = inject(TenantUserService);
   private readonly companyService = inject(CompanyService);
   private readonly roleService = inject(RoleService);
   private readonly messageService = inject(MessageService);
@@ -71,7 +72,7 @@ export class TenantUserListComponent implements OnInit {
 
   readonly users = this.userService.users;
   readonly searchQuery = signal<string>('');
-  readonly loading = signal<boolean>(false);
+  readonly loading = this.userService.loading;
   readonly selectedUsers = signal<TenantUser[]>([]);
 
   readonly filterVisible = signal<boolean>(false);
@@ -192,6 +193,11 @@ export class TenantUserListComponent implements OnInit {
   }
 
   ngOnInit(): void { this.userService.load(); }
+
+  onLazyLoad(e: TableLazyEvent): void {
+    const page = Math.floor((e.first ?? 0) / (e.rows ?? 50)) + 1;
+    if (page !== this.userService.page()) this.userService.goToPage(page);
+  }
 
   resetFilters(): void {
     this.selectedTenantFilter.set(null); this.selectedRoleFilter.set(null); this.selectedStatusFilter.set(null);

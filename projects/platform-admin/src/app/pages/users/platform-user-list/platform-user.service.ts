@@ -25,6 +25,18 @@ export class PlatformUserService extends BaseApiCrudService<PlatformUser> {
   // Alias so existing component code using users() needs no changes
   readonly users = this.items;
 
+  loadById(id: string): Observable<PlatformUser> {
+    return this.api.get<PlatformUser>(`${this.endpoint}/${id}`).pipe(
+      take(1),
+      tap(user => {
+        this._items.update(list => {
+          const idx = list.findIndex(u => u.id === id);
+          return idx >= 0 ? list.map((u, i) => i === idx ? user : u) : [user, ...list];
+        });
+      }),
+    );
+  }
+
   updateDisabledPermissions(id: string, disabledPermissionIds: string[]): Observable<PlatformUser> {
     return this.api.patch<PlatformUser>(`${this.endpoint}/${id}/permissions`, { disabledPermissionIds }).pipe(
       take(1),

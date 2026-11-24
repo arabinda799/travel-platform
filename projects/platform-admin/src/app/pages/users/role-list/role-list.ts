@@ -27,6 +27,7 @@ import {
   StatusBadgeComponent,
   TableActionComponent,
   TableColumn,
+  TableLazyEvent,
   SelectOption,
 } from 'admin-core';
 import { ALL_PERMISSIONS } from './role.service';
@@ -75,14 +76,14 @@ const STATUS_OPTIONS: SelectOption<RoleStatus>[] = [
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RoleListComponent implements OnInit {
-  private readonly roleService = inject(RoleService);
+  readonly roleService = inject(RoleService);
   private readonly messageService = inject(MessageService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly roles = this.roleService.roles;
   readonly searchQuery = signal<string>('');
-  readonly loading = signal<boolean>(false);
+  readonly loading = this.roleService.loading;
   readonly selectedRoles = signal<Role[]>([]);
   readonly totalPermCount = TOTAL_PERM_COUNT;
 
@@ -161,6 +162,11 @@ export class RoleListComponent implements OnInit {
   ]);
 
   ngOnInit(): void { this.roleService.load(); }
+
+  onLazyLoad(e: TableLazyEvent): void {
+    const page = Math.floor((e.first ?? 0) / (e.rows ?? 50)) + 1;
+    if (page !== this.roleService.page()) this.roleService.goToPage(page);
+  }
 
   onSearch(query: string): void { this.searchQuery.set(query); }
 

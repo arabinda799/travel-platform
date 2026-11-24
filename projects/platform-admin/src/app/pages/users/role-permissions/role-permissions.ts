@@ -2,8 +2,8 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  OnInit,
   computed,
-  effect,
   inject,
   signal,
 } from '@angular/core';
@@ -105,7 +105,7 @@ export const TOTAL_PERM_COUNT = ALL_PERMISSIONS.length;
   styleUrl: './role-permissions.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class RolePermissionsComponent {
+export class RolePermissionsComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly roleService = inject(RoleService);
@@ -116,8 +116,9 @@ export class RolePermissionsComponent {
   readonly role = computed<Role | null>(() =>
     this.roleService.roles().find(r => r.id === this.roleId()) ?? null,
   );
+  readonly loading = signal(false);
 
-  // Draft permission state
+  // Draft permission state — initialized once role is available
   readonly draftPermIds = signal<string[]>([]);
   readonly draftPermSet = computed(() => new Set(this.draftPermIds()));
   readonly selectedPermCount = computed(() => this.draftPermIds().length);
@@ -128,15 +129,28 @@ export class RolePermissionsComponent {
   readonly permissionGroups = PERMISSION_GROUPS;
   readonly totalPermCount = TOTAL_PERM_COUNT;
 
-  constructor() {
-    effect(() => {
-      const id = this.route.snapshot.params['id'];
-      if (id) {
-        this.roleId.set(id);
-        const role = this.roleService.roles().find(r => r.id === id);
-        if (role) this.draftPermIds.set([...role.permissionIds]);
-      }
-    });
+  ngOnInit(): void {
+    const id = this.route.snapshot.params['id'];
+    if (!id) return;
+    this.roleId.set(id);
+    const cached = this.roleService.roles().find(r => r.id === id);
+    if (cached) {
+      this.draftPermIds.set([...cached.permissionIds]);
+    } else {
+      this.loading.set(true);
+      this.roleService.loadById(id)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: role => {
+            this.draftPermIds.set([...role.permissionIds]);
+            this.loading.set(false);
+          },
+          error: () => {
+            this.loading.set(false);
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to load role.' });
+          },
+        });
+    }
   }
 
   readonly breadcrumbs = computed(() => {

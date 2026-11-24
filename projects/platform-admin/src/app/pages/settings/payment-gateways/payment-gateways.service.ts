@@ -70,8 +70,12 @@ export class PaymentGatewaysService {
 
   loadGateways(): void {
     this._loading.set(true);
-    this.api.get<PaymentGateway[]>('/payment-gateways').pipe(take(1)).subscribe({
-      next: data => { this._gateways.set(data); this._loading.set(false); },
+    this.api.get<any>('/payment-gateways').pipe(take(1)).subscribe({
+      next: res => {
+        const data = Array.isArray(res) ? res : (res?.data ?? []);
+        this._gateways.set(data);
+        this._loading.set(false);
+      },
       error: (err: unknown) => {
         const msg = (err as { error?: { message?: string } })?.error?.message ?? 'Failed to load gateways';
         this._error.set(msg);
@@ -82,8 +86,11 @@ export class PaymentGatewaysService {
 
   loadFeeRules(gatewayId?: string): void {
     const params = gatewayId ? { gatewayId } : undefined;
-    this.api.get<ConvenienceFeeRule[]>('/convenience-fees', params).pipe(take(1)).subscribe({
-      next: data => this._feeRules.set(data),
+    this.api.get<any>('/convenience-fees', params).pipe(take(1)).subscribe({
+      next: res => {
+        const data = Array.isArray(res) ? res : (res?.data ?? []);
+        this._feeRules.set(data);
+      },
       error: () => {},
     });
   }

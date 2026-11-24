@@ -35,7 +35,13 @@ export class RolesController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id') id: string) {
-    this.rolesService.remove(id);
+  async remove(@Param('id') id: string) {
+    await this.rolesService.remove(id);
+  }
+
+  @Post('bulk-delete')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  bulkRemove(@Body() body: { ids: string[] }) {
+    return this.rolesService.bulkRemove(body.ids);
   }
 }

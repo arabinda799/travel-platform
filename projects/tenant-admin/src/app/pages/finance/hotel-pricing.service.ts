@@ -1,5 +1,6 @@
-import { Injectable, signal } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Injectable, inject, signal } from '@angular/core';
+import { Observable, take, tap } from 'rxjs';
+import { ApiService } from 'admin-core';
 
 export type PricingTarget = 'B2B' | 'B2C' | 'Corporate' | 'All';
 export type HotelMarkupType = 'Per Night' | 'Per Stay' | 'Percentage' | 'Fixed';
@@ -143,6 +144,7 @@ const INITIAL_DISCOUNTS: HotelDiscount[] = [
 
 @Injectable({ providedIn: 'root' })
 export class HotelPricingService {
+  private readonly api = inject(ApiService);
   private readonly _markups = signal<HotelMarkup[]>(this.loadMarkupsFromStorage());
   private readonly _discounts = signal<HotelDiscount[]>(this.loadDiscountsFromStorage());
   private readonly _loading = signal(false);
@@ -182,112 +184,111 @@ export class HotelPricingService {
   // ─── Markups ──────────────────────────────────────────────────────────────
 
   loadMarkups(): void {
-    this._markups.set(this.loadMarkupsFromStorage());
+    this._loading.set(true);
+    this.api.get<any>('/hotel-markups').pipe(take(1)).subscribe({
+      next: res => {
+        const data = Array.isArray(res) ? res : (res?.data ?? []);
+        this._markups.set(data.length > 0 ? data : this.loadMarkupsFromStorage());
+        this._loading.set(false);
+      },
+      error: () => {
+        this._markups.set(this.loadMarkupsFromStorage());
+        this._loading.set(false);
+      },
+    });
   }
 
   addMarkup(data: Omit<HotelMarkup, 'id' | 'createdDate' | 'updatedDate'>): Observable<HotelMarkup> {
-    const newItem: HotelMarkup = {
-      ...data,
-      id: `mk-${Date.now()}`,
-      createdDate: new Date().toISOString(),
-      updatedDate: new Date().toISOString(),
-    };
-    const updated = [newItem, ...this._markups()];
-    this._markups.set(updated);
-    this.persistMarkups(updated);
-    return of(newItem);
+    return this.api.post<HotelMarkup>('/hotel-markups', data).pipe(
+      take(1),
+      tap(created => this._markups.update(list => [created, ...list])),
+    );
   }
 
   updateMarkup(id: string, updates: Partial<HotelMarkup>): Observable<HotelMarkup> {
-    const list = this._markups();
-    const idx = list.findIndex(m => m.id === id);
-    if (idx !== -1) {
-      const updatedItem: HotelMarkup = { ...list[idx], ...updates, updatedDate: new Date().toISOString() };
-      const updated = [...list];
-      updated[idx] = updatedItem;
-      this._markups.set(updated);
-      this.persistMarkups(updated);
-      return of(updatedItem);
-    }
-    return of(list[0]);
+    return this.api.patch<HotelMarkup>(`/hotel-markups/${id}`, updates).pipe(
+      take(1),
+      tap(updated => this._markups.update(list => list.map(m => m.id === id ? updated : m))),
+    );
   }
 
   updateMultipleMarkupStatus(ids: string[], status: 'Active' | 'Inactive'): Observable<HotelMarkup[]> {
-    const set = new Set(ids);
-    const updated = this._markups().map(m => set.has(m.id) ? { ...m, status, updatedDate: new Date().toISOString() } : m);
-    this._markups.set(updated);
-    this.persistMarkups(updated);
-    return of(updated.filter(m => set.has(m.id)));
+    return this.api.patch<HotelMarkup[]>('/hotel-markups/bulk-status', { ids, status }).pipe(
+      take(1),
+      tap(updated => {
+        const map = new Map(updated.map(m => [m.id, m]));
+        this._markups.update(list => list.map(m => map.get(m.id) ?? m));
+      }),
+    );
   }
 
   deleteMarkup(id: string): Observable<void> {
-    const updated = this._markups().filter(m => m.id !== id);
-    this._markups.set(updated);
-    this.persistMarkups(updated);
-    return of(void 0);
+    return this.api.delete<void>(`/hotel-markups/${id}`).pipe(
+      take(1),
+      tap(() => this._markups.update(list => list.filter(m => m.id !== id))),
+    );
   }
 
   bulkDeleteMarkups(ids: string[]): Observable<void> {
-    const set = new Set(ids);
-    const updated = this._markups().filter(m => !set.has(m.id));
-    this._markups.set(updated);
-    this.persistMarkups(updated);
-    return of(void 0);
+    return this.api.post<void>('/hotel-markups/bulk-delete', { ids }).pipe(
+      take(1),
+      tap(() => {
+        const set = new Set(ids);
+        this._markups.update(list => list.filter(m => !set.has(m.id)));
+      }),
+    );
   }
 
   // ─── Discounts ────────────────────────────────────────────────────────────
 
   loadDiscounts(): void {
-    this._discounts.set(this.loadDiscountsFromStorage());
+    this.api.get<any>('/hotel-discounts').pipe(take(1)).subscribe({
+      next: res => {
+        const data = Array.isArray(res) ? res : (res?.data ?? []);
+        this._discounts.set(data.length > 0 ? data : this.loadDiscountsFromStorage());
+      },
+      error: () => this._discounts.set(this.loadDiscountsFromStorage()),
+    });
   }
 
   addDiscount(data: Omit<HotelDiscount, 'id' | 'createdDate' | 'updatedDate'>): Observable<HotelDiscount> {
-    const newItem: HotelDiscount = {
-      ...data,
-      id: `disc-${Date.now()}`,
-      createdDate: new Date().toISOString(),
-      updatedDate: new Date().toISOString(),
-    };
-    const updated = [newItem, ...this._discounts()];
-    this._discounts.set(updated);
-    this.persistDiscounts(updated);
-    return of(newItem);
+    return this.api.post<HotelDiscount>('/hotel-discounts', data).pipe(
+      take(1),
+      tap(created => this._discounts.update(list => [created, ...list])),
+    );
   }
 
   updateDiscount(id: string, updates: Partial<HotelDiscount>): Observable<HotelDiscount> {
-    const list = this._discounts();
-    const idx = list.findIndex(d => d.id === id);
-    if (idx !== -1) {
-      const updatedItem: HotelDiscount = { ...list[idx], ...updates, updatedDate: new Date().toISOString() };
-      const updated = [...list];
-      updated[idx] = updatedItem;
-      this._discounts.set(updated);
-      this.persistDiscounts(updated);
-      return of(updatedItem);
-    }
-    return of(list[0]);
+    return this.api.patch<HotelDiscount>(`/hotel-discounts/${id}`, updates).pipe(
+      take(1),
+      tap(updated => this._discounts.update(list => list.map(d => d.id === id ? updated : d))),
+    );
   }
 
   updateMultipleDiscountStatus(ids: string[], status: 'Active' | 'Inactive'): Observable<HotelDiscount[]> {
-    const set = new Set(ids);
-    const updated = this._discounts().map(d => set.has(d.id) ? { ...d, status, updatedDate: new Date().toISOString() } : d);
-    this._discounts.set(updated);
-    this.persistDiscounts(updated);
-    return of(updated.filter(d => set.has(d.id)));
+    return this.api.patch<HotelDiscount[]>('/hotel-discounts/bulk-status', { ids, status }).pipe(
+      take(1),
+      tap(updated => {
+        const map = new Map(updated.map(d => [d.id, d]));
+        this._discounts.update(list => list.map(d => map.get(d.id) ?? d));
+      }),
+    );
   }
 
   deleteDiscount(id: string): Observable<void> {
-    const updated = this._discounts().filter(d => d.id !== id);
-    this._discounts.set(updated);
-    this.persistDiscounts(updated);
-    return of(void 0);
+    return this.api.delete<void>(`/hotel-discounts/${id}`).pipe(
+      take(1),
+      tap(() => this._discounts.update(list => list.filter(d => d.id !== id))),
+    );
   }
 
   bulkDeleteDiscounts(ids: string[]): Observable<void> {
-    const set = new Set(ids);
-    const updated = this._discounts().filter(d => !set.has(d.id));
-    this._discounts.set(updated);
-    this.persistDiscounts(updated);
-    return of(void 0);
+    return this.api.post<void>('/hotel-discounts/bulk-delete', { ids }).pipe(
+      take(1),
+      tap(() => {
+        const set = new Set(ids);
+        this._discounts.update(list => list.filter(d => !set.has(d.id)));
+      }),
+    );
   }
 }

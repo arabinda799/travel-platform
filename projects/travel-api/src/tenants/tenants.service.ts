@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, ConflictException, OnModuleInit } from '
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Not, Repository } from 'typeorm';
 import { paginate, PaginatedResponse } from '../common/paginate';
-import { TenantCompany } from './entities/tenant.entity';
+import { TenantCompany, TenantBranding, TenantSmtp } from './entities/tenant.entity';
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
 
@@ -35,7 +35,7 @@ export class TenantsService implements OnModuleInit {
     return this.repo.save(this.repo.create({
       ...dto,
       companyCode: dto.companyCode.toUpperCase(),
-      status: dto.status ?? 'TRIAL',
+      status: (dto as any).status ?? 'TRIAL',
     }));
   }
 
@@ -46,6 +46,18 @@ export class TenantsService implements OnModuleInit {
       if (taken) throw new ConflictException(`Company code '${dto.companyCode}' already exists`);
     }
     return this.repo.save({ ...tenant, ...dto, ...(dto.companyCode && { companyCode: dto.companyCode.toUpperCase() }) });
+  }
+
+  async updateBranding(id: string, branding: TenantBranding): Promise<TenantCompany> {
+    const tenant = await this.findOne(id);
+    tenant.branding = { ...(tenant.branding || {}), ...branding };
+    return this.repo.save(tenant);
+  }
+
+  async updateSmtp(id: string, smtp: TenantSmtp): Promise<TenantCompany> {
+    const tenant = await this.findOne(id);
+    tenant.smtp = { ...(tenant.smtp || {}), ...smtp };
+    return this.repo.save(tenant);
   }
 
   async remove(id: string): Promise<void> {

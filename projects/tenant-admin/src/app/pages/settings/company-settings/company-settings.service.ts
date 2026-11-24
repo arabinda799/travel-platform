@@ -1,5 +1,6 @@
-import { Injectable, signal } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Injectable, signal, inject } from '@angular/core';
+import { Observable, of, tap, catchError } from 'rxjs';
+import { ApiService } from 'admin-core';
 
 export interface CompanySettingsData {
   // Company Info
@@ -166,6 +167,7 @@ export const INITIAL_COMPANY_SETTINGS: CompanySettingsData = {
 
 @Injectable({ providedIn: 'root' })
 export class CompanySettingsService {
+  private readonly api = inject(ApiService);
   private readonly _settings = signal<CompanySettingsData>(this.loadFromStorage());
   private readonly _loading = signal(false);
 
@@ -186,15 +188,34 @@ export class CompanySettingsService {
   }
 
   load(): Observable<CompanySettingsData> {
-    const data = this.loadFromStorage();
-    this._settings.set(data);
-    return of(data);
+    this._loading.set(true);
+    return this.api.get<any>('/tenant-config/branding').pipe(
+      tap(backendConfig => {
+        const merged = { ...this._settings(), ...backendConfig };
+        this._settings.set(merged);
+        this.persist(merged);
+        this._loading.set(false);
+      }),
+      catchError(() => {
+        const data = this.loadFromStorage();
+        this._settings.set(data);
+        this._loading.set(false);
+        return of(data);
+      }),
+    );
   }
 
   updateSettings(data: Partial<CompanySettingsData>): Observable<CompanySettingsData> {
     const updated = { ...this._settings(), ...data };
     this._settings.set(updated);
     this.persist(updated);
-    return of(updated);
+    return this.api.patch<any>('/tenant-config/branding', data).pipe(
+      tap(saved => {
+        const merged = { ...this._settings(), ...saved };
+        this._settings.set(merged);
+        this.persist(merged);
+      }),
+      catchError(() => of(updated)),
+    );
   }
 }

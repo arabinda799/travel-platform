@@ -41,4 +41,10 @@ export class TenantsController {
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string) { this.service.remove(id); }
+
+  @Post('bulk-delete')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  bulkRemove(@Body() body: { ids: string[] }) {
+    return this.service.bulkRemove(body.ids);
+  }
 }

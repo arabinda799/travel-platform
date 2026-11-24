@@ -81,4 +81,16 @@ export class CompanyService extends BaseApiCrudService<TenantCompany> {
       tap(updated => this._items.update(list => list.map(c => c.id === id ? updated : c))),
     );
   }
+
+  loadById(id: string): Observable<TenantCompany> {
+    return this.api.get<TenantCompany>(`${this.endpoint}/${id}`).pipe(
+      take(1),
+      tap(company => {
+        this._items.update(list => {
+          const idx = list.findIndex(c => c.id === id);
+          return idx >= 0 ? list.map((c, i) => i === idx ? company : c) : [company, ...list];
+        });
+      }),
+    );
+  }
 }

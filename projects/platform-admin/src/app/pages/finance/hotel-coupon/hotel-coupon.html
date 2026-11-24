@@ -17,11 +17,13 @@
   <lib-data-table
     [value]="filteredCoupons()"
     [columns]="columns()"
-    [totalRecords]="filteredCoupons().length"
+    [totalRecords]="couponService.total()"
+    [rows]="50"
     [loading]="loading()"
     [searchable]="true"
     searchPlaceholder="Search by code, title, region, or star rating..."
-    (search)="onSearch($event)">
+    (search)="onSearch($event)"
+    (lazyLoad)="onLazyLoad($event)">
 
     <div table-actions class="table-actions-group">
       <lib-button

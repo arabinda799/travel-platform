@@ -56,8 +56,12 @@ export class HotelPricingService {
 
   loadMarkups(): void {
     this._loading.set(true);
-    this.api.get<HotelMarkup[]>('/hotel-markups').pipe(take(1)).subscribe({
-      next: data => { this._markups.set(data); this._loading.set(false); },
+    this.api.get<any>('/hotel-markups').pipe(take(1)).subscribe({
+      next: res => {
+        const data = Array.isArray(res) ? res : (res?.data ?? []);
+        this._markups.set(data);
+        this._loading.set(false);
+      },
       error: (err: unknown) => {
         this._error.set((err as { error?: { message?: string } })?.error?.message ?? 'Failed to load markups');
         this._loading.set(false);
@@ -66,8 +70,11 @@ export class HotelPricingService {
   }
 
   loadDiscounts(): void {
-    this.api.get<HotelDiscount[]>('/hotel-discounts').pipe(take(1)).subscribe({
-      next: data => this._discounts.set(data),
+    this.api.get<any>('/hotel-discounts').pipe(take(1)).subscribe({
+      next: res => {
+        const data = Array.isArray(res) ? res : (res?.data ?? []);
+        this._discounts.set(data);
+      },
       error: () => {},
     });
   }

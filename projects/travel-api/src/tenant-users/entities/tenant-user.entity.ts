@@ -14,6 +14,8 @@ export class TenantUser {
   @Column({ default: 'ACTIVE' }) status: TenantUserStatus;
   @Column({ type: 'simple-json', default: '[]' }) disabledPermissionIds: string[];
   @Column({ default: false }) isPrimary: boolean;
+  @Column({ nullable: true, select: false }) password?: string;
+  @Column({ nullable: true, select: false }) resetToken?: string;
   @CreateDateColumn() createdAt: Date;
   @Column({ nullable: true, type: 'text' }) lastLoginAt: string | null;
 }

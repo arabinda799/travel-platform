@@ -1,243 +1,66 @@
 <lib-page-container
   title="Blog Categories"
-  subtitle="Manage and organize your blog and destination guide categories"
+  subtitle="Manage blog categories for the content section"
   [breadcrumbs]="[
     { label: 'Dashboard', route: '/dashboard' },
     { label: 'Content' },
-    { label: 'Blogs' },
-    { label: 'Category' }
+    { label: 'Blog Categories' }
   ]">
 
-  <!-- Top Page Action: Add New Button -->
   <div page-actions>
-    <lib-button
-      variant="primary"
-      icon="add"
-      (click)="openAddModal()">
-      Add New Category
+    <lib-button variant="primary" icon="add" (click)="openAddModal()">
+      Add Category
     </lib-button>
   </div>
 
-  <!-- Reusable Data Table Component -->
   <lib-data-table
-    [value]="filteredCategories()"
+    [value]="filteredItems()"
     [columns]="columns()"
-    [totalRecords]="filteredCategories().length"
-    [loading]="loading()"
-    [checkbox]="true"
-    [(selection)]="selectedCategories"
+    [totalRecords]="service.total()"
+    [rows]="50"
+    [loading]="service.loading()"
     [searchable]="true"
-    searchPlaceholder="Search categories by name, slug..."
-    (search)="onSearch($event)">
+    searchPlaceholder="Search by name..."
+    (search)="onSearch($event)"
+    (lazyLoad)="onLazyLoad($event)">
 
-    <!-- Standard Table Actions (when 0 selected): Filter Button -->
-    <div table-actions class="table-actions-group">
-      <lib-button
-        variant="outline"
-        icon="tune"
-        [badge]="activeFilterCount() ? activeFilterCount() : ''"
-        (click)="filterVisible.set(true)">
-        Filters
-      </lib-button>
-    </div>
-
-    <!-- Bulk Selection Actions (when 1+ selected): Change Status and Delete -->
-    <div selection-actions class="selection-actions-group">
-      <lib-button
-        variant="outline-warning"
-        icon="sync"
-        (click)="openBulkStatusModal()">
-        Change Status
-      </lib-button>
-
-      <lib-button
-        variant="danger"
-        icon="delete"
-        (click)="confirmBulkDelete()">
-        Delete Selected ({{ selectedCategories().length }})
-      </lib-button>
-    </div>
-
-    <!-- Category Image Template with Lazy Load and Spinner -->
-    <ng-template #imageTpl let-row>
-      <div class="category-image-wrapper">
-        <lib-thumb-image [src]="row.image" [alt]="row.name" fallbackIcon="category" />
-      </div>
-    </ng-template>
-
-    <!-- Category Title Template -->
-    <ng-template #titleTpl let-row>
-      <div class="category-title-cell">
-        <span class="category-name">{{ row.name }}</span>
-        <span class="category-slug text-muted">/{{ row.slug }}</span>
-      </div>
-    </ng-template>
-
-    <!-- Status Badge Template using Common Status Badge Component -->
     <ng-template #statusTpl let-row>
-      <lib-status-badge [status]="row.status" />
+      <lib-status-badge [status]="row.status === 'Active' ? 'ACTIVE' : 'INACTIVE'" />
     </ng-template>
 
-    <!-- Actions Template adhering to Standard Action Convention -->
     <ng-template #actionsTpl let-row>
       <div class="table-row-actions">
-        <lib-table-action
-          action="edit"
-          tooltip="Edit Category"
-          (clicked)="openEditModal(row)" />
-
-        <lib-table-action
-          action="delete"
-          tooltip="Delete Category"
-          (clicked)="confirmDeleteSingle(row)" />
+        <lib-table-action action="edit" tooltip="Edit" (clicked)="openEditModal(row)" />
+        <lib-table-action action="delete" tooltip="Delete" (clicked)="confirmDelete(row)" />
       </div>
     </ng-template>
-
   </lib-data-table>
 
-</lib-page-container>
-
-<!-- Filter Sidebar with Status Dropdown and Datepicker for Created Date -->
-<lib-filter-sidebar
-  [(visible)]="filterVisible"
-  (apply)="onApplyFilters()"
-  (reset)="onResetFilters()">
-
-  <div class="filter-group">
-    <lib-select-field
-      label="Category Status"
-      [options]="filterStatusOptions"
-      [value]="selectedStatusFilter()"
-      (valueChange)="selectedStatusFilter.set($event)"
-      placeholder="All Statuses"
-      [clearable]="true" />
-  </div>
-
-  <div class="filter-group">
-    <lib-datepicker-field
-      label="Created Date Range"
-      selectionMode="range"
-      dateFormat="dd/mm/yy"
-      placeholder="Select start and end date"
-      [value]="selectedDateRangeFilter()"
-      (valueChange)="selectedDateRangeFilter.set($event)" />
-  </div>
-
-</lib-filter-sidebar>
-
-<!-- Reusable Form Modal for Add / Edit -->
-<lib-form-modal
-  [(visible)]="modalVisible"
-  [title]="isEditing() ? 'Edit Blog Category' : 'Add New Blog Category'"
-  [subtitle]="isEditing() ? 'Update the details for this category' : 'Create a new blog category'"
-  [icon]="isEditing() ? 'edit' : 'add_circle'"
-  width="52rem"
-  submitLabel="Save"
-  submitIcon="save"
-  (submitted)="onSaveCategory()">
-
-  <div class="category-form-grid">
-    <!-- Row 1: Name and Slug -->
-    <div class="form-row two-cols">
-      <lib-text-field
-        label="Category Name"
-        placeholder="Blog Category Name"
-        [formControl]="form.controls.name"
-        (blurred)="onNameBlur()"
-        [required]="true" />
-
-      <lib-text-field
-        label="Category Slug"
-        placeholder="Category Slug"
-        [formControl]="form.controls.slug"
-        (blurred)="onSlugInput()"
-        [required]="true" />
-    </div>
-
-    <!-- Row 2: Image File Upload and Status (Status only appears in Edit mode, default Active on Add) -->
-    <div class="form-row" [class.two-cols]="isEditing()">
-      <lib-file-upload-field
-        label="Category Image"
-        accept="image/*"
-        [formControl]="form.controls.image"
-        [fileName]="formImageFileName()"
-        (fileNameChange)="formImageFileName.set($event)"
-        [required]="true"
-        hint="Upload category cover image" />
-
-      @if (isEditing()) {
-        <lib-select-field
-          label="Status"
-          [options]="statusOptions"
-          [formControl]="form.controls.status"
-          [required]="true" />
-      }
-    </div>
-
-    <!-- Row 3: Description -->
-    <div class="form-row">
-      <lib-textarea-field
-        label="Description"
-        placeholder="Write a brief category description..."
-        [rows]="4"
-        [autoResize]="false"
-        [formControl]="form.controls.description"
-        [required]="true" />
-    </div>
-
-    <!-- Row 4: SEO Meta Section -->
-    <div class="seo-section-divider">
-      <span class="seo-section-title">SEO & Meta Information</span>
-    </div>
-
-    <div class="form-row two-cols">
+  <lib-form-modal
+    [(visible)]="modalVisible"
+    [title]="isEditing() ? 'Edit Category' : 'Add Category'"
+    [submitLabel]="isEditing() ? 'Update' : 'Save'"
+    submitIcon="save"
+    (submitted)="save()">
+    <div class="modal-form-grid">
+      <lib-text-field label="Name" placeholder="e.g. Travel Tips" [required]="true" [formControl]="form.controls.name" (input)="onNameInput()" />
+      <lib-text-field label="Slug" placeholder="e.g. travel-tips" [required]="true" [formControl]="form.controls.slug" />
+      <lib-text-field label="Image URL" placeholder="https://..." [formControl]="form.controls.image" />
+      <lib-text-field label="Description" placeholder="Category description" [formControl]="form.controls.description" />
       <lib-select-field
-        label="Meta Robots"
-        [options]="robotsOptions"
-        [formControl]="form.controls.metaRobots"
-        [required]="true" />
-
-      <lib-text-field
-        label="Meta Title"
-        placeholder="Meta Title"
-        [formControl]="form.controls.metaTitle"
-        [required]="true" />
+        label="Status"
+        [required]="true"
+        [options]="[{ label: 'Active', value: 'Active' }, { label: 'Inactive', value: 'Inactive' }]"
+        [formControl]="form.controls.status" />
     </div>
+  </lib-form-modal>
 
-    <div class="form-row">
-      <lib-text-field
-        label="Meta Keyword"
-        placeholder="comma separated keywords (e.g. travel, bali, tour)"
-        [formControl]="form.controls.metaKeyword" />
-    </div>
+  <lib-confirm-dialog
+    [(visible)]="confirmDeleteVisible"
+    title="Delete Category"
+    [message]="itemToDelete() ? 'Delete &quot;' + itemToDelete()!.name + '&quot;?' : ''"
+    confirmLabel="Delete"
+    severity="danger"
+    (confirmed)="executeDelete()" />
 
-    <div class="form-row">
-      <lib-textarea-field
-        label="Meta Description"
-        placeholder="Brief SEO meta description (up to 160 characters)"
-        [rows]="3"
-        [autoResize]="false"
-        [maxlength]="160"
-        [formControl]="form.controls.metaDescription" />
-    </div>
-  </div>
-
-</lib-form-modal>
-
-<!-- Status Modal for Bulk Status Changes -->
-<lib-status-modal
-  [(visible)]="statusModalVisible"
-  [count]="selectedCategories().length"
-  [options]="[
-    { label: 'Active', value: 'Active', description: 'Enable category for public listing' },
-    { label: 'Inactive', value: 'Inactive', description: 'Hide category from public listing' }
-  ]"
-  (confirmed)="onBulkStatusConfirm($event)" />
-
-<!-- Confirmation Dialog for Deletions -->
-<lib-confirm-dialog
-  [(visible)]="confirmDeleteVisible"
-  [title]="itemToDelete() ? 'Delete Category' : 'Delete Selected Categories'"
-  [message]="itemToDelete() ? 'Are you sure you want to delete this category? This cannot be undone.' : 'Are you sure you want to delete the selected categories?'"
-  confirmLabel="Delete"
-  (confirmed)="executeDelete()" />
+</lib-page-container>

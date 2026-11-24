@@ -22,86 +22,9 @@ import {
 } from 'admin-core';
 import { Menu } from 'primeng/menu';
 import { MenuItem } from 'primeng/api';
+import { HotelQueryListService, HotelQuery } from './hotel-query-list.service';
 
-export interface HotelQuery {
-  id: number;
-  queryId: string;
-  guestName: string;
-  guestEmail: string;
-  guestPhone: string;
-  queryType: 'Price Inquiry' | 'Availability Check' | 'Room Upgrade Request' | 'Special Request' | 'Complaint' | 'Feedback' | 'Cancellation Request';
-  queryStatus: 'Open' | 'In Progress' | 'Resolved' | 'Closed' | 'Pending';
-  hotel: string;
-  city: string;
-  checkIn: string;
-  checkOut: string;
-  pax: string;
-  message: string;
-  response: string;
-  assignedStaff: string;
-  source: 'Website' | 'Email' | 'Phone' | 'WhatsApp' | 'App';
-  createdDate: string;
-  updatedDate: string;
-}
-
-const MESSAGES = [
-  'We are planning a family vacation and would like to inquire about room availability and rates for the given dates. Please share the best available options.',
-  'Looking for a suite with sea view for our anniversary trip. Would appreciate any special packages or offers available.',
-  'Requesting information on early check-in facility and airport transfer services. Please advise on the costs.',
-  'Would like to know about conference room facilities and catering options for a corporate event of 50 people.',
-  'The room assigned to us does not match the booking description. We booked a superior room but were given a standard room.',
-  'Very satisfied with the service. The staff was exceptional and the room was immaculate. Would highly recommend.',
-  'We need to cancel our reservation due to an emergency. Please let us know the cancellation charges and refund timeline.',
-  'Requesting a cot and extra blankets for our room. Also, is there a kids pool available at the property?',
-];
-
-const RESPONSES = [
-  'Thank you for reaching out. We have noted your request and our team will get back to you within 24 hours with available options.',
-  'We appreciate your interest. Our concierge has been informed and will contact you shortly with the requested details.',
-  'We sincerely apologize for the inconvenience. This has been escalated to the property manager for immediate resolution.',
-  'Your feedback has been recorded and shared with the management team. We look forward to hosting you again.',
-  'The cancellation has been processed as per policy. Refund will be credited within 5–7 business days.',
-  '',
-  '',
-];
-
-const DUMMY_QUERIES: HotelQuery[] = Array.from({ length: 48 }, (_, i) => {
-  const statuses: HotelQuery['queryStatus'][] = ['Open', 'In Progress', 'Resolved', 'Closed', 'Pending'];
-  const types: HotelQuery['queryType'][] = [
-    'Price Inquiry', 'Availability Check', 'Room Upgrade Request',
-    'Special Request', 'Complaint', 'Feedback', 'Cancellation Request',
-  ];
-  const hotels = ['Taj Palace Delhi', 'Oberoi Mumbai', 'Leela Bangalore', 'ITC Grand Kolkata', 'Marriott Goa', 'Hyatt Jaipur'];
-  const cities = ['New Delhi', 'Mumbai', 'Bengaluru', 'Kolkata', 'Goa', 'Jaipur'];
-  const names = ['Rahul Sharma', 'Priya Patel', 'Amit Singh', 'Sneha Reddy', 'Vikram Joshi', 'Ananya Das', 'Karan Malhotra', 'Deepa Nair'];
-  const staff = ['Aarav Mehta', 'Neha Kapoor', 'Rohan Verma', 'Priya Nair', 'Siddharth Rao'];
-  const paxList = ['2 Adults', '2 Adults, 1 Child', '1 Adult', '3 Adults', '2 Adults, 2 Children', '4 Adults'];
-  const sources: HotelQuery['source'][] = ['Website', 'Email', 'Phone', 'WhatsApp', 'App'];
-  const emails = ['rahul.s@example.com', 'priya.p@example.com', 'amit.singh@example.com', 'sneha.r@example.com',
-    'vikram.j@example.com', 'ananya.d@example.com', 'karan.m@example.com', 'deepa.n@example.com'];
-  const phones = ['9876543210', '9823456781', '9712345678', '9654321098', '9543219876', '9432198765', '9321987654', '9219876543'];
-
-  return {
-    id: 3001 + i,
-    queryId: `QRY-${String(2026001 + i).slice(-6)}`,
-    guestName: names[i % names.length],
-    guestEmail: emails[i % emails.length],
-    guestPhone: phones[i % phones.length],
-    queryType: types[i % types.length],
-    queryStatus: statuses[i % statuses.length],
-    hotel: hotels[i % hotels.length],
-    city: cities[i % cities.length],
-    checkIn: `2026-${String(1 + (i % 12)).padStart(2, '0')}-${String(5 + (i % 20)).padStart(2, '0')}`,
-    checkOut: `2026-${String(1 + (i % 12)).padStart(2, '0')}-${String(8 + (i % 20)).padStart(2, '0')}`,
-    pax: paxList[i % paxList.length],
-    message: MESSAGES[i % MESSAGES.length],
-    response: RESPONSES[i % RESPONSES.length],
-    assignedStaff: staff[i % staff.length],
-    source: sources[i % sources.length],
-    createdDate: `2026-01-${String(1 + (i % 28)).padStart(2, '0')}`,
-    updatedDate: `2026-01-${String(2 + (i % 27)).padStart(2, '0')}`,
-  };
-});
+export type { HotelQuery };
 
 @Component({
   selector: 'app-hotel-query-list',
@@ -196,9 +119,10 @@ export class HotelQueryListComponent {
     { label: 'App', value: 'App' },
   ];
 
-  readonly allData = signal<HotelQuery[]>(DUMMY_QUERIES);
+  private readonly hotelQueryService = inject(HotelQueryListService);
+  readonly allData = this.hotelQueryService.queries;
   readonly tableData = signal<HotelQuery[]>([]);
-  readonly totalRecords = signal(DUMMY_QUERIES.length);
+  readonly totalRecords = signal(0);
   readonly activeFilterCount = signal(0);
 
   private currentLazyEvent: TableLazyEvent = { first: 0, rows: 10, sortOrder: 1 };
@@ -276,18 +200,20 @@ export class HotelQueryListComponent {
   }
 
   confirmBulkDelete(): void {
-    const selectedIds = new Set(this.selectedQueries.map(q => q.id));
-    this.allData.update(list => list.filter(q => !selectedIds.has(q.id)));
+    const selectedIds = this.selectedQueries.map(q => q.id);
+    if (selectedIds.length) {
+      this.hotelQueryService.deleteMultiple(selectedIds);
+    }
     this.selectedQueries = [];
     this.deleteConfirmVisible.set(false);
     this.loadData({ ...this.currentLazyEvent, first: 0 });
   }
 
   onStatusModalConfirm(newStatus: string): void {
-    const selectedIds = new Set(this.selectedQueries.map(q => q.id));
-    this.allData.update(list =>
-      list.map(q => (selectedIds.has(q.id) ? { ...q, queryStatus: newStatus as HotelQuery['queryStatus'] } : q)),
-    );
+    const selectedIds = this.selectedQueries.map(q => q.id);
+    if (selectedIds.length) {
+      this.hotelQueryService.updateMultipleStatus(selectedIds, newStatus as HotelQuery['queryStatus']);
+    }
     this.selectedQueries = [];
     this.statusModalVisible.set(false);
     this.loadData(this.currentLazyEvent);

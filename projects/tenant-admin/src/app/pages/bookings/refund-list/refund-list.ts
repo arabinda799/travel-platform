@@ -23,67 +23,9 @@ import {
 } from 'admin-core';
 import { Menu } from 'primeng/menu';
 import { MenuItem } from 'primeng/api';
+import { RefundListService, RefundRecord } from './refund-list.service';
 
-interface RefundRecord {
-  id: number;
-  refundId: string;
-  amendmentId: string;
-  bookingId: string;
-  amendmentType: 'Date Change' | 'Room Upgrade' | 'Guest Name Change' | 'Meal Plan Change' | 'Occupancy Change' | 'Full Cancellation';
-  refundStatus: 'Processed' | 'Pending' | 'Initiated' | 'Failed';
-  amendmentStatus: 'Approved' | 'Pending' | 'Rejected' | 'In Review';
-  bookingStatus: 'Confirmed' | 'Pending' | 'Cancelled' | 'Checked In' | 'Checked Out';
-  bookingAmount: number;
-  hotel: string;
-  guest: string;
-  pax: string;
-  checkIn: string;
-  checkOut: string;
-  city: string;
-  assignedStaff: string;
-  bookingDate: string;
-  createdDate: string;
-}
-
-const DUMMY_REFUNDS: RefundRecord[] = Array.from({ length: 36 }, (_, i) => {
-  const refundStatuses: RefundRecord['refundStatus'][] = ['Processed', 'Pending', 'Initiated', 'Failed'];
-  const amendmentStatuses: RefundRecord['amendmentStatus'][] = ['Approved', 'Pending', 'Rejected', 'In Review'];
-  const bookingStatuses: RefundRecord['bookingStatus'][] = ['Cancelled', 'Confirmed', 'Pending', 'Checked Out'];
-  const types: RefundRecord['amendmentType'][] = [
-    'Full Cancellation',
-    'Date Change',
-    'Room Upgrade',
-    'Guest Name Change',
-    'Meal Plan Change',
-    'Occupancy Change',
-  ];
-  const hotels = ['Taj Palace Delhi', 'Oberoi Mumbai', 'Leela Bangalore', 'ITC Grand Kolkata', 'Marriott Goa', 'Hyatt Jaipur'];
-  const cities = ['New Delhi', 'Mumbai', 'Bengaluru', 'Kolkata', 'Goa', 'Jaipur'];
-  const names = ['Rahul Sharma', 'Priya Patel', 'Amit Singh', 'Sneha Reddy', 'Vikram Joshi', 'Ananya Das', 'Karan Malhotra', 'Deepa Nair'];
-  const staff = ['Aarav Mehta', 'Neha Kapoor', 'Rohan Verma', 'Priya Nair', 'Siddharth Rao'];
-  const paxList = ['2 Adults', '2 Adults, 1 Child', '1 Adult', '3 Adults', '2 Adults, 2 Children', '4 Adults'];
-
-  return {
-    id: 3001 + i,
-    refundId: `RFD-${String(2026001 + i).slice(-6)}`,
-    amendmentId: `AMD-${String(2026001 + i).slice(-6)}`,
-    bookingId: `BK-${String(2024001 + i).slice(-6)}`,
-    amendmentType: types[i % types.length],
-    refundStatus: refundStatuses[i % refundStatuses.length],
-    amendmentStatus: amendmentStatuses[i % amendmentStatuses.length],
-    bookingStatus: bookingStatuses[i % bookingStatuses.length],
-    bookingAmount: 4800 + ((i * 550) % 22000),
-    hotel: hotels[i % hotels.length],
-    guest: names[i % names.length],
-    pax: paxList[i % paxList.length],
-    checkIn: `2026-${String(1 + (i % 12)).padStart(2, '0')}-${String(5 + (i % 20)).padStart(2, '0')}`,
-    checkOut: `2026-${String(1 + (i % 12)).padStart(2, '0')}-${String(8 + (i % 20)).padStart(2, '0')}`,
-    city: cities[i % cities.length],
-    assignedStaff: staff[i % staff.length],
-    bookingDate: `2025-12-${String(1 + (i % 28)).padStart(2, '0')}`,
-    createdDate: `2026-01-${String(1 + (i % 28)).padStart(2, '0')}`,
-  };
-});
+export type { RefundRecord };
 
 @Component({
   selector: 'app-refund-list',
@@ -186,9 +128,10 @@ export class RefundListComponent {
     { label: 'Occupancy Change', value: 'Occupancy Change' },
   ];
 
-  readonly allData = signal<RefundRecord[]>(DUMMY_REFUNDS);
+  private readonly refundService = inject(RefundListService);
+  readonly allData = this.refundService.refunds;
   readonly tableData = signal<RefundRecord[]>([]);
-  readonly totalRecords = signal(DUMMY_REFUNDS.length);
+  readonly totalRecords = signal(0);
   readonly activeFilterCount = signal(0);
 
   private currentLazyEvent: TableLazyEvent = { first: 0, rows: 10, sortOrder: 1 };
@@ -267,18 +210,20 @@ export class RefundListComponent {
   }
 
   confirmBulkDelete(): void {
-    const selectedIds = new Set(this.selectedRefunds.map(r => r.id));
-    this.allData.update(list => list.filter(r => !selectedIds.has(r.id)));
+    const selectedIds = this.selectedRefunds.map(r => r.id);
+    if (selectedIds.length) {
+      this.refundService.deleteMultiple(selectedIds);
+    }
     this.selectedRefunds = [];
     this.deleteConfirmVisible.set(false);
     this.loadData({ ...this.currentLazyEvent, first: 0 });
   }
 
   onStatusModalConfirm(newStatus: string): void {
-    const selectedIds = new Set(this.selectedRefunds.map(r => r.id));
-    this.allData.update(list =>
-      list.map(r => (selectedIds.has(r.id) ? { ...r, refundStatus: newStatus as RefundRecord['refundStatus'] } : r)),
-    );
+    const selectedIds = this.selectedRefunds.map(r => r.id);
+    if (selectedIds.length) {
+      this.refundService.updateMultipleStatus(selectedIds, newStatus as RefundRecord['refundStatus']);
+    }
     this.selectedRefunds = [];
     this.statusModalVisible.set(false);
     this.loadData(this.currentLazyEvent);

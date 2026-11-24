@@ -47,26 +47,60 @@ export class LogsService implements OnModuleInit {
   // ─── Email Logs ──────────────────────────────────────────────────────────
 
   async findAllEmailLogs(): Promise<EmailLog[]> { return this.emailRepo.find({ order: { sentAt: 'DESC' } }); }
-  async findOneEmailLog(id: string): Promise<EmailLog> {
+
+  async resendEmail(id: string): Promise<EmailLog> {
     const l = await this.emailRepo.findOneBy({ id });
     if (!l) throw new NotFoundException(`Email log ${id} not found`);
-    return l;
+    return this.emailRepo.save({ ...l, status: 'Sent' as const, errorMessage: null });
+  }
+
+  async removeEmailLog(id: string): Promise<void> {
+    await this.emailRepo.delete(id);
+  }
+
+  async bulkRemoveEmailLogs(ids: string[]): Promise<void> {
+    await this.emailRepo.delete(ids);
   }
 
   // ─── SMS Logs ─────────────────────────────────────────────────────────────
 
   async findAllSmsLogs(): Promise<SmsLog[]> { return this.smsRepo.find({ order: { sentAt: 'DESC' } }); }
-  async findOneSmsLog(id: string): Promise<SmsLog> {
+
+  async resendSms(id: string): Promise<SmsLog> {
     const l = await this.smsRepo.findOneBy({ id });
     if (!l) throw new NotFoundException(`SMS log ${id} not found`);
-    return l;
+    return this.smsRepo.save({ ...l, status: 'Sent' as const, errorMessage: null });
+  }
+
+  async removeSmsLog(id: string): Promise<void> {
+    await this.smsRepo.delete(id);
+  }
+
+  async bulkRemoveSmsLogs(ids: string[]): Promise<void> {
+    await this.smsRepo.delete(ids);
   }
 
   // ─── Login Logs ───────────────────────────────────────────────────────────
 
   async findAllLoginLogs(): Promise<LoginLog[]> { return this.loginRepo.find({ order: { createdAt: 'DESC' } }); }
 
+  async removeLoginLog(id: string): Promise<void> {
+    await this.loginRepo.delete(id);
+  }
+
+  async bulkRemoveLoginLogs(ids: string[]): Promise<void> {
+    await this.loginRepo.delete(ids);
+  }
+
   // ─── Coupon Logs ──────────────────────────────────────────────────────────
 
   async findAllCouponLogs(): Promise<CouponLog[]> { return this.couponRepo.find({ order: { usedAt: 'DESC' } }); }
+
+  async removeCouponLog(id: string): Promise<void> {
+    await this.couponRepo.delete(id);
+  }
+
+  async bulkRemoveCouponLogs(ids: string[]): Promise<void> {
+    await this.couponRepo.delete(ids);
+  }
 }

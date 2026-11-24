@@ -23,61 +23,9 @@ import {
 } from 'admin-core';
 import { Menu } from 'primeng/menu';
 import { MenuItem } from 'primeng/api';
+import { AmendmentListService, Amendment } from './amendment-list.service';
 
-interface Amendment {
-  id: number;
-  amendmentId: string;
-  bookingId: string;
-  amendmentType: 'Date Change' | 'Room Upgrade' | 'Guest Name Change' | 'Meal Plan Change' | 'Occupancy Change';
-  amendmentStatus: 'Approved' | 'Pending' | 'Rejected' | 'In Review';
-  bookingStatus: 'Confirmed' | 'Pending' | 'Cancelled' | 'Checked In' | 'Checked Out';
-  bookingAmount: number;
-  hotel: string;
-  guest: string;
-  pax: string;
-  checkIn: string;
-  checkOut: string;
-  city: string;
-  assignedStaff: string;
-  bookingDate: string;
-  createdDate: string;
-}
-
-const DUMMY_AMENDMENTS: Amendment[] = Array.from({ length: 42 }, (_, i) => {
-  const amendmentStatuses: Amendment['amendmentStatus'][] = ['Approved', 'Pending', 'Rejected', 'In Review'];
-  const bookingStatuses: Amendment['bookingStatus'][] = ['Confirmed', 'Pending', 'Cancelled', 'Checked In', 'Checked Out'];
-  const types: Amendment['amendmentType'][] = [
-    'Date Change',
-    'Room Upgrade',
-    'Guest Name Change',
-    'Meal Plan Change',
-    'Occupancy Change',
-  ];
-  const hotels = ['Taj Palace Delhi', 'Oberoi Mumbai', 'Leela Bangalore', 'ITC Grand Kolkata', 'Marriott Goa', 'Hyatt Jaipur'];
-  const cities = ['New Delhi', 'Mumbai', 'Bengaluru', 'Kolkata', 'Goa', 'Jaipur'];
-  const names = ['Rahul Sharma', 'Priya Patel', 'Amit Singh', 'Sneha Reddy', 'Vikram Joshi', 'Ananya Das', 'Karan Malhotra', 'Deepa Nair'];
-  const staff = ['Aarav Mehta', 'Neha Kapoor', 'Rohan Verma', 'Priya Nair', 'Siddharth Rao'];
-  const paxList = ['2 Adults', '2 Adults, 1 Child', '1 Adult', '3 Adults', '2 Adults, 2 Children', '4 Adults'];
-
-  return {
-    id: 2001 + i,
-    amendmentId: `AMD-${String(2026001 + i).slice(-6)}`,
-    bookingId: `BK-${String(2024001 + i).slice(-6)}`,
-    amendmentType: types[i % types.length],
-    amendmentStatus: amendmentStatuses[i % amendmentStatuses.length],
-    bookingStatus: bookingStatuses[i % bookingStatuses.length],
-    bookingAmount: 5500 + ((i * 650) % 24000),
-    hotel: hotels[i % hotels.length],
-    guest: names[i % names.length],
-    pax: paxList[i % paxList.length],
-    checkIn: `2026-${String(1 + (i % 12)).padStart(2, '0')}-${String(5 + (i % 20)).padStart(2, '0')}`,
-    checkOut: `2026-${String(1 + (i % 12)).padStart(2, '0')}-${String(8 + (i % 20)).padStart(2, '0')}`,
-    city: cities[i % cities.length],
-    assignedStaff: staff[i % staff.length],
-    bookingDate: new Date(2025, 11, 1 + (i % 28), 10 + (i % 12), ((i * 17) % 60)).toISOString(),
-    createdDate: new Date(2026, 0, 1 + (i % 28), 9 + (i % 12), ((i * 13) % 60)).toISOString(),
-  };
-});
+export type { Amendment };
 
 @Component({
   selector: 'app-amendment-list',
@@ -171,9 +119,10 @@ export class AmendmentListComponent {
     { label: 'Occupancy Change', value: 'Occupancy Change' },
   ];
 
-  readonly allData = signal<Amendment[]>(DUMMY_AMENDMENTS);
+  private readonly amendmentService = inject(AmendmentListService);
+  readonly allData = this.amendmentService.amendments;
   readonly tableData = signal<Amendment[]>([]);
-  readonly totalRecords = signal(DUMMY_AMENDMENTS.length);
+  readonly totalRecords = signal(0);
   readonly activeFilterCount = signal(0);
 
   private currentLazyEvent: TableLazyEvent = { first: 0, rows: 10, sortOrder: 1 };
@@ -248,18 +197,20 @@ export class AmendmentListComponent {
   }
 
   confirmBulkDelete(): void {
-    const selectedIds = new Set(this.selectedAmendments.map(a => a.id));
-    this.allData.update(list => list.filter(a => !selectedIds.has(a.id)));
+    const selectedIds = this.selectedAmendments.map(a => a.id);
+    if (selectedIds.length) {
+      this.amendmentService.deleteMultiple(selectedIds);
+    }
     this.selectedAmendments = [];
     this.deleteConfirmVisible.set(false);
     this.loadData({ ...this.currentLazyEvent, first: 0 });
   }
 
   onStatusModalConfirm(newStatus: string): void {
-    const selectedIds = new Set(this.selectedAmendments.map(a => a.id));
-    this.allData.update(list =>
-      list.map(a => (selectedIds.has(a.id) ? { ...a, amendmentStatus: newStatus as Amendment['amendmentStatus'] } : a)),
-    );
+    const selectedIds = this.selectedAmendments.map(a => a.id);
+    if (selectedIds.length) {
+      this.amendmentService.updateMultipleStatus(selectedIds, newStatus as Amendment['amendmentStatus']);
+    }
     this.selectedAmendments = [];
     this.statusModalVisible.set(false);
     this.loadData(this.currentLazyEvent);

@@ -25,6 +25,7 @@ import {
   StatusBadgeComponent,
   TableActionComponent,
   TableColumn,
+  TableLazyEvent,
   SelectOption,
 } from 'admin-core';
 import { TenantCompany, TenantStatus, FirmType, PgOwner, CompanyService, DEFAULT_BRANDING, DEFAULT_SMTP } from './company.service';
@@ -70,14 +71,14 @@ const PG_OWNER_OPTIONS: SelectOption<PgOwner>[] = [
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CompanyListComponent implements OnInit {
-  private readonly companyService = inject(CompanyService);
+  readonly companyService = inject(CompanyService);
   private readonly messageService = inject(MessageService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly companies = this.companyService.companies;
   readonly searchQuery = signal<string>('');
-  readonly loading = signal<boolean>(false);
+  readonly loading = this.companyService.loading;
 
   readonly filterVisible = signal<boolean>(false);
   readonly selectedStatusFilter = signal<string | null>(null);
@@ -148,6 +149,11 @@ export class CompanyListComponent implements OnInit {
   }
 
   ngOnInit(): void { this.companyService.load(); }
+
+  onLazyLoad(e: TableLazyEvent): void {
+    const page = Math.floor((e.first ?? 0) / (e.rows ?? 50)) + 1;
+    if (page !== this.companyService.page()) this.companyService.goToPage(page);
+  }
 
   resetFilters(): void {
     this.selectedStatusFilter.set(null);

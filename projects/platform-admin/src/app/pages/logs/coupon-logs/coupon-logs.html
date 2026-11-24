@@ -1,4 +1,4 @@
-<lib-page-container
+﻿<lib-page-container
   title="Coupon Logs"
   subtitle="Coupon redemption history — applied, expired, invalid, and limit-reached usage records"
   [breadcrumbs]="breadcrumbs">
@@ -25,7 +25,7 @@
     </div>
 
     <div selection-actions class="selection-actions-group">
-      <lib-button variant="outline" icon="download" (click)="exportData(true)">
+      <lib-button variant="info" icon="download" (click)="exportData(true)">
         Export Selected ({{ selectedItems().length }})
       </lib-button>
       <lib-button variant="danger" icon="delete" (click)="confirmBulkDelete()">

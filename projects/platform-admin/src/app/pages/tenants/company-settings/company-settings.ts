@@ -136,10 +136,19 @@ export class TenantCompanySettingsComponent implements OnInit {
 
   ngOnInit(): void {
     const id = this.route.snapshot.params['id'];
-    if (id) {
-      this.companyId.set(id);
-      const company = this.companyService.companies().find(c => c.id === id);
-      if (company) this._patchForms(company);
+    if (!id) return;
+    this.companyId.set(id);
+    const cached = this.companyService.companies().find(c => c.id === id);
+    if (cached) {
+      this._patchForms(cached);
+    } else {
+      this.saving.set(true);
+      this.companyService.loadById(id)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: company => { this._patchForms(company); this.saving.set(false); },
+          error: () => { this.saving.set(false); this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to load company.' }); },
+        });
     }
   }
 

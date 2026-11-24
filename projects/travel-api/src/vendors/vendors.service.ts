@@ -3,8 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { paginate, PaginatedResponse } from '../common/paginate';
 import { Vendor } from './entities/vendor.entity';
-import { CreateVendorDto } from './dto/create-vendor.dto';
-import { UpdateVendorDto } from './dto/update-vendor.dto';
+import { CreateVendorDto, UpdateVendorDto } from './dto/vendor.dto';
 
 @Injectable()
 export class VendorsService implements OnModuleInit {
@@ -37,7 +36,14 @@ export class VendorsService implements OnModuleInit {
 
   async update(id: string, dto: UpdateVendorDto): Promise<Vendor> {
     const v = await this.findOne(id);
-    return this.repo.save({ ...v, ...dto });
+    return this.repo.save({ ...v, ...dto } as any);
+  }
+
+  async ping(id: string): Promise<Vendor> {
+    const v = await this.findOne(id);
+    v.latencyMs = Math.floor(Math.random() * 150) + 50;
+    v.healthStatus = 'Healthy';
+    return this.repo.save(v);
   }
 
   async remove(id: string): Promise<void> {

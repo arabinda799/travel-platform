@@ -23,6 +23,10 @@ export type ButtonSize = 'sm' | 'md' | 'lg';
   templateUrl: './button.html',
   styleUrl: './button.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '[style.pointer-events]': '(disabled() || loading()) ? "none" : null',
+    '[attr.aria-disabled]': '(disabled() || loading()) ? "true" : null',
+  },
 })
 export class ButtonComponent {
   readonly variant = input<ButtonVariant>('primary');

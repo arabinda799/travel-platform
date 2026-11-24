@@ -1,0 +1,109 @@
+<lib-page-container
+  title="Agency Wallet"
+  subtitle="Manage agency wallet reserves, credit line, and top-up funds"
+  icon="account_balance_wallet"
+  [breadcrumbs]="breadcrumbs">
+
+  <div page-actions>
+    <lib-button
+      label="Recharge Wallet"
+      icon="add_card"
+      variant="primary"
+      (btnClick)="openTopUp()">
+      Recharge Wallet
+    </lib-button>
+  </div>
+
+  <div class="wallet-stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon stat-icon--success">
+        <span class="icon">account_balance_wallet</span>
+      </div>
+      <span class="stat-label">Total Balance</span>
+      <span class="stat-value">{{ balance() | currency:'INR':'symbol':'1.0-0' }}</span>
+      <span class="stat-change up">
+        <span class="icon">arrow_upward</span>
+        Available: {{ availableBalance() | currency:'INR':'symbol':'1.0-0' }}
+      </span>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon stat-icon--info">
+        <span class="icon">credit_score</span>
+      </div>
+      <span class="stat-label">Credit Line</span>
+      <span class="stat-value">{{ creditLimit() | currency:'INR':'symbol':'1.0-0' }}</span>
+      <span class="stat-change up">
+        Approved pre-authorized limit
+      </span>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon stat-icon--warning">
+        <span class="icon">lock_clock</span>
+      </div>
+      <span class="stat-label">On-Hold Balance</span>
+      <span class="stat-value">{{ holdAmount() | currency:'INR':'symbol':'1.0-0' }}</span>
+      <span class="stat-change down">
+        Pending booking settlements
+      </span>
+    </div>
+  </div>
+
+  <div class="wallet-table-card">
+    <div class="card-title-row">
+      <h3>Recent Wallet Activity</h3>
+      <span class="card-subtitle">Real-time ledger of debits, credits, and top-ups</span>
+    </div>
+
+    <lib-data-table
+      [value]="filteredTransactions()"
+      [columns]="columns()"
+      [totalRecords]="filteredTransactions().length"
+      [searchable]="true"
+      searchPlaceholder="Search reference, description, or category..."
+      (search)="onSearch($event)">
+
+      <ng-template #amountTpl let-row>
+        <span [class.credit-text]="row.type === 'Credit'" [class.debit-text]="row.type === 'Debit'">
+          {{ row.type === 'Credit' ? '+' : '-' }}{{ row.amount | currency:'INR':'symbol':'1.0-0' }}
+        </span>
+      </ng-template>
+
+      <ng-template #balanceTpl let-row>
+        <span>{{ row.balanceAfter | currency:'INR':'symbol':'1.0-0' }}</span>
+      </ng-template>
+
+      <ng-template #statusTpl let-row>
+        <lib-status-badge [status]="row.status"></lib-status-badge>
+      </ng-template>
+    </lib-data-table>
+  </div>
+
+  <lib-form-modal
+    [visible]="showTopUpModal()"
+    (visibleChange)="showTopUpModal.set($event)"
+    title="Recharge Agency Wallet"
+    icon="add_card"
+    submitLabel="Proceed to Recharge"
+    (submitForm)="submitTopUp()">
+    <lib-text-field
+      label="Amount (₹)"
+      type="number"
+      placeholder="e.g. 50000"
+      [ngModel]="topUpAmount()"
+      (ngModelChange)="topUpAmount.set($event)">
+    </lib-text-field>
+
+    <lib-select-field
+      label="Payment Method"
+      [options]="[
+        { label: 'UPI / QR Code', value: 'UPI' },
+        { label: 'Internet Banking', value: 'NetBanking' },
+        { label: 'NEFT / RTGS Transfer', value: 'NEFT/RTGS' }
+      ]"
+      [ngModel]="paymentMethod()"
+      (ngModelChange)="paymentMethod.set($event)">
+    </lib-select-field>
+  </lib-form-modal>
+</lib-page-container>

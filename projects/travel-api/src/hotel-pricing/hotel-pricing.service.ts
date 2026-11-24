@@ -52,12 +52,19 @@ export class HotelPricingService implements OnModuleInit {
     await this.markupRepo.delete(id);
   }
 
-  async bulkStatusMarkups(dto: BulkStatusDto): Promise<void> {
+  async bulkStatusMarkups(dto: BulkStatusDto): Promise<HotelMarkup[]> {
     await this.markupRepo.update({ id: In(dto.ids) }, { status: dto.status });
+    return this.markupRepo.find({ where: { id: In(dto.ids) } });
+  }
+  async bulkUpdateMarkupStatus(dto: BulkStatusDto): Promise<HotelMarkup[]> {
+    return this.bulkStatusMarkups(dto);
   }
 
   async bulkDeleteMarkups(dto: BulkDeleteDto): Promise<void> {
     await this.markupRepo.delete({ id: In(dto.ids) });
+  }
+  async bulkRemoveMarkups(dto: BulkDeleteDto): Promise<void> {
+    return this.bulkDeleteMarkups(dto);
   }
 
   // ─── Discounts ─────────────────────────────────────────────────────────────
@@ -86,11 +93,18 @@ export class HotelPricingService implements OnModuleInit {
     await this.discountRepo.delete(id);
   }
 
-  async bulkStatusDiscounts(dto: BulkStatusDto): Promise<void> {
+  async bulkStatusDiscounts(dto: BulkStatusDto): Promise<HotelDiscount[]> {
     await this.discountRepo.update({ id: In(dto.ids) }, { status: dto.status });
+    return this.discountRepo.find({ where: { id: In(dto.ids) } });
+  }
+  async bulkUpdateDiscountStatus(dto: BulkStatusDto): Promise<HotelDiscount[]> {
+    return this.bulkStatusDiscounts(dto);
   }
 
   async bulkDeleteDiscounts(dto: BulkDeleteDto): Promise<void> {
     await this.discountRepo.delete({ id: In(dto.ids) });
+  }
+  async bulkRemoveDiscounts(dto: BulkDeleteDto): Promise<void> {
+    return this.bulkDeleteDiscounts(dto);
   }
 }

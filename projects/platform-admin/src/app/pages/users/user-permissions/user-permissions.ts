@@ -59,12 +59,38 @@ export class UserPermissionsComponent implements OnInit {
   readonly disabledCount = computed(() => this.draftDisabledIds().length);
   readonly effectiveCount = computed(() => this.rolePermCount() - this.disabledCount());
 
+  readonly loading = signal(false);
+
   ngOnInit(): void {
     const id = this.route.snapshot.params['id'];
-    if (id) {
-      this.userId.set(id);
-      const user = this.userService.users().find(u => u.id === id);
-      if (user) this.draftDisabledIds.set([...user.disabledPermissionIds]);
+    if (!id) return;
+    this.userId.set(id);
+
+    const cached = this.userService.users().find(u => u.id === id);
+    if (cached) {
+      this.draftDisabledIds.set([...cached.disabledPermissionIds]);
+      this._ensureRoleLoaded(cached.roleId);
+    } else {
+      this.loading.set(true);
+      this.userService.loadById(id)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: user => {
+            this.draftDisabledIds.set([...user.disabledPermissionIds]);
+            this.loading.set(false);
+            this._ensureRoleLoaded(user.roleId);
+          },
+          error: () => {
+            this.loading.set(false);
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to load user.' });
+          },
+        });
+    }
+  }
+
+  private _ensureRoleLoaded(roleId: string): void {
+    if (!this.roleService.roles().find(r => r.id === roleId)) {
+      this.roleService.loadById(roleId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
     }
   }
 

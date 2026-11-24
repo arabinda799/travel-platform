@@ -1,5 +1,6 @@
-import { Injectable, signal } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Injectable, inject, signal } from '@angular/core';
+import { Observable, of, take, tap } from 'rxjs';
+import { ApiService } from 'admin-core';
 
 export type PaymentMode =
   | 'Credit Card'
@@ -126,6 +127,7 @@ const INITIAL_FEE_RULES: ConvenienceFeeRule[] = [
 
 @Injectable({ providedIn: 'root' })
 export class PaymentGatewaysService {
+  private readonly api = inject(ApiService);
   private readonly _gateways = signal<PaymentGateway[]>(this.loadGatewaysFromStorage());
   private readonly _feeRules = signal<ConvenienceFeeRule[]>(this.loadFeeRulesFromStorage());
   private readonly _loading = signal(false);
@@ -163,16 +165,29 @@ export class PaymentGatewaysService {
   }
 
   loadGateways(): void {
-    this._gateways.set(this.loadGatewaysFromStorage());
+    this._loading.set(true);
+    this.api.get<any>('/payment-gateways').pipe(take(1)).subscribe({
+      next: res => {
+        const data = Array.isArray(res) ? res : (res?.data ?? []);
+        this._gateways.set(data.length > 0 ? data : this.loadGatewaysFromStorage());
+        this._loading.set(false);
+      },
+      error: () => {
+        this._gateways.set(this.loadGatewaysFromStorage());
+        this._loading.set(false);
+      },
+    });
   }
 
   loadFeeRules(gatewayId?: string): void {
-    const all = this.loadFeeRulesFromStorage();
-    if (gatewayId) {
-      this._feeRules.set(all.filter(r => r.gatewayId === gatewayId));
-    } else {
-      this._feeRules.set(all);
-    }
+    const params = gatewayId ? { gatewayId } : undefined;
+    this.api.get<any>('/convenience-fees', params).pipe(take(1)).subscribe({
+      next: res => {
+        const data = Array.isArray(res) ? res : (res?.data ?? []);
+        this._feeRules.set(data.length > 0 ? data : this.loadFeeRulesFromStorage());
+      },
+      error: () => this._feeRules.set(this.loadFeeRulesFromStorage()),
+    });
   }
 
   getGatewayById(id: string): PaymentGateway | undefined {
@@ -180,30 +195,17 @@ export class PaymentGatewaysService {
   }
 
   createGateway(data: Omit<PaymentGateway, 'id' | 'createdDate' | 'updatedDate'>): Observable<PaymentGateway> {
-    const newItem: PaymentGateway = {
-      ...data,
-      id: `pg-${Date.now()}`,
-      createdDate: new Date().toISOString(),
-      updatedDate: new Date().toISOString(),
-    };
-    const updated = [newItem, ...this._gateways()];
-    this._gateways.set(updated);
-    this.persistGateways(updated);
-    return of(newItem);
+    return this.api.post<PaymentGateway>('/payment-gateways', data).pipe(
+      take(1),
+      tap(created => this._gateways.update(list => [created, ...list])),
+    );
   }
 
   updateGateway(id: string, updates: Partial<PaymentGateway>): Observable<PaymentGateway> {
-    const list = this._gateways();
-    const idx = list.findIndex(g => g.id === id);
-    if (idx !== -1) {
-      const updatedItem = { ...list[idx], ...updates, updatedDate: new Date().toISOString() };
-      const updated = [...list];
-      updated[idx] = updatedItem;
-      this._gateways.set(updated);
-      this.persistGateways(updated);
-      return of(updatedItem);
-    }
-    return of(list[0]);
+    return this.api.patch<PaymentGateway>(`/payment-gateways/${id}`, updates).pipe(
+      take(1),
+      tap(updated => this._gateways.update(list => list.map(g => g.id === id ? updated : g))),
+    );
   }
 
   updateGatewayStatus(id: string, status: 'Active' | 'Inactive'): Observable<PaymentGateway> {
@@ -211,11 +213,13 @@ export class PaymentGatewaysService {
   }
 
   updateMultipleStatus(ids: string[], status: 'Active' | 'Inactive'): Observable<PaymentGateway[]> {
-    const set = new Set(ids);
-    const updated = this._gateways().map(g => set.has(g.id) ? { ...g, status, updatedDate: new Date().toISOString() } : g);
-    this._gateways.set(updated);
-    this.persistGateways(updated);
-    return of(updated.filter(g => set.has(g.id)));
+    return this.api.patch<PaymentGateway[]>('/payment-gateways/bulk-status', { ids, status }).pipe(
+      take(1),
+      tap(updated => {
+        const map = new Map(updated.map(g => [g.id, g]));
+        this._gateways.update(list => list.map(g => map.get(g.id) ?? g));
+      }),
+    );
   }
 
   saveFeeRule(ruleData: Omit<ConvenienceFeeRule, 'createdDate' | 'updatedDate' | 'id'> & { id?: string }): Observable<ConvenienceFeeRule> {

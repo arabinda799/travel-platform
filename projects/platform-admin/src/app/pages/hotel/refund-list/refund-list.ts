@@ -23,6 +23,7 @@ import {
 } from 'admin-core';
 import { Menu } from 'primeng/menu';
 import { MenuItem } from 'primeng/api';
+import { RefundListService } from './refund-list.service';
 
 interface RefundRecord {
   id: number;
@@ -110,6 +111,7 @@ const DUMMY_REFUNDS: RefundRecord[] = Array.from({ length: 36 }, (_, i) => {
 })
 export class RefundListComponent {
   private readonly router = inject(Router);
+  protected readonly refundService = inject(RefundListService);
 
   readonly refundStatusTpl = viewChild<TemplateRef<any>>('refundStatusTpl');
   readonly amendmentStatusTpl = viewChild<TemplateRef<any>>('amendmentStatusTpl');
@@ -213,6 +215,7 @@ export class RefundListComponent {
   ]);
 
   constructor() {
+    this.refundService.load();
     this.search$.pipe(
       debounceTime(300),
       distinctUntilChanged(),
@@ -267,6 +270,7 @@ export class RefundListComponent {
 
   confirmBulkDelete(): void {
     const selectedIds = new Set(this.selectedRefunds.map(r => r.id));
+    this.refundService.deleteMultiple(Array.from(selectedIds)).subscribe({ error: () => {} });
     this.allData.update(list => list.filter(r => !selectedIds.has(r.id)));
     this.selectedRefunds = [];
     this.deleteConfirmVisible.set(false);
@@ -275,6 +279,7 @@ export class RefundListComponent {
 
   onStatusModalConfirm(newStatus: string): void {
     const selectedIds = new Set(this.selectedRefunds.map(r => r.id));
+    this.refundService.updateStatus(Array.from(selectedIds), newStatus).subscribe({ error: () => {} });
     this.allData.update(list =>
       list.map(r => (selectedIds.has(r.id) ? { ...r, refundStatus: newStatus as RefundRecord['refundStatus'] } : r)),
     );
@@ -294,7 +299,8 @@ export class RefundListComponent {
   private loadData(event: TableLazyEvent): void {
     this.isLoading.set(true);
     setTimeout(() => {
-      let filtered = [...this.allData()];
+      const source = this.refundService.items();
+      let filtered = source.length > 0 ? [...source] : [...this.allData()];
 
       if (this.selectedType()) {
         filtered = filtered.filter(r => r.amendmentType === this.selectedType());

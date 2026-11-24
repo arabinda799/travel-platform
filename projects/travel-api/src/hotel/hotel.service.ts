@@ -2,11 +2,21 @@ import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { paginate, PaginatedResponse } from '../common/paginate';
-import { TrendingDestination, PopularHotel, HotelBooking, HotelAmendment } from './entities/hotel.entity';
+import {
+  TrendingDestination,
+  PopularHotel,
+  HotelBooking,
+  HotelAmendment,
+  HotelBookingRecord,
+  HotelAmendmentRecord,
+  HotelRefundRecord,
+  HotelQueryRecord,
+} from './entities/hotel.entity';
 import {
   CreateTrendingDestinationDto, UpdateTrendingDestinationDto,
   CreatePopularHotelDto, UpdatePopularHotelDto,
   UpdateBookingDto, UpdateAmendmentDto,
+  BulkStatusDto,
 } from './dto/hotel.dto';
 
 @Injectable()
@@ -16,6 +26,10 @@ export class HotelService implements OnModuleInit {
     @InjectRepository(PopularHotel) private readonly hotelRepo: Repository<PopularHotel>,
     @InjectRepository(HotelBooking) private readonly bookingRepo: Repository<HotelBooking>,
     @InjectRepository(HotelAmendment) private readonly amendRepo: Repository<HotelAmendment>,
+    @InjectRepository(HotelBookingRecord) private readonly bookingRecRepo: Repository<HotelBookingRecord>,
+    @InjectRepository(HotelAmendmentRecord) private readonly amendRecRepo: Repository<HotelAmendmentRecord>,
+    @InjectRepository(HotelRefundRecord) private readonly refundRecRepo: Repository<HotelRefundRecord>,
+    @InjectRepository(HotelQueryRecord) private readonly queryRecRepo: Repository<HotelQueryRecord>,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -81,6 +95,107 @@ export class HotelService implements OnModuleInit {
           gstRows: [{ serviceDescription: 'Service Charges', taxableValue: 0, cgst: 0, sgst: 0, igst: 0, total: 0 }],
         }),
       ]);
+    }
+    if (await this.bookingRecRepo.count() === 0) {
+      const hotels = ['Taj Palace Delhi', 'Oberoi Mumbai', 'Leela Bangalore', 'ITC Grand Kolkata', 'Marriott Goa', 'Hyatt Jaipur'];
+      const cities = ['New Delhi', 'Mumbai', 'Bengaluru', 'Kolkata', 'Goa', 'Jaipur'];
+      const names = ['Rahul Sharma', 'Priya Patel', 'Amit Singh', 'Sneha Reddy', 'Vikram Joshi', 'Ananya Das', 'Karan Malhotra', 'Deepa Nair'];
+      const statuses = ['Confirmed', 'Pending', 'Cancelled', 'Checked In', 'Checked Out'];
+      const seedBookings: Partial<HotelBookingRecord>[] = Array.from({ length: 30 }, (_, i) => ({
+        bookingRef: `BK-2026-${String(i + 1).padStart(4, '0')}`,
+        guestName: names[i % names.length],
+        hotel: hotels[i % hotels.length],
+        city: cities[i % cities.length],
+        checkIn: `2026-12-${String((i % 20) + 1).padStart(2, '0')}`,
+        checkOut: `2026-12-${String((i % 20) + 5).padStart(2, '0')}`,
+        rooms: (i % 3) + 1,
+        amount: 4500 + ((i * 350) % 25000),
+        paymentMethod: 'Credit Card (Visa)',
+        paymentStatus: i % 4 === 0 ? 'Pending' : 'Paid',
+        assignedUser: names[(i + 2) % names.length],
+        supplier: 'Hotelbeds',
+        bookingDate: '2026-11-20',
+        status: statuses[i % statuses.length],
+      }));
+      await this.bookingRecRepo.save(this.bookingRecRepo.create(seedBookings as any));
+    }
+    if (await this.amendRecRepo.count() === 0) {
+      const hotels = ['Taj Palace Delhi', 'Oberoi Mumbai', 'Leela Bangalore', 'ITC Grand Kolkata', 'Marriott Goa', 'Hyatt Jaipur'];
+      const cities = ['New Delhi', 'Mumbai', 'Bengaluru', 'Kolkata', 'Goa', 'Jaipur'];
+      const names = ['Rahul Sharma', 'Priya Patel', 'Amit Singh', 'Sneha Reddy', 'Vikram Joshi'];
+      const types = ['Date Change', 'Room Upgrade', 'Guest Name Change', 'Meal Plan Change', 'Occupancy Change'];
+      const amendStatuses = ['Approved', 'Pending', 'Rejected', 'In Review'];
+      const seedAmendments: Partial<HotelAmendmentRecord>[] = Array.from({ length: 20 }, (_, i) => ({
+        amendmentId: `AMD-${String(i + 1).padStart(4, '0')}`,
+        bookingId: `BK-2026-${String(i + 10).padStart(4, '0')}`,
+        amendmentType: types[i % types.length],
+        amendmentStatus: amendStatuses[i % amendStatuses.length],
+        bookingStatus: 'Confirmed',
+        bookingAmount: 5000 + ((i * 400) % 30000),
+        hotel: hotels[i % hotels.length],
+        guest: names[i % names.length],
+        pax: '2 Adults',
+        checkIn: `2026-12-${String((i % 20) + 2).padStart(2, '0')}`,
+        checkOut: `2026-12-${String((i % 20) + 6).padStart(2, '0')}`,
+        city: cities[i % cities.length],
+        assignedStaff: names[(i + 1) % names.length],
+        bookingDate: '2026-11-18',
+        createdDate: '2026-11-21',
+      }));
+      await this.amendRecRepo.save(this.amendRecRepo.create(seedAmendments as any));
+    }
+    if (await this.refundRecRepo.count() === 0) {
+      const hotels = ['Taj Palace Delhi', 'Oberoi Mumbai', 'Leela Bangalore', 'ITC Grand Kolkata', 'Marriott Goa', 'Hyatt Jaipur'];
+      const cities = ['New Delhi', 'Mumbai', 'Bengaluru', 'Kolkata', 'Goa', 'Jaipur'];
+      const names = ['Rahul Sharma', 'Priya Patel', 'Amit Singh', 'Sneha Reddy', 'Vikram Joshi'];
+      const refundStatuses = ['Processed', 'Pending', 'Initiated', 'Failed'];
+      const seedRefunds: Partial<HotelRefundRecord>[] = Array.from({ length: 20 }, (_, i) => ({
+        refundId: `REF-${String(i + 1).padStart(4, '0')}`,
+        amendmentId: `AMD-${String(i + 1).padStart(4, '0')}`,
+        bookingId: `BK-2026-${String(i + 20).padStart(4, '0')}`,
+        amendmentType: 'Full Cancellation',
+        refundStatus: refundStatuses[i % refundStatuses.length],
+        amendmentStatus: 'Approved',
+        bookingStatus: 'Cancelled',
+        bookingAmount: 6000 + ((i * 500) % 40000),
+        hotel: hotels[i % hotels.length],
+        guest: names[i % names.length],
+        pax: '2 Adults',
+        checkIn: `2026-12-${String((i % 20) + 3).padStart(2, '0')}`,
+        checkOut: `2026-12-${String((i % 20) + 7).padStart(2, '0')}`,
+        city: cities[i % cities.length],
+        assignedStaff: names[(i + 2) % names.length],
+        bookingDate: '2026-11-15',
+        createdDate: '2026-11-22',
+      }));
+      await this.refundRecRepo.save(this.refundRecRepo.create(seedRefunds as any));
+    }
+    if (await this.queryRecRepo.count() === 0) {
+      const hotels = ['Taj Palace Delhi', 'Oberoi Mumbai', 'Leela Bangalore', 'ITC Grand Kolkata', 'Marriott Goa', 'Hyatt Jaipur'];
+      const cities = ['New Delhi', 'Mumbai', 'Bengaluru', 'Kolkata', 'Goa', 'Jaipur'];
+      const names = ['Rahul Sharma', 'Priya Patel', 'Amit Singh', 'Sneha Reddy', 'Vikram Joshi'];
+      const queryStatuses = ['Open', 'In Progress', 'Resolved', 'Closed'];
+      const queryTypes = ['Price Inquiry', 'Availability Check', 'Room Upgrade Request', 'Special Request'];
+      const seedQueries: Partial<HotelQueryRecord>[] = Array.from({ length: 20 }, (_, i) => ({
+        queryId: `HQ-${String(i + 1).padStart(4, '0')}`,
+        guestName: names[i % names.length],
+        guestEmail: `${names[i % names.length].toLowerCase().replace(' ', '.')}@example.com`,
+        guestPhone: `+91 98110 000${String(i).padStart(2, '0')}`,
+        queryType: queryTypes[i % queryTypes.length],
+        queryStatus: queryStatuses[i % queryStatuses.length],
+        hotel: hotels[i % hotels.length],
+        city: cities[i % cities.length],
+        checkIn: `2026-12-${String((i % 20) + 1).padStart(2, '0')}`,
+        checkOut: `2026-12-${String((i % 20) + 5).padStart(2, '0')}`,
+        pax: '2 Adults',
+        message: 'Looking for special package or rates for these dates.',
+        response: 'Thank you for reaching out. We will get back to you with options.',
+        assignedStaff: names[(i + 3) % names.length],
+        source: 'Website',
+        createdDate: '2026-11-20',
+        updatedDate: '2026-11-22',
+      }));
+      await this.queryRecRepo.save(this.queryRecRepo.create(seedQueries as any));
     }
   }
 
@@ -171,7 +286,7 @@ export class HotelService implements OnModuleInit {
 
   async updateAmendment(id: string, dto: UpdateAmendmentDto): Promise<HotelAmendment> {
     const existing = await this.findAmendmentById(id);
-    return this.amendRepo.save({ ...existing, ...dto });
+    return this.amendRepo.save({ ...existing, ...dto } as any);
   }
 
   async approveAmendment(id: string): Promise<HotelAmendment> {
@@ -180,5 +295,103 @@ export class HotelService implements OnModuleInit {
 
   async rejectAmendment(id: string): Promise<HotelAmendment> {
     return this.updateAmendment(id, { amendmentStatus: 'Rejected' });
+  }
+
+  // ─── Booking Records ────────────────────────────────────────────────────────
+  async findAllBookingRecords(page = 1, limit = 50): Promise<PaginatedResponse<HotelBookingRecord>> {
+    return paginate<HotelBookingRecord>(this.bookingRecRepo, page, limit, { order: { id: 'ASC' } });
+  }
+  async findBookingRecordById(id: number | string): Promise<HotelBookingRecord> {
+    const b = await this.bookingRecRepo.findOneBy({ id: Number(id) });
+    if (!b) throw new NotFoundException(`Booking record ${id} not found`);
+    return b;
+  }
+  async updateBookingRecord(id: number | string, dto: Partial<HotelBookingRecord>): Promise<HotelBookingRecord> {
+    const b = await this.findBookingRecordById(id);
+    return this.bookingRecRepo.save({ ...b, ...dto } as any);
+  }
+  async bulkStatusBookingRecords(dto: BulkStatusDto): Promise<HotelBookingRecord[]> {
+    const numIds = dto.ids.map(Number);
+    await this.bookingRecRepo.update({ id: In(numIds) }, { status: dto.status });
+    return this.bookingRecRepo.find({ where: { id: In(numIds) } });
+  }
+  async bulkRemoveBookingRecords(ids: (number | string)[]): Promise<void> {
+    await this.bookingRecRepo.delete({ id: In(ids.map(Number)) });
+  }
+
+  // ─── Amendment Records ──────────────────────────────────────────────────────
+  async findAllAmendmentRecords(page = 1, limit = 50): Promise<PaginatedResponse<HotelAmendmentRecord>> {
+    return paginate<HotelAmendmentRecord>(this.amendRecRepo, page, limit, { order: { id: 'ASC' } });
+  }
+  async findAmendmentRecordById(id: number | string): Promise<HotelAmendmentRecord> {
+    const a = await this.amendRecRepo.findOneBy({ id: Number(id) });
+    if (!a) throw new NotFoundException(`Amendment record ${id} not found`);
+    return a;
+  }
+  async updateAmendmentRecord(id: number | string, dto: Partial<HotelAmendmentRecord>): Promise<HotelAmendmentRecord> {
+    const a = await this.findAmendmentRecordById(id);
+    return this.amendRecRepo.save({ ...a, ...dto } as any);
+  }
+  async bulkStatusAmendmentRecords(dto: BulkStatusDto): Promise<HotelAmendmentRecord[]> {
+    const numIds = dto.ids.map(Number);
+    await this.amendRecRepo.update({ id: In(numIds) }, { amendmentStatus: dto.status });
+    return this.amendRecRepo.find({ where: { id: In(numIds) } });
+  }
+  async bulkRemoveAmendmentRecords(ids: (number | string)[]): Promise<void> {
+    await this.amendRecRepo.delete({ id: In(ids.map(Number)) });
+  }
+
+  // ─── Refund Records ─────────────────────────────────────────────────────────
+  async findAllRefundRecords(page = 1, limit = 50): Promise<PaginatedResponse<HotelRefundRecord>> {
+    return paginate<HotelRefundRecord>(this.refundRecRepo, page, limit, { order: { id: 'ASC' } });
+  }
+  async findRefundRecordById(id: number | string): Promise<HotelRefundRecord> {
+    const r = await this.refundRecRepo.findOneBy({ id: Number(id) });
+    if (!r) throw new NotFoundException(`Refund record ${id} not found`);
+    return r;
+  }
+  async updateRefundRecord(id: number | string, dto: Partial<HotelRefundRecord>): Promise<HotelRefundRecord> {
+    const r = await this.findRefundRecordById(id);
+    return this.refundRecRepo.save({ ...r, ...dto } as any);
+  }
+  async bulkStatusRefundRecords(dto: BulkStatusDto): Promise<HotelRefundRecord[]> {
+    const numIds = dto.ids.map(Number);
+    await this.refundRecRepo.update({ id: In(numIds) }, { refundStatus: dto.status });
+    return this.refundRecRepo.find({ where: { id: In(numIds) } });
+  }
+  async bulkRemoveRefundRecords(ids: (number | string)[]): Promise<void> {
+    await this.refundRecRepo.delete({ id: In(ids.map(Number)) });
+  }
+
+  // ─── Query Records ──────────────────────────────────────────────────────────
+  async findAllHotelQueryRecords(page = 1, limit = 50): Promise<PaginatedResponse<HotelQueryRecord>> {
+    return paginate<HotelQueryRecord>(this.queryRecRepo, page, limit, { order: { id: 'ASC' } });
+  }
+  async findHotelQueryRecordById(id: number | string): Promise<HotelQueryRecord> {
+    const q = await this.queryRecRepo.findOneBy({ id: Number(id) });
+    if (!q) throw new NotFoundException(`Query record ${id} not found`);
+    return q;
+  }
+  async createHotelQueryRecord(dto: Partial<HotelQueryRecord>): Promise<HotelQueryRecord> {
+    const count = await this.queryRecRepo.count();
+    const queryId = `HQ-${String(count + 1).padStart(4, '0')}`;
+    const entity = this.queryRecRepo.create({ ...dto, queryId } as any) as unknown as HotelQueryRecord;
+    return this.queryRecRepo.save(entity);
+  }
+  async updateHotelQueryRecord(id: number | string, dto: Partial<HotelQueryRecord>): Promise<HotelQueryRecord> {
+    const q = await this.findHotelQueryRecordById(id);
+    return this.queryRecRepo.save({ ...q, ...dto, updatedDate: new Date().toISOString().split('T')[0] } as any);
+  }
+  async bulkStatusHotelQueryRecords(dto: BulkStatusDto): Promise<HotelQueryRecord[]> {
+    const numIds = dto.ids.map(Number);
+    await this.queryRecRepo.update({ id: In(numIds) }, { queryStatus: dto.status });
+    return this.queryRecRepo.find({ where: { id: In(numIds) } });
+  }
+  async bulkRemoveHotelQueryRecords(ids: (number | string)[]): Promise<void> {
+    await this.queryRecRepo.delete({ id: In(ids.map(Number)) });
+  }
+  async removeHotelQueryRecord(id: number | string): Promise<void> {
+    await this.findHotelQueryRecordById(id);
+    await this.queryRecRepo.delete(Number(id));
   }
 }

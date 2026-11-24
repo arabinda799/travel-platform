@@ -16,4 +16,5 @@ export class PlatformUser {
   @CreateDateColumn() createdAt: Date;
   @Column({ nullable: true, type: 'text' }) lastLoginAt: string | null;
   @Column({ nullable: true, type: 'text', select: false }) password: string | null;
+  @Column({ nullable: true, type: 'text', select: false }) resetToken: string | null;
 }

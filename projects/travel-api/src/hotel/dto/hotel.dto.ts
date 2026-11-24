@@ -31,7 +31,12 @@ export class UpdatePopularHotelDto {
 }
 
 export class BulkDeleteDto {
-  @IsArray() @IsString({ each: true }) ids: string[];
+  @IsArray() ids: (string | number)[];
+}
+
+export class BulkStatusDto {
+  @IsArray() ids: (string | number)[];
+  @IsString() status: string;
 }
 
 export class UpdateBookingDto {

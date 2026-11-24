@@ -1,0 +1,74 @@
+<lib-page-container
+  title="Trending Destinations"
+  subtitle="Manage featured destinations shown on the booking app homepage"
+  [breadcrumbs]="[
+    { label: 'Dashboard', route: '/dashboard' },
+    { label: 'Hotel Management' },
+    { label: 'Trending Destinations' }
+  ]">
+
+  <div page-actions>
+    <lib-button variant="primary" icon="add_location_alt" (click)="openAddModal()">
+      Add Destination
+    </lib-button>
+  </div>
+
+  <lib-data-table
+    [value]="filteredItems()"
+    [columns]="columns()"
+    [totalRecords]="service.total()"
+    [rows]="50"
+    [loading]="service.loading()"
+    [searchable]="true"
+    searchPlaceholder="Search by name..."
+    (search)="onSearch($event)"
+    (lazyLoad)="onLazyLoad($event)">
+
+    <ng-template #imageTpl let-row>
+      @if (row.imageUrl) {
+        <img [src]="row.imageUrl" alt="" style="width:48px;height:36px;object-fit:cover;border-radius:4px;" />
+      } @else {
+        <span style="color:var(--text-muted)">—</span>
+      }
+    </ng-template>
+
+    <ng-template #statusTpl let-row>
+      <lib-status-badge [status]="row.isActive ? 'ACTIVE' : 'INACTIVE'" />
+    </ng-template>
+
+    <ng-template #actionsTpl let-row>
+      <div class="table-row-actions">
+        <lib-table-action action="edit" tooltip="Edit" (clicked)="openEditModal(row)" />
+        <lib-table-action action="delete" tooltip="Delete" (clicked)="confirmDelete(row)" />
+      </div>
+    </ng-template>
+  </lib-data-table>
+
+  <lib-form-modal
+    [(visible)]="modalVisible"
+    [title]="isEditing() ? 'Edit Destination' : 'Add Destination'"
+    [submitLabel]="isEditing() ? 'Update' : 'Save'"
+    submitIcon="save"
+    (submitted)="save()">
+    <div class="modal-form-grid">
+      <lib-text-field label="Name" placeholder="e.g. Dubai" [required]="true" [formControl]="form.controls.name" />
+      <lib-text-field label="Subtitle" placeholder="e.g. 1,240 properties" [formControl]="form.controls.subtitle" />
+      <lib-text-field label="Image URL" placeholder="https://..." [formControl]="form.controls.imageUrl" />
+      <lib-text-field label="Sort Order" placeholder="1" [formControl]="form.controls.sortOrder" />
+      <lib-select-field
+        label="Status"
+        [required]="true"
+        [options]="[{ label: 'Active', value: true }, { label: 'Inactive', value: false }]"
+        [formControl]="form.controls.isActive" />
+    </div>
+  </lib-form-modal>
+
+  <lib-confirm-dialog
+    [(visible)]="confirmDeleteVisible"
+    title="Delete Destination"
+    [message]="itemToDelete() ? 'Delete &quot;' + itemToDelete()!.name + '&quot;?' : ''"
+    confirmLabel="Delete"
+    severity="danger"
+    (confirmed)="executeDelete()" />
+
+</lib-page-container>

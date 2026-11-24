@@ -1,0 +1,67 @@
+<div class="auth-page">
+  <div class="auth-card">
+
+    <div class="auth-brand">
+      <span class="icon brand-icon">flight_takeoff</span>
+      <span class="brand-text">Easy<span class="brand-accent">Flys</span></span>
+    </div>
+
+    <div class="auth-header">
+      <h1 class="auth-title">Welcome back</h1>
+      <p class="auth-subtitle">Sign in to your platform account</p>
+    </div>
+
+    @if (error()) {
+      <div class="auth-error">
+        <span class="icon">error</span>
+        {{ error() }}
+      </div>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="auth-form" novalidate>
+
+      <lib-text-field
+        formControlName="email"
+        label="Email address"
+        type="email"
+        placeholder="admin@easyflys.com"
+        prefixIcon="mail"
+        autocomplete="email"
+        [required]="true"
+        [error]="emailError">
+      </lib-text-field>
+
+      <lib-text-field
+        formControlName="password"
+        label="Password"
+        [type]="showPassword() ? 'text' : 'password'"
+        placeholder="Enter your password"
+        prefixIcon="lock"
+        [suffixIcon]="showPassword() ? 'visibility_off' : 'visibility'"
+        autocomplete="current-password"
+        [required]="true"
+        [error]="passwordError">
+      </lib-text-field>
+
+      <div class="auth-row">
+        <lib-checkbox-field formControlName="rememberMe" label="Remember me"></lib-checkbox-field>
+        <a routerLink="/auth/forgot-password" class="auth-link forgot-link">Forgot password?</a>
+      </div>
+
+      <lib-button
+        type="submit"
+        variant="primary"
+        [loading]="loading()"
+        class="auth-submit-btn">
+        Sign In
+      </lib-button>
+
+    </form>
+
+    <p class="auth-footer-text">
+      Don't have an account?
+      <a routerLink="/auth/register" class="auth-link">Create one</a>
+    </p>
+
+  </div>
+</div>

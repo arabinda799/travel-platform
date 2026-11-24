@@ -16,13 +16,15 @@
   <lib-data-table
     [value]="filteredUsers()"
     [columns]="columns()"
-    [totalRecords]="filteredUsers().length"
+    [totalRecords]="userService.total()"
+    [rows]="50"
     [loading]="loading()"
     [checkbox]="true"
     [(selection)]="selectedUsers"
     [searchable]="true"
     searchPlaceholder="Search by name, email, phone..."
-    (search)="onSearch($event)">
+    (search)="onSearch($event)"
+    (lazyLoad)="onLazyLoad($event)">
 
     <div table-actions class="table-actions-group">
       <lib-button

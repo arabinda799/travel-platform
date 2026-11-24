@@ -27,6 +27,7 @@ import {
   StatusBadgeComponent,
   TableActionComponent,
   TableColumn,
+  TableLazyEvent,
   SelectOption,
 } from 'admin-core';
 import { Customer, CustomerService, CustomerStatus } from './customer.service';
@@ -79,13 +80,13 @@ const COUNTRY_OPTIONS: SelectOption<string>[] = [
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CustomerListComponent implements OnInit {
-  private readonly customerService = inject(CustomerService);
+  readonly customerService = inject(CustomerService);
   private readonly messageService = inject(MessageService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly customers = this.customerService.customers;
   readonly searchQuery = signal<string>('');
-  readonly loading = signal<boolean>(false);
+  readonly loading = this.customerService.loading;
   readonly selectedCustomers = signal<Customer[]>([]);
 
   // Filter state
@@ -220,6 +221,11 @@ export class CustomerListComponent implements OnInit {
   ]);
 
   ngOnInit(): void { this.customerService.load(); }
+
+  onLazyLoad(e: TableLazyEvent): void {
+    const page = Math.floor((e.first ?? 0) / (e.rows ?? 50)) + 1;
+    if (page !== this.customerService.page()) this.customerService.goToPage(page);
+  }
 
   onSearch(query: string): void {
     this.searchQuery.set(query);

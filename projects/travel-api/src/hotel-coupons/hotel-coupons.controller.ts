@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query, DefaultValuePipe, ParseIntPipe } from '@nestjs/common';
+import { Public } from '../auth/decorators/public.decorator';
 import { HotelCouponsService } from './hotel-coupons.service';
 import { CreateCouponDto, UpdateCouponDto, BulkDeleteDto } from './dto/hotel-coupon.dto';
 
@@ -28,4 +29,10 @@ export class HotelCouponsController {
   @Post('bulk-delete')
   @HttpCode(204)
   bulkDelete(@Body() dto: BulkDeleteDto) { this.service.bulkRemove(dto); }
+
+  @Public()
+  @Get('app/offers')
+  getAppOffers(@Query('tenantId') tenantId?: string) {
+    return this.service.findAll(1, 100);
+  }
 }

@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ConflictException, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
+import * as bcrypt from 'bcryptjs';
 import { paginate, PaginatedResponse } from '../common/paginate';
 import { TenantUser } from './entities/tenant-user.entity';
 import { CreateTenantUserDto } from './dto/create-tenant-user.dto';
@@ -12,10 +13,11 @@ export class TenantUsersService implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     if (await this.repo.count() > 0) return;
+    const defaultPassword = bcrypt.hashSync('Password@123', 10);
     await this.repo.save([
-      this.repo.create({ tenantId: 'easyfly', firstName: 'Priya', lastName: 'Sharma', email: 'priya@easyfly.travel', phone: '9800000001', roleId: 'TENANT_ADMIN', status: 'ACTIVE', isPrimary: true }),
-      this.repo.create({ tenantId: 'easyfly', firstName: 'Ravi', lastName: 'Kumar', email: 'ravi@easyfly.travel', phone: '9800000002', roleId: 'B2B_AGENT', status: 'ACTIVE', isPrimary: false }),
-      this.repo.create({ tenantId: 'voyageplus', firstName: 'John', lastName: 'Doe', email: 'john@voyageplus.in', phone: '9800000003', roleId: 'TENANT_ADMIN', status: 'ACTIVE', isPrimary: true }),
+      this.repo.create({ tenantId: 'easyfly', firstName: 'Priya', lastName: 'Sharma', email: 'priya@easyfly.travel', phone: '9800000001', roleId: 'TENANT_ADMIN', status: 'ACTIVE', isPrimary: true, password: defaultPassword }),
+      this.repo.create({ tenantId: 'easyfly', firstName: 'Ravi', lastName: 'Kumar', email: 'ravi@easyfly.travel', phone: '9800000002', roleId: 'B2B_AGENT', status: 'ACTIVE', isPrimary: false, password: defaultPassword }),
+      this.repo.create({ tenantId: 'voyageplus', firstName: 'John', lastName: 'Doe', email: 'john@voyageplus.in', phone: '9800000003', roleId: 'TENANT_ADMIN', status: 'ACTIVE', isPrimary: true, password: defaultPassword }),
     ]);
   }
 
@@ -44,6 +46,32 @@ export class TenantUsersService implements OnModuleInit {
   async updatePermissions(id: string, dto: UpdatePermissionsDto): Promise<TenantUser> {
     const user = await this.findOne(id);
     return this.repo.save({ ...user, disabledPermissionIds: dto.disabledPermissionIds });
+  }
+
+  async findByEmail(email: string): Promise<TenantUser | null> {
+    return this.repo.createQueryBuilder('user')
+      .addSelect('user.password')
+      .where('LOWER(user.email) = :email', { email: email.toLowerCase() })
+      .getOne();
+  }
+
+  async findByResetToken(token: string): Promise<TenantUser | null> {
+    return this.repo.createQueryBuilder('user')
+      .addSelect('user.resetToken')
+      .where('user.resetToken = :token', { token })
+      .getOne();
+  }
+
+  async setPassword(id: string, hash: string): Promise<void> {
+    await this.repo.update(id, { password: hash });
+  }
+
+  async setResetToken(id: string, token: string): Promise<void> {
+    await this.repo.update(id, { resetToken: token });
+  }
+
+  async clearResetToken(id: string): Promise<void> {
+    await this.repo.update(id, { resetToken: undefined });
   }
 
   async remove(id: string): Promise<void> {

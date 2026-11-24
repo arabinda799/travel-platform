@@ -1,5 +1,7 @@
-import { Injectable, signal } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Injectable, inject, signal } from '@angular/core';
+import { Observable } from 'rxjs';
+import { tap } from 'rxjs/operators';
+import { ApiService } from 'admin-core';
 
 export interface EmailLog {
   id: string;
@@ -12,117 +14,48 @@ export interface EmailLog {
   errorMessage: string | null;
 }
 
-const STORAGE_KEY = 'tenant_admin_email_logs';
-
-const INITIAL_EMAIL_LOGS: EmailLog[] = [
-  {
-    id: 'eml-1',
-    to: 'priya.sharma@gmail.com',
-    subject: 'Booking Confirmed – EF-HTL-98001',
-    template: 'booking_confirmation',
-    status: 'Sent',
-    triggeredBy: 'Booking Confirmed',
-    sentAt: '2026-11-23 / 11:30 AM',
-    errorMessage: null,
-  },
-  {
-    id: 'eml-2',
-    to: 'rahul.verma@outlook.com',
-    subject: 'Your Password Reset Request',
-    template: 'password_reset',
-    status: 'Sent',
-    triggeredBy: 'Password Reset',
-    sentAt: '2026-11-23 / 10:15 AM',
-    errorMessage: null,
-  },
-  {
-    id: 'eml-3',
-    to: 'anita.kapoor@yahoo.com',
-    subject: 'Refund Processed – ₹12,500',
-    template: 'refund_notification',
-    status: 'Failed',
-    triggeredBy: 'Refund Processed',
-    sentAt: '2026-11-22 / 04:45 PM',
-    errorMessage: 'SMTP connection timeout after 30s.',
-  },
-  {
-    id: 'eml-4',
-    to: 'david.smith@uktravel.co.uk',
-    subject: 'Hotel Voucher Update – EF-HTL-98015',
-    template: 'booking_amendment',
-    status: 'Sent',
-    triggeredBy: 'Amendment Approved',
-    sentAt: '2026-11-22 / 02:20 PM',
-    errorMessage: null,
-  },
-  {
-    id: 'eml-5',
-    to: 'bounced.recipient@testdomain.com',
-    subject: 'Booking Inquiry Confirmation',
-    template: 'query_acknowledgement',
-    status: 'Bounced',
-    triggeredBy: 'Contact Query',
-    sentAt: '2026-11-21 / 09:10 AM',
-    errorMessage: '550 5.1.1 The email account does not exist.',
-  },
-];
-
 @Injectable({ providedIn: 'root' })
 export class EmailLogsService {
-  private readonly _logs = signal<EmailLog[]>(this.loadFromStorage());
+  private readonly api = inject(ApiService);
+
+  private readonly _logs = signal<EmailLog[]>([]);
   private readonly _loading = signal<boolean>(false);
 
   readonly logs = this._logs.asReadonly();
   readonly loading = this._loading.asReadonly();
 
-  private loadFromStorage(): EmailLog[] {
-    try {
-      const raw = sessionStorage.getItem(STORAGE_KEY);
-      if (raw) return JSON.parse(raw) as EmailLog[];
-    } catch { /* ignore */ }
-    this.persist(INITIAL_EMAIL_LOGS);
-    return INITIAL_EMAIL_LOGS;
-  }
-
-  private persist(items: EmailLog[]): void {
-    try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch { /* ignore */ }
-  }
-
   load(): void {
-    this._logs.set(this.loadFromStorage());
+    this._loading.set(true);
+    this.api.get<EmailLog[] | { data: EmailLog[] }>('/email-logs').subscribe({
+      next: (res) => {
+        const data = Array.isArray(res) ? res : res.data ?? [];
+        this._logs.set(data);
+        this._loading.set(false);
+      },
+      error: () => this._loading.set(false),
+    });
   }
 
   resend(id: string): Observable<EmailLog> {
-    const list = this._logs();
-    const idx = list.findIndex(l => l.id === id);
-    if (idx !== -1) {
-      const updatedItem: EmailLog = {
-        ...list[idx],
-        status: 'Sent',
-        errorMessage: null,
-        sentAt: 'Just now',
-      };
-      const updated = [...list];
-      updated[idx] = updatedItem;
-      this._logs.set(updated);
-      this.persist(updated);
-      return of(updatedItem);
-    }
-    return of(list[0]);
+    return this.api.patch<EmailLog>(`/email-logs/${id}/resend`, {}).pipe(
+      tap((updated) => {
+        this._logs.update(list => list.map(l => l.id === id ? updated : l));
+      })
+    );
   }
 
   delete(id: string): Observable<void> {
-    const updated = this._logs().filter(l => l.id !== id);
-    this._logs.set(updated);
-    this.persist(updated);
-    return of(void 0);
+    return this.api.delete<void>(`/email-logs/${id}`).pipe(
+      tap(() => this._logs.update(list => list.filter(l => l.id !== id)))
+    );
   }
 
   bulkDelete(ids: string[]): Observable<void> {
-    const set = new Set(ids);
-    const updated = this._logs().filter(l => !set.has(l.id));
-    this._logs.set(updated);
-    this.persist(updated);
-    return of(void 0);
+    return this.api.post<void>('/email-logs/bulk-delete', { ids }).pipe(
+      tap(() => {
+        const set = new Set(ids);
+        this._logs.update(list => list.filter(l => !set.has(l.id)));
+      })
+    );
   }
 }

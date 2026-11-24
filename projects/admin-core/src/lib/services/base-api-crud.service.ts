@@ -11,7 +11,7 @@ export interface PaginatedResponse<T> {
 }
 
 @Injectable()
-export abstract class BaseApiCrudService<T extends { id: string }> {
+export abstract class BaseApiCrudService<T extends { id: string | number }> {
   protected readonly api = inject(ApiService);
 
   protected abstract readonly endpoint: string;
@@ -34,12 +34,20 @@ export abstract class BaseApiCrudService<T extends { id: string }> {
     this._loading.set(true);
     this._error.set(null);
     const queryParams = { page: this._page(), limit: this._limit(), ...params };
-    this.api.get<PaginatedResponse<T>>(this.endpoint, queryParams)
+    this.api.get<PaginatedResponse<T> | T[]>(this.endpoint, queryParams)
       .pipe(take(1))
       .subscribe({
-        next: res => {
-          this._items.set(res.data);
-          this._total.set(res.total);
+        next: (res: any) => {
+          if (Array.isArray(res)) {
+            this._items.set(res);
+            this._total.set(res.length);
+          } else if (res && Array.isArray(res.data)) {
+            this._items.set(res.data);
+            this._total.set(typeof res.total === 'number' ? res.total : res.data.length);
+          } else {
+            this._items.set([]);
+            this._total.set(0);
+          }
           this._loading.set(false);
         },
         error: (err: unknown) => {
@@ -62,25 +70,29 @@ export abstract class BaseApiCrudService<T extends { id: string }> {
     );
   }
 
-  update(id: string, payload: object): Observable<T> {
+  update(id: string | number, payload: object): Observable<T> {
     return this.api.patch<T>(`${this.endpoint}/${id}`, payload).pipe(
       take(1),
-      tap(updated => this._items.update(list => list.map(i => i.id === id ? updated : i))),
+      tap(updated => this._items.update(list => list.map(i => String(i.id) === String(id) ? updated : i))),
     );
   }
 
-  delete(id: string): Observable<void> {
+  delete(id: string | number): Observable<void> {
     return this.api.delete<void>(`${this.endpoint}/${id}`).pipe(
       take(1),
-      tap(() => this._items.update(list => list.filter(i => i.id !== id))),
+      tap(() => this._items.update(list => list.filter(i => String(i.id) !== String(id)))),
     );
   }
 
-  deleteMultiple(ids: string[]): Observable<void> {
-    const idSet = new Set(ids);
+  deleteMultiple(ids: (string | number)[]): Observable<void> {
+    const idSet = new Set(ids.map(id => String(id)));
     return this.api.post<void>(`${this.endpoint}/bulk-delete`, { ids }).pipe(
       take(1),
-      tap(() => this._items.update(list => list.filter(i => !idSet.has(i.id)))),
+      tap(() => this._items.update(list => list.filter(i => !idSet.has(String(i.id))))),
     );
+  }
+
+  bulkDelete(ids: (string | number)[]): Observable<void> {
+    return this.deleteMultiple(ids);
   }
 }

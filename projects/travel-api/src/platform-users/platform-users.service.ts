@@ -80,4 +80,28 @@ export class PlatformUsersService implements OnModuleInit {
   async bulkRemove(ids: string[]): Promise<void> {
     await this.repo.delete({ id: In(ids) });
   }
+
+  async findByEmailSafe(email: string): Promise<PlatformUser | null> {
+    return this.repo.findOneBy({ email });
+  }
+
+  async findByIdWithPassword(id: string): Promise<PlatformUser | null> {
+    return this.repo.createQueryBuilder('u').addSelect('u.password').where('u.id = :id', { id }).getOne();
+  }
+
+  async findByResetToken(token: string): Promise<PlatformUser | null> {
+    return this.repo.createQueryBuilder('u').addSelect('u.resetToken').where('u.resetToken = :token', { token }).getOne();
+  }
+
+  async setResetToken(id: string, token: string): Promise<void> {
+    await this.repo.update(id, { resetToken: token } as any);
+  }
+
+  async clearResetToken(id: string): Promise<void> {
+    await this.repo.update(id, { resetToken: null } as any);
+  }
+
+  async setPassword(id: string, hashedPassword: string): Promise<void> {
+    await this.repo.update(id, { password: hashedPassword });
+  }
 }

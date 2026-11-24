@@ -5,6 +5,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { PlatformUsersModule } from '../platform-users/platform-users.module';
+import { TenantUsersModule } from '../tenant-users/tenant-users.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { PlatformUsersModule } from '../platform-users/platform-users.module';
       signOptions: { expiresIn: '8h' },
     }),
     PlatformUsersModule,
+    TenantUsersModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],

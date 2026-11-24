@@ -1,4 +1,4 @@
-<lib-page-container
+﻿<lib-page-container
   title="Email Logs"
   subtitle="System-generated email dispatch records and delivery status"
   [breadcrumbs]="breadcrumbs">
@@ -25,7 +25,7 @@
     </div>
 
     <div selection-actions class="selection-actions-group">
-      <lib-button variant="outline" icon="download" (click)="exportSelected()">
+      <lib-button variant="info" icon="download" (click)="exportSelected()">
         Export Selected ({{ selectedItems().length }})
       </lib-button>
       <lib-button variant="danger" icon="delete" (click)="confirmBulkDelete()">

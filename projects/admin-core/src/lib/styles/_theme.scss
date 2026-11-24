@@ -31,6 +31,10 @@
     --fs-icon-md: 1.25rem; /* Standard action icon */
     --fs-icon-lg: 1.35rem; /* Large action icon */
 
+    /* Warning / amber color tokens */
+    --color-warning: #f59e0b;
+    --color-warning-fg: #d97706;
+
     /* Brand EasyFlys Colors */
     --purple-primary: #5B1B8A;  /* Deep Indigo-Purple from EasyFlys "easy" ribbon */
     --purple-vibrant: #7B1FA2;  /* Mid Purple */
@@ -1736,4 +1740,188 @@ th {
 
 #p-license-host {
     display: none !important;
+}
+
+// ─── Shared Log Detail Modal Styles ───────────────────────────────────────────
+.log-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.log-detail-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0.625rem 0;
+  border-bottom: 1px solid var(--border);
+
+  &:last-child { border-bottom: none; }
+}
+
+.log-detail-label {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fg-muted);
+  min-width: 8rem;
+  flex-shrink: 0;
+  padding-top: 0.1rem;
+}
+
+.log-detail-value {
+  font-size: var(--fs-md);
+  color: var(--fg);
+  word-break: break-word;
+}
+
+// ─── Modal & Filter Form Grids ────────────────────────────────────────────────
+.modal-form-grid,
+.filter-form-fields {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+.form-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+// ─── Common Avatar + Name + Subtitle Table Cell ──────────────────────────────
+.name-avatar-cell,
+.customer-name-cell,
+.user-name-cell,
+.company-name-cell,
+.role-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.cell-avatar,
+.user-avatar,
+.customer-avatar,
+.company-avatar,
+.role-avatar,
+.role-icon {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  flex-shrink: 0;
+
+  .icon {
+    font-size: var(--fs-base);
+  }
+}
+
+.company-avatar {
+  border-radius: 8px;
+}
+
+.role-icon {
+  background: color-mix(in srgb, var(--fg-muted) 12%, transparent);
+  color: var(--fg-muted);
+
+  &--system {
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    color: var(--accent);
+  }
+}
+
+.cell-info,
+.user-info,
+.customer-info,
+.company-info,
+.role-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cell-title,
+.user-fullname,
+.customer-name,
+.customer-full-name,
+.company-name,
+.company-fullname,
+.role-name {
+  font-size: var(--fs-base);
+  font-weight: 600;
+  color: var(--fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cell-subtitle,
+.user-email,
+.customer-email,
+.company-domain,
+.role-desc {
+  font-size: var(--fs-xs);
+  color: var(--fg-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.company-code {
+  font-size: var(--fs-xs);
+  color: var(--fg-muted);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.role-key {
+  font-size: var(--fs-xs);
+  color: var(--fg-muted);
+  font-family: monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// ─── Export Date Range Modal Body ─────────────────────────────────────────────
+.export-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 0.5rem 0;
+
+  .export-label {
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    color: var(--fg);
+    margin-bottom: 0.25rem;
+  }
+
+  .export-hint {
+    font-size: var(--fs-xs);
+    color: var(--fg-muted);
+    line-height: 1.4;
+  }
+}
+
+.export-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: 1rem;
 }

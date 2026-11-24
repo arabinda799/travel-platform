@@ -145,6 +145,7 @@
   width="34rem"
   submitLabel="Update Password"
   submitIcon="lock_reset"
+  [loading]="changingPassword()"
   (submitted)="onChangePassword()">
 
   <div class="pw-form-grid">

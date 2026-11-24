@@ -17,6 +17,7 @@ import { ContentModule } from './content/content.module';
 import { LogsModule } from './logs/logs.module';
 import { HotelModule } from './hotel/hotel.module';
 import { TenantConfigModule } from './tenant-config/tenant-config.module';
+import { FinanceModule } from './finance/finance.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { TenantConfigModule } from './tenant-config/tenant-config.module';
     LogsModule,
     HotelModule,
     TenantConfigModule,
+    FinanceModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
