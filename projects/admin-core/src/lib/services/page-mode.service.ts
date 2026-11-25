@@ -15,15 +15,26 @@ const DYNAMIC_ROUTE_PREFIXES = [
   '/hotel/trending-destinations',
   '/hotel/popular-hotels',
   // Blogs & Articles
+  '/content/blog',
   '/content/blogs',
-  // Sliders
+  '/content/blog-categories',
+  // Content: Pages, Menus, Sliders, Engagement
+  '/content/pages',
+  '/content/page-list',
   '/content/sliders',
-  // Finance (Coupons, Markups, Discounts)
+  '/content/newsletter',
+  '/content/contact-queries',
+  '/content/menus',
+  '/content/menu-list',
+  // Finance (Coupons, Markups, Discounts, Wallet, Transactions)
   '/finance/coupon',
+  '/finance/hotel-coupon',
   '/finance/discount',
   '/finance/markup',
+  '/finance/wallet',
+  '/finance/transactions',
   // Logs with dynamic backend data
-  '/system/logs/coupon',
+  '/system/logs',
   // Auth
   '/auth',
 ];
