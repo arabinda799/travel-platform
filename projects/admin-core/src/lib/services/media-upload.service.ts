@@ -38,7 +38,11 @@ export class MediaUploadService {
    */
   resolveUrl(url: string): string {
     if (!url) return '';
-    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+    // Upgrade http:// to https:// in production
+    if (url.startsWith('http://') && !url.includes('localhost')) {
+      url = url.replace('http://', 'https://');
+    }
+    if (url.startsWith('https://') || url.startsWith('data:')) {
       return url;
     }
     try {

@@ -28,12 +28,20 @@ export class App {
 
   readonly brandLogo = computed(() => {
     const s = this.settings();
-    return s.logos?.['dark'] || s.logos?.['light'] || '';
+    let logo = s.logos?.['dark'] || s.logos?.['light'] || '';
+    if (logo && logo.startsWith('http://') && !logo.includes('localhost')) {
+      logo = logo.replace('http://', 'https://');
+    }
+    return logo;
   });
 
   readonly brandFavicon = computed(() => {
     const s = this.settings();
-    return s.logos?.['favicon'] || '';
+    let fav = s.logos?.['favicon'] || '';
+    if (fav && fav.startsWith('http://') && !fav.includes('localhost')) {
+      fav = fav.replace('http://', 'https://');
+    }
+    return fav;
   });
 
   readonly trimmedBrandLogo = signal<string>('');
@@ -72,14 +80,22 @@ export class App {
         this.trimmedBrandFavicon.set('');
       } else {
         trimImagePadding(fav).then(res => this.trimmedBrandFavicon.set(res));
-        // Dynamically update browser tab favicon
-        let link: HTMLLinkElement | null = document.querySelector("link[rel*='icon']");
-        if (!link) {
-          link = document.createElement('link');
-          link.rel = 'icon';
-          document.head.appendChild(link);
+        // Dynamically update browser tab favicon with proper MIME type
+        const cleanFav = fav.startsWith('http://') && !fav.includes('localhost')
+          ? fav.replace('http://', 'https://')
+          : fav;
+        document.querySelectorAll("link[rel*='icon']").forEach(el => el.remove());
+        const link = document.createElement('link');
+        link.rel = 'icon';
+        if (cleanFav.endsWith('.png')) {
+          link.type = 'image/png';
+        } else if (cleanFav.endsWith('.svg')) {
+          link.type = 'image/svg+xml';
+        } else {
+          link.type = 'image/x-icon';
         }
-        link.href = fav;
+        link.href = cleanFav;
+        document.head.appendChild(link);
       }
     });
 

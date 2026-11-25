@@ -1,7 +1,7 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { ButtonComponent, TextFieldComponent, CheckboxFieldComponent, AuthService, ApiService } from 'admin-core';
+import { ButtonComponent, TextFieldComponent, CheckboxFieldComponent, AuthService, ApiService, trimImagePadding } from 'admin-core';
 import { CompanySettingsService } from '../../settings/company-settings/company-settings.service';
 
 interface LoginResponse {
@@ -25,16 +25,36 @@ export class LoginComponent {
 
   readonly brandLogo = computed(() => {
     const s = this.settingsService.settings();
-    return s.logos?.['light'] || s.logos?.['dark'] || s.logos?.['favicon'] || '';
+    let logo = s.logos?.['light'] || s.logos?.['dark'] || s.logos?.['favicon'] || '';
+    if (logo && logo.startsWith('http://') && !logo.includes('localhost')) {
+      logo = logo.replace('http://', 'https://');
+    }
+    return logo;
   });
 
   readonly companyName = computed(() => {
     return this.settingsService.settings()?.companyName || 'EasyFlys';
   });
 
+  readonly displayLogo = signal<string>('');
+
   readonly loading = signal(false);
   readonly error = signal('');
   readonly showPassword = signal(false);
+
+  constructor() {
+    effect(() => {
+      const logo = this.brandLogo();
+      if (!logo) {
+        this.displayLogo.set('');
+      } else {
+        this.displayLogo.set(logo);
+        trimImagePadding(logo).then(res => {
+          if (res) this.displayLogo.set(res);
+        });
+      }
+    });
+  }
 
   readonly form = new FormGroup({
     email: new FormControl('', [Validators.required, Validators.email]),

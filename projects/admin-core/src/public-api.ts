@@ -85,5 +85,8 @@ export * from './lib/interfaces/nav-item';
 export * from './lib/interfaces/breadcrumb-item';
 export * from './lib/interfaces/table-column';
 
+// Utilities
+export * from './lib/utils/image-trim';
+
 // Constants & Enums
 export * from './lib/constants/index';
