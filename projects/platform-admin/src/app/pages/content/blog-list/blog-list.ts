@@ -51,7 +51,7 @@ export class BlogListComponent implements OnInit {
   readonly form = new FormGroup({
     title: new FormControl('', Validators.required),
     slug: new FormControl('', Validators.required),
-    categoryName: new FormControl(''),
+    categoryName: new FormControl('', Validators.required),
     image: new FormControl(''),
     description: new FormControl(''),
     postedBy: new FormControl(''),
