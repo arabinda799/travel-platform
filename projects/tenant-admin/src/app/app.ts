@@ -18,6 +18,12 @@ export class App {
   readonly title = signal('EasyFlys Tenant Portal');
 
   readonly isAuthRoute = signal(this.router.url.startsWith('/auth'));
+  readonly isMaintenance = this.settingsService.maintenanceMode;
+  readonly maintenanceMsg = this.settingsService.maintenanceMsg;
+
+  retryLoad(): void {
+    this.settingsService.load().subscribe();
+  }
   readonly settings = this.settingsService.settings;
 
   readonly brandLogo = computed(() => {

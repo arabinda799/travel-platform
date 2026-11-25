@@ -1,4 +1,20 @@
-@if (isAuthRoute()) {
+@if (isMaintenance()) {
+  <div class="maintenance-board">
+    <div class="maintenance-card">
+      <div class="maintenance-icon-wrap">
+        <span class="icon">engineering</span>
+      </div>
+      <h1 class="maintenance-title">System Under Maintenance</h1>
+      <p class="maintenance-desc">
+        {{ maintenanceMsg() }}
+      </p>
+      <button type="button" class="maintenance-retry-btn" (click)="retryLoad()">
+        <span class="icon">refresh</span>
+        Retry Connection
+      </button>
+    </div>
+  </div>
+} @else if (isAuthRoute()) {
   <router-outlet></router-outlet>
 } @else {
   <lib-admin-layout

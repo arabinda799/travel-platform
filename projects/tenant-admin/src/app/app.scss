@@ -52,3 +52,77 @@
     color: var(--accent);
   }
 }
+
+/* ── Maintenance Board ──────────────────────────────────────────────────────── */
+.maintenance-board {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: var(--bg-body, #0f172a);
+}
+
+.maintenance-card {
+  max-width: 520px;
+  width: 100%;
+  background: var(--bg-card, #1e293b);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 1rem;
+  padding: 3rem 2rem;
+  text-align: center;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+
+  .maintenance-icon-wrap {
+    width: 4.5rem;
+    height: 4.5rem;
+    border-radius: 50%;
+    background: rgba(229, 117, 20, 0.15);
+    color: var(--accent, #e57514);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+
+    .icon {
+      font-size: 2.5rem;
+    }
+  }
+
+  .maintenance-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--fg-header, #f8fafc);
+    margin: 0 0 0.75rem;
+  }
+
+  .maintenance-desc {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--fg-muted, #94a3b8);
+    margin: 0 0 2rem;
+  }
+
+  .maintenance-retry-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.75rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #ffffff;
+    background: var(--accent, #e57514);
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.2s;
+
+    &:hover {
+      opacity: 0.9;
+    }
+
+    .icon {
+      font-size: 1.15rem;
+    }
+  }
+}

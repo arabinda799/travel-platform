@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { ButtonComponent, TextFieldComponent, CheckboxFieldComponent, AuthService, ApiService } from 'admin-core';
+import { CompanySettingsService } from '../../settings/company-settings/company-settings.service';
 
 interface LoginResponse {
   token: string;
@@ -20,6 +21,16 @@ export class LoginComponent {
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
   private readonly api = inject(ApiService);
+  private readonly settingsService = inject(CompanySettingsService);
+
+  readonly brandLogo = computed(() => {
+    const s = this.settingsService.settings();
+    return s.logos?.['light'] || s.logos?.['dark'] || s.logos?.['favicon'] || '';
+  });
+
+  readonly companyName = computed(() => {
+    return this.settingsService.settings()?.companyName || 'EasyFlys';
+  });
 
   readonly loading = signal(false);
   readonly error = signal('');

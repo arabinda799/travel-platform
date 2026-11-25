@@ -44,6 +44,15 @@
   align-items: center;
   gap: 0.5rem;
   justify-content: center;
+
+  .auth-brand-logo {
+    max-height: 52px;
+    max-width: 220px;
+    width: auto;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto;
+  }
 }
 
 .brand-icon {

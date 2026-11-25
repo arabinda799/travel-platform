@@ -175,9 +175,24 @@ export class CompanySettingsService {
 
   private readonly _settings = signal<CompanySettingsData>(INITIAL_COMPANY_SETTINGS);
   private readonly _loading = signal(false);
+  private readonly _loadFailed = signal(false);
 
   readonly settings = this._settings.asReadonly();
   readonly loading = this._loading.asReadonly();
+  readonly loadFailed = this._loadFailed.asReadonly();
+
+  readonly maintenanceMode = computed(
+    () => this._loadFailed() || Boolean(this._settings().maintenanceMode),
+  );
+  readonly maintenanceMsg = computed(() => {
+    if (this._loadFailed()) {
+      return 'Unable to connect to platform services. Please check back shortly.';
+    }
+    return (
+      this._settings().maintenanceMsg ||
+      'We are currently performing scheduled maintenance. Please check back shortly.'
+    );
+  });
 
   load(): Observable<CompanySettingsData> {
     this._loading.set(true);
@@ -188,8 +203,12 @@ export class CompanySettingsService {
           const raw = data?.data ?? data;
           this._settings.set({ ...INITIAL_COMPANY_SETTINGS, ...(raw || {}) });
           this._loading.set(false);
+          this._loadFailed.set(false);
         },
-        error: () => this._loading.set(false),
+        error: () => {
+          this._loading.set(false);
+          this._loadFailed.set(true);
+        },
       }),
     );
   }

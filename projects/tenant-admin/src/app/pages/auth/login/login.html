@@ -2,8 +2,12 @@
   <div class="auth-card">
 
     <div class="auth-brand">
-      <span class="icon brand-icon">flight_takeoff</span>
-      <span class="brand-text">Easy<span class="brand-accent">Flys</span></span>
+      @if (brandLogo()) {
+        <img [src]="brandLogo()" [alt]="companyName()" class="auth-brand-logo" />
+      } @else {
+        <span class="icon brand-icon">flight_takeoff</span>
+        <span class="brand-text">{{ companyName() }}</span>
+      }
     </div>
 
     <div class="auth-header">
