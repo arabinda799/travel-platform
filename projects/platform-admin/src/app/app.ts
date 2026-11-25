@@ -73,6 +73,21 @@ export class App {
         this.trimmedBrandFavicon.set('');
       } else {
         trimImagePadding(fav).then(res => this.trimmedBrandFavicon.set(res));
+        // Dynamically update browser tab favicon
+        let link: HTMLLinkElement | null = document.querySelector("link[rel*='icon']");
+        if (!link) {
+          link = document.createElement('link');
+          link.rel = 'icon';
+          document.head.appendChild(link);
+        }
+        link.href = fav;
+      }
+    });
+
+    effect(() => {
+      const name = this.companyName();
+      if (name) {
+        document.title = `${name} | Platform Admin`;
       }
     });
   }

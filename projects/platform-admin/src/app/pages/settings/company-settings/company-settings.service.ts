@@ -1,4 +1,4 @@
-import { Injectable, signal, inject } from '@angular/core';
+import { Injectable, computed, signal, inject } from '@angular/core';
 import { Observable, take, tap } from 'rxjs';
 import { ApiService } from 'admin-core';
 

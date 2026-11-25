@@ -594,7 +594,7 @@ export class CompanySettingsComponent implements OnInit {
           this.uploadingLogo.update(prev => ({ ...prev, [key]: false }));
           this.logoPreviews.update(prev => ({
             ...prev,
-            [key]: res.url || res.relativePath,
+            [key]: res.url || res.relativePath || '',
           }));
           this.messageService.add({
             severity: 'info',
