@@ -13,14 +13,14 @@
     <lib-button
       variant="outline-danger"
       icon="arrow_back"
-      (btnClick)="goBack()">
+      (click)="goBack()">
       Back
     </lib-button>
 
     <lib-button
       variant="primary"
       icon="description"
-      (btnClick)="editBooking()">
+      (click)="editBooking()">
       Booking Detail
     </lib-button>
 
@@ -28,7 +28,7 @@
       variant="outline"
       icon="description"
       [dropdown]="true"
-      (btnClick)="actionMenu.toggle($event)">
+      (click)="actionMenu.toggle($event)">
       Actions
     </lib-button>
     <p-menu #actionMenu [model]="actionMenuItems" [popup]="true" appendTo="body">
@@ -169,9 +169,9 @@
             <table class="clean-data-table">
               <thead>
                 <tr>
-                  <th style="width: 3rem;">#</th>
-                  <th style="width: 14rem;">Room & Meal Plan</th>
-                  <th style="width: 17rem;">Accompanying Guests</th>
+                  <th class="th-num">#</th>
+                  <th class="th-room">Room & Meal Plan</th>
+                  <th class="th-guests">Accompanying Guests</th>
                   <th>Room Inclusions</th>
                 </tr>
               </thead>

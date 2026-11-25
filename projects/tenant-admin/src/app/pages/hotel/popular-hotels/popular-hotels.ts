@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal, TemplateRef, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, signal, TemplateRef, viewChild } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import {
@@ -18,6 +19,8 @@ import {
   STATUS_OPTIONS,
   BreadcrumbItem,
   ThumbImageComponent,
+  HotelAutocompleteService,
+  AutocompleteHotel,
 } from 'admin-core';
 import { PopularHotel, PopularHotelsService } from './popular-hotels.service';
 
@@ -46,7 +49,41 @@ import { PopularHotel, PopularHotelsService } from './popular-hotels.service';
 })
 export class PopularHotelsComponent {
   private readonly service = inject(PopularHotelsService);
+  private readonly autocompleteService = inject(HotelAutocompleteService);
   private readonly messageService = inject(MessageService);
+  private readonly destroyRef = inject(DestroyRef);
+
+  readonly hotelSearchQuery = signal('');
+  readonly searchingHotels = signal(false);
+  readonly hotelSuggestions = signal<AutocompleteHotel[]>([]);
+
+  onHotelSearchInput(term: string): void {
+    const q = (term || '').trim();
+    this.hotelSearchQuery.set(term);
+    if (q.length < 2) {
+      this.hotelSuggestions.set([]);
+      return;
+    }
+    this.searchingHotels.set(true);
+    this.autocompleteService.searchHotels(q).pipe(
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: hotels => {
+        this.hotelSuggestions.set(hotels);
+        this.searchingHotels.set(false);
+      },
+      error: () => {
+        this.hotelSuggestions.set([]);
+        this.searchingHotels.set(false);
+      },
+    });
+  }
+
+  selectHotel(hotel: AutocompleteHotel): void {
+    this.form.controls.title.setValue(hotel.name);
+    this.hotelSearchQuery.set(hotel.name);
+    this.hotelSuggestions.set([]);
+  }
 
   readonly breadcrumbs: BreadcrumbItem[] = [
     { label: 'Home', route: '/' },
@@ -72,6 +109,7 @@ export class PopularHotelsComponent {
   readonly confirmDeleteVisible = signal(false);
   readonly itemToDelete = signal<PopularHotel | null>(null);
   readonly formImageFileName = signal('');
+  readonly isSaving = signal(false);
 
   readonly statusOptions = STATUS_OPTIONS;
 
@@ -129,6 +167,8 @@ export class PopularHotelsComponent {
   openAddModal(): void {
     this.isEditing.set(false);
     this.editingId.set(null);
+    this.hotelSearchQuery.set('');
+    this.hotelSuggestions.set([]);
     this.form.reset({
       title: '',
       imageUrl: '',
@@ -142,6 +182,8 @@ export class PopularHotelsComponent {
   openEditModal(hotel: PopularHotel): void {
     this.isEditing.set(true);
     this.editingId.set(hotel.id);
+    this.hotelSearchQuery.set(hotel.title ?? '');
+    this.hotelSuggestions.set([]);
     this.form.patchValue({
       title: hotel.title ?? '',
       imageUrl: hotel.imageUrl ?? '',
@@ -166,6 +208,7 @@ export class PopularHotelsComponent {
       sortOrder: parseInt(v.sortOrder ?? '1', 10) || 1,
       isActive: v.status === 'Active',
     };
+    this.isSaving.set(true);
     if (this.isEditing() && this.editingId()) {
       this.service.update(this.editingId()!, payload);
       this.messageService.add({ severity: 'success', summary: 'Hotel Updated', detail: `"${payload.title}" updated successfully.` });
@@ -173,6 +216,7 @@ export class PopularHotelsComponent {
       this.service.add(payload);
       this.messageService.add({ severity: 'success', summary: 'Hotel Added', detail: `"${payload.title}" added to popular hotels.` });
     }
+    this.isSaving.set(false);
     this.modalVisible.set(false);
   }
 

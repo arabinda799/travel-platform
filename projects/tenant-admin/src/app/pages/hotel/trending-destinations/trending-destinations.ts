@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal, TemplateRef, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal, TemplateRef, viewChild } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import {
@@ -18,6 +19,8 @@ import {
   STATUS_OPTIONS,
   BreadcrumbItem,
   ThumbImageComponent,
+  HotelAutocompleteService,
+  AutocompleteCity,
 } from 'admin-core';
 import { TrendingDestination, TrendingDestinationsService } from './trending-destinations.service';
 
@@ -46,7 +49,45 @@ import { TrendingDestination, TrendingDestinationsService } from './trending-des
 })
 export class TrendingDestinationsComponent {
   private readonly service = inject(TrendingDestinationsService);
+  private readonly autocompleteService = inject(HotelAutocompleteService);
   private readonly messageService = inject(MessageService);
+  private readonly destroyRef = inject(DestroyRef);
+
+  readonly destinationSearchQuery = signal('');
+  readonly searchingDestinations = signal(false);
+  readonly destinationSuggestions = signal<AutocompleteCity[]>([]);
+
+  onDestinationSearchInput(term: string): void {
+    const q = (term || '').trim();
+    this.destinationSearchQuery.set(term);
+    if (q.length < 2) {
+      this.destinationSuggestions.set([]);
+      return;
+    }
+    this.searchingDestinations.set(true);
+    this.autocompleteService.searchCities(q).pipe(
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: cities => {
+        this.destinationSuggestions.set(cities);
+        this.searchingDestinations.set(false);
+      },
+      error: () => {
+        this.destinationSuggestions.set([]);
+        this.searchingDestinations.set(false);
+      },
+    });
+  }
+
+  selectDestination(city: AutocompleteCity): void {
+    this.form.controls.name.setValue(city.name);
+    const sub = city.hotelsCount
+      ? `${city.hotelsCount.toLocaleString()} properties in ${city.country}`
+      : city.country;
+    this.form.controls.subtitle.setValue(sub);
+    this.destinationSearchQuery.set(`${city.name}, ${city.country}`);
+    this.destinationSuggestions.set([]);
+  }
 
   readonly breadcrumbs: BreadcrumbItem[] = [
     { label: 'Home', route: '/' },
@@ -72,6 +113,7 @@ export class TrendingDestinationsComponent {
   readonly confirmDeleteVisible = signal(false);
   readonly itemToDelete = signal<TrendingDestination | null>(null);
   readonly formImageFileName = signal('');
+  readonly isSaving = signal(false);
 
   readonly statusOptions = STATUS_OPTIONS;
 
@@ -133,6 +175,8 @@ export class TrendingDestinationsComponent {
   openAddModal(): void {
     this.isEditing.set(false);
     this.editingId.set(null);
+    this.destinationSearchQuery.set('');
+    this.destinationSuggestions.set([]);
     this.form.reset({
       name: '',
       subtitle: '',
@@ -147,6 +191,8 @@ export class TrendingDestinationsComponent {
   openEditModal(dest: TrendingDestination): void {
     this.isEditing.set(true);
     this.editingId.set(dest.id);
+    this.destinationSearchQuery.set(dest.name);
+    this.destinationSuggestions.set([]);
     this.form.patchValue({
       name: dest.name,
       subtitle: dest.subtitle ?? '',
@@ -173,6 +219,7 @@ export class TrendingDestinationsComponent {
       sortOrder: parseInt(v.sortOrder ?? '1', 10) || 1,
       isActive: v.status === 'Active',
     };
+    this.isSaving.set(true);
     if (this.isEditing() && this.editingId()) {
       this.service.update(this.editingId()!, payload);
       this.messageService.add({ severity: 'success', summary: 'Destination Updated', detail: `"${payload.name}" updated successfully.` });
@@ -180,6 +227,7 @@ export class TrendingDestinationsComponent {
       this.service.add(payload);
       this.messageService.add({ severity: 'success', summary: 'Destination Added', detail: `"${payload.name}" added to trending destinations.` });
     }
+    this.isSaving.set(false);
     this.modalVisible.set(false);
   }
 

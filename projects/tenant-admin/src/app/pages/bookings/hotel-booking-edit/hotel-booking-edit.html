@@ -14,14 +14,14 @@
     <lib-button
       variant="outline-danger"
       icon="arrow_back"
-      (btnClick)="goBack()">
+      (click)="goBack()">
       Back
     </lib-button>
 
     <lib-button
       variant="primary"
       icon="visibility"
-      (btnClick)="viewConfirmation()">
+      (click)="viewConfirmation()">
       View Confirmation
     </lib-button>
   </div>
@@ -40,11 +40,11 @@
       </div>
 
       <div class="identity-actions">
-        <lib-button variant="outline" size="sm" icon="description" (btnClick)="openBookingSummary()">
+        <lib-button variant="outline" size="sm" icon="description" (click)="openBookingSummary()">
           Summary
         </lib-button>
 
-        <lib-button variant="primary" size="sm" icon="edit" (btnClick)="scrollToEdit()">
+        <lib-button variant="primary" size="sm" icon="edit" (click)="scrollToEdit()">
           Edit Controls
         </lib-button>
       </div>
@@ -618,7 +618,7 @@
                 variant="outline"
                 icon="close"
                 type="button"
-                (btnClick)="onCancelEdit()">
+                (click)="onCancelEdit()">
                 Cancel
               </lib-button>
             </div>
@@ -685,8 +685,8 @@
     </div>
 
     <div modal-footer class="modal-footer-actions">
-      <lib-button variant="outline" (btnClick)="closeBookingSummary()">Close</lib-button>
-      <lib-button variant="primary" icon="visibility" (btnClick)="viewConfirmation()">View Full Voucher</lib-button>
+      <lib-button variant="outline" (click)="closeBookingSummary()">Close</lib-button>
+      <lib-button variant="primary" icon="visibility" (click)="viewConfirmation()">View Full Voucher</lib-button>
     </div>
   </lib-modal>
 
@@ -729,7 +729,7 @@
     }
 
     <div modal-footer class="modal-footer-actions">
-      <lib-button variant="primary" (btnClick)="closeRemarkModal()">Close</lib-button>
+      <lib-button variant="primary" (click)="closeRemarkModal()">Close</lib-button>
     </div>
   </lib-modal>
 

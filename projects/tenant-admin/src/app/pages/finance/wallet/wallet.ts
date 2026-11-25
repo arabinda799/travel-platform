@@ -3,7 +3,7 @@ import {
   TemplateRef, viewChild,
 } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import {
   PageContainerComponent,
@@ -35,7 +35,7 @@ export interface WalletTransaction {
   standalone: true,
   imports: [
     CommonModule,
-    FormsModule,
+    ReactiveFormsModule,
     CurrencyPipe,
     PageContainerComponent,
     ButtonComponent,
@@ -75,8 +75,13 @@ export class WalletComponent {
   readonly availableBalance = computed(() => this.balance() - this.holdAmount());
 
   readonly showTopUpModal = signal(false);
-  readonly topUpAmount = signal<number | null>(null);
-  readonly paymentMethod = signal<'NetBanking' | 'UPI' | 'NEFT/RTGS'>('UPI');
+  readonly recharging = signal(false);
+
+  readonly topUpForm = new FormGroup({
+    amount: new FormControl<number | null>(null, [Validators.required, Validators.min(1)]),
+    paymentMethod: new FormControl<string>('UPI', [Validators.required]),
+  });
+
   readonly searchQuery = signal<string>('');
 
   readonly transactions = computed<WalletTransaction[]>(() => {
@@ -124,7 +129,8 @@ export class WalletComponent {
   }
 
   openTopUp(): void {
-    this.topUpAmount.set(null);
+    this.topUpForm.reset({ amount: null, paymentMethod: 'UPI' });
+    this.recharging.set(false);
     this.showTopUpModal.set(true);
   }
 
@@ -133,8 +139,8 @@ export class WalletComponent {
   }
 
   submitTopUp(): void {
-    const amt = this.topUpAmount();
-    if (!amt || amt <= 0) {
+    this.topUpForm.markAllAsTouched();
+    if (this.topUpForm.invalid) {
       this.messageService.add({
         severity: 'error',
         summary: 'Validation Error',
@@ -143,8 +149,13 @@ export class WalletComponent {
       return;
     }
 
-    this.financeService.topupWallet(amt, this.paymentMethod()).subscribe({
+    const { amount, paymentMethod } = this.topUpForm.getRawValue();
+    const amt = Number(amount);
+    this.recharging.set(true);
+
+    this.financeService.topupWallet(amt, paymentMethod || 'UPI').subscribe({
       next: () => {
+        this.recharging.set(false);
         this.messageService.add({
           severity: 'success',
           summary: 'Wallet Top-up',
@@ -153,6 +164,7 @@ export class WalletComponent {
         this.closeTopUp();
       },
       error: () => {
+        this.recharging.set(false);
         this.messageService.add({
           severity: 'error',
           summary: 'Top-up Failed',

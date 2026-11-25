@@ -1,1 +1,79 @@
-/* styles */
+.list-thumb {
+  width: 48px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.empty-dash {
+  color: var(--text-muted);
+}
+
+.ratehawk-autocomplete-wrapper {
+  position: relative;
+}
+
+.ratehawk-searching-status {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  margin-top: -0.25rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  .searching-icon {
+    font-size: 1rem;
+    animation: spin 1s linear infinite;
+  }
+}
+
+.autocomplete-dropdown-panel {
+  position: absolute;
+  z-index: 1000;
+  left: 0;
+  right: 0;
+  top: 100%;
+  background: var(--bg-surface, #ffffff);
+  border: 1px solid var(--border-color, #cbd5e1);
+  border-radius: 8px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
+  max-height: 220px;
+  overflow-y: auto;
+  margin-top: 2px;
+}
+
+.autocomplete-item {
+  padding: 10px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-color, #f1f5f9);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: var(--bg-hover, #f8fafc);
+  }
+
+  .item-title {
+    color: var(--text-primary, #0f172a);
+    font-size: 0.9375rem;
+    font-weight: 600;
+  }
+
+  .item-sub {
+    color: var(--text-muted, #64748b);
+    font-size: 0.8125rem;
+    margin-left: 8px;
+  }
+
+  .item-badge {
+    font-size: 0.75rem;
+    background: #e0f2fe;
+    color: #0369a1;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 500;
+  }
+}

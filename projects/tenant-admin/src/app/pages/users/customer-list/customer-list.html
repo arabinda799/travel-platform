@@ -119,6 +119,7 @@
     [(visible)]="modalVisible"
     [title]="isEditing() ? 'Edit Customer' : 'Add Customer'"
     width="44rem"
+    [loading]="isSaving()"
     [submitLabel]="isEditing() ? 'Update' : 'Save'"
     submitIcon="save"
     (submitted)="saveCustomer()">

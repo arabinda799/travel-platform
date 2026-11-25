@@ -10,5 +10,4 @@ export class FooterComponent {
   readonly currentYear = new Date().getFullYear();
   readonly companyName = input<string>('EasyFlys');
   readonly appVersion = input<string>('v1.0.0');
-  readonly systemStatus = input<string>('Systems Operational');
 }

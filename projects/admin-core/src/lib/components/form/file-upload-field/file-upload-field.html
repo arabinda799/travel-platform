@@ -11,17 +11,17 @@
   [disabled]="disabled()">
 
   <div class="file-upload-container">
-    <div class="file-upload-box" [class.has-file]="!!fileName()" [class.is-disabled]="disabled()">
+    <div class="file-upload-box" [class.has-file]="!!fileName()" [class.is-disabled]="disabled() || isUploading()">
       <label [attr.for]="inputId()" class="file-choose-btn">
-        <span class="icon">upload_file</span>
-        <span>Choose File</span>
+        <span class="icon">{{ isUploading() ? 'sync' : 'upload_file' }}</span>
+        <span>{{ isUploading() ? 'Uploading...' : 'Choose File' }}</span>
       </label>
 
       <span class="file-name-display" [title]="fileName() || 'No file chosen'">
-        {{ fileName() || 'No file chosen' }}
+        {{ isUploading() ? 'Uploading file to media assets...' : (fileName() || 'No file chosen') }}
       </span>
 
-      @if (fileName() && clearable()) {
+      @if (fileName() && clearable() && !isUploading()) {
         <button type="button" class="file-clear-btn" aria-label="Clear file" (click)="onClear()">
           <span class="icon">close</span>
         </button>
@@ -31,10 +31,16 @@
         type="file"
         [id]="inputId()"
         [accept]="accept()"
-        [disabled]="disabled()"
+        [disabled]="disabled() || isUploading()"
         (change)="onFileSelected($event)"
         class="file-hidden-input" />
     </div>
+
+    @if (uploadError()) {
+      <div class="file-upload-error">
+        {{ uploadError() }}
+      </div>
+    }
 
     @if (previewUrl()) {
       <div class="file-preview-wrapper">

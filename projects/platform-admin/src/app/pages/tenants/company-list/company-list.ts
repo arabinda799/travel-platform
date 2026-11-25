@@ -87,6 +87,7 @@ export class CompanyListComponent implements OnInit {
   readonly modalVisible = signal<boolean>(false);
   readonly isEditing = signal<boolean>(false);
   readonly editingId = signal<string | null>(null);
+  readonly isSaving = signal<boolean>(false);
 
   readonly confirmDeleteVisible = signal<boolean>(false);
   readonly itemToDelete = signal<TenantCompany | null>(null);
@@ -200,6 +201,7 @@ export class CompanyListComponent implements OnInit {
       smtp: { ...DEFAULT_SMTP },
     };
 
+    this.isSaving.set(true);
     if (this.isEditing() && this.editingId()) {
       const existing = this.companyService.companies().find(c => c.id === this.editingId());
       const editPayload = { ...payload, branding: existing?.branding ?? payload.branding, smtp: existing?.smtp ?? payload.smtp };
@@ -207,21 +209,29 @@ export class CompanyListComponent implements OnInit {
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: () => {
+            this.isSaving.set(false);
             this.messageService.add({ severity: 'success', summary: 'Updated', detail: `${payload.companyName} updated.` });
             this.modalVisible.set(false);
           },
-          error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to update company.' }),
+          error: () => {
+            this.isSaving.set(false);
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to update company.' });
+          },
         });
     } else {
       this.companyService.add(payload)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: created => {
+            this.isSaving.set(false);
             this.messageService.add({ severity: 'success', summary: 'Created', detail: `${payload.companyName} created. Configure whitelabel settings now.` });
             this.modalVisible.set(false);
             this.router.navigate(['/tenants/companies', created.id, 'settings']);
           },
-          error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to create company.' }),
+          error: () => {
+            this.isSaving.set(false);
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to create company.' });
+          },
         });
     }
   }

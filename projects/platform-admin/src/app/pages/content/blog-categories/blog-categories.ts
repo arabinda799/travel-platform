@@ -7,7 +7,7 @@ import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angula
 import { MessageService } from 'primeng/api';
 import {
   PageContainerComponent, DataTableComponent, ButtonComponent,
-  FormModalComponent, TextFieldComponent, SelectFieldComponent,
+  FormModalComponent, TextFieldComponent, SelectFieldComponent, FileUploadFieldComponent,
   ConfirmDialogComponent, StatusBadgeComponent, TableActionComponent,
   TableColumn, TableLazyEvent,
 } from 'admin-core';
@@ -18,7 +18,7 @@ import { BlogCategory, BlogCategoryService } from './blog-category.service';
   standalone: true,
   imports: [
     ReactiveFormsModule, PageContainerComponent, DataTableComponent, ButtonComponent,
-    FormModalComponent, TextFieldComponent, SelectFieldComponent,
+    FormModalComponent, TextFieldComponent, SelectFieldComponent, FileUploadFieldComponent,
     ConfirmDialogComponent, StatusBadgeComponent, TableActionComponent,
   ],
   templateUrl: './blog-categories.html',
@@ -36,6 +36,8 @@ export class BlogCategoriesComponent implements OnInit {
   readonly editingId = signal<string | null>(null);
   readonly confirmDeleteVisible = signal(false);
   readonly itemToDelete = signal<BlogCategory | null>(null);
+  readonly formImageFileName = signal('');
+  readonly isSaving = signal(false);
 
   readonly form = new FormGroup({
     name: new FormControl('', Validators.required),
@@ -75,6 +77,7 @@ export class BlogCategoriesComponent implements OnInit {
     this.isEditing.set(false);
     this.editingId.set(null);
     this.form.reset({ name: '', slug: '', image: '', description: '', status: 'Active' });
+    this.formImageFileName.set('');
     this.modalVisible.set(true);
   }
 
@@ -82,6 +85,7 @@ export class BlogCategoriesComponent implements OnInit {
     this.isEditing.set(true);
     this.editingId.set(item.id);
     this.form.patchValue({ name: item.name, slug: item.slug, image: item.image, description: item.description, status: item.status });
+    this.formImageFileName.set('');
     this.modalVisible.set(true);
   }
 
@@ -95,14 +99,22 @@ export class BlogCategoriesComponent implements OnInit {
   save(): void {
     this.form.markAllAsTouched();
     if (this.form.invalid) return;
+    this.isSaving.set(true);
     const v = this.form.getRawValue();
     const payload = { name: v.name!.trim(), slug: v.slug!.trim(), image: v.image?.trim() || '', description: v.description?.trim() || '', status: v.status! };
     const obs = this.isEditing() && this.editingId()
       ? this.service.update(this.editingId()!, payload)
       : this.service.add(payload);
     obs.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => { this.messageService.add({ severity: 'success', summary: this.isEditing() ? 'Updated' : 'Created', detail: `"${payload.name}" saved.` }); this.modalVisible.set(false); },
-      error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save.' }),
+      next: () => {
+        this.isSaving.set(false);
+        this.messageService.add({ severity: 'success', summary: this.isEditing() ? 'Updated' : 'Created', detail: `"${payload.name}" saved.` });
+        this.modalVisible.set(false);
+      },
+      error: () => {
+        this.isSaving.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save.' });
+      },
     });
   }
 

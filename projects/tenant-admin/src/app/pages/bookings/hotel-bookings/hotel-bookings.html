@@ -178,7 +178,7 @@
       [(value)]="exportDateRange"
       placeholder="Choose range to export..." />
     <span class="export-hint">Export all bookings created within the selected window.</span>
-    <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem;">
+    <div class="modal-dialog-actions">
       <lib-button variant="outline" (click)="exportDateRangeVisible.set(false)">Cancel</lib-button>
       <lib-button variant="primary" icon="download" [disabled]="!exportDateRange" (click)="confirmCustomDateExport()">
         Download

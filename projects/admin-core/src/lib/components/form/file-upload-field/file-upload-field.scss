@@ -105,6 +105,12 @@
       object-fit: cover;
     }
   }
+
+  .file-upload-error {
+    color: var(--danger, #dc3545);
+    font-size: var(--fs-xs, 0.8125rem);
+    margin-top: 0.25rem;
+  }
 }
 
 :host-context(.has-error) {

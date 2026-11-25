@@ -131,6 +131,7 @@
     [(visible)]="modalVisible"
     [title]="isEditing() ? 'Edit Platform User' : 'Add Platform User'"
     width="44rem"
+    [loading]="isSaving()"
     [submitLabel]="isEditing() ? 'Update' : 'Save & Set Permissions'"
     submitIcon="save"
     (submitted)="saveUser()">
@@ -161,23 +162,24 @@
           [formControl]="form.controls.phone" />
       </div>
 
-      <lib-select-field
-        label="Assign Role"
-        placeholder="Select a role"
-        [required]="true"
-        [options]="roleOptions()"
-        [formControl]="form.controls.roleId" />
+      <div class="form-row-2">
+        <lib-select-field
+          label="Assign Role"
+          placeholder="Select a role"
+          [required]="true"
+          [options]="roleOptions()"
+          [formControl]="form.controls.roleId" />
+        <lib-select-field
+          label="Status"
+          [required]="true"
+          [options]="statusOptions"
+          [formControl]="form.controls.status" />
+      </div>
 
       <div class="role-info-note">
         <span class="icon">info</span>
         User inherits all permissions from the assigned role. You can restrict specific permissions after saving.
       </div>
-
-      <lib-select-field
-        label="Status"
-        [required]="true"
-        [options]="statusOptions"
-        [formControl]="form.controls.status" />
     </div>
   </lib-form-modal>
 

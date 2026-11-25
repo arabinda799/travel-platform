@@ -1,4 +1,4 @@
-﻿<lib-page-container
+<lib-page-container
   title="Newsletter Subscribers"
   subtitle="Manage newsletter subscribers, track subscriptions, and export email lists"
   [breadcrumbs]="breadcrumbs">
@@ -110,6 +110,7 @@
   [subtitle]="isEditing() ? 'Update subscriber details and subscription status' : 'Register a new newsletter subscriber'"
   [icon]="isEditing() ? 'edit' : 'person_add'"
   width="32rem"
+  [loading]="isSaving()"
   submitLabel="Save"
   submitIcon="save"
   (submitted)="onSaveSubscriber()">

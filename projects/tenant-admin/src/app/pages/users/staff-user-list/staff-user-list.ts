@@ -83,6 +83,7 @@ export class StaffUserListComponent implements OnInit {
   readonly modalVisible = signal<boolean>(false);
   readonly isEditing = signal<boolean>(false);
   readonly editingId = signal<string | null>(null);
+  readonly isSaving = signal<boolean>(false);
 
   // Bulk status modal
   readonly statusModalVisible = signal<boolean>(false);
@@ -215,27 +216,36 @@ export class StaffUserListComponent implements OnInit {
     };
 
     const fullName = `${payload.firstName} ${payload.lastName}`;
+    this.isSaving.set(true);
 
     if (this.isEditing() && this.editingId()) {
       this.userService.update(this.editingId()!, payload)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: () => {
+            this.isSaving.set(false);
             this.messageService.add({ severity: 'success', summary: 'Updated', detail: `${fullName} updated.` });
             this.modalVisible.set(false);
           },
-          error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to update user.' }),
+          error: () => {
+            this.isSaving.set(false);
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to update user.' });
+          },
         });
     } else {
       this.userService.add(payload)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: created => {
+            this.isSaving.set(false);
             this.messageService.add({ severity: 'success', summary: 'Created', detail: `${fullName} created. Configure permission overrides now.` });
             this.modalVisible.set(false);
             this.router.navigate(['/users/staff', created.id, 'permissions']);
           },
-          error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to create user.' }),
+          error: () => {
+            this.isSaving.set(false);
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to create user.' });
+          },
         });
     }
   }

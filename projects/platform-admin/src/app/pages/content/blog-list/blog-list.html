@@ -38,16 +38,32 @@
 
   <lib-form-modal
     [(visible)]="modalVisible"
+    [loading]="isSaving()"
     [title]="isEditing() ? 'Edit Blog Post' : 'Add Blog Post'"
     [submitLabel]="isEditing() ? 'Update' : 'Save'"
     submitIcon="save"
     (submitted)="save()">
     <div class="modal-form-grid">
-      <lib-text-field label="Title" placeholder="Blog post title" [required]="true" [formControl]="form.controls.title" (input)="onTitleInput()" />
-      <lib-text-field label="Slug" placeholder="e.g. my-blog-post" [required]="true" [formControl]="form.controls.slug" />
-      <lib-text-field label="Category" placeholder="Category name" [formControl]="form.controls.categoryName" />
-      <lib-text-field label="Author" placeholder="Author name" [formControl]="form.controls.postedBy" />
-      <lib-text-field label="Image URL" placeholder="https://..." [formControl]="form.controls.image" />
+      <lib-file-upload-field
+        label="Cover Image"
+        accept="image/*"
+        [formControl]="form.controls.image"
+        [(fileName)]="formImageFileName"
+        hint="Recommended: 16:9 landscape image" />
+      <div class="modal-form-grid-2col">
+        <lib-text-field label="Title" placeholder="Blog post title" [required]="true" [formControl]="form.controls.title" (input)="onTitleInput()" />
+        <lib-text-field label="Slug" placeholder="e.g. my-blog-post" [required]="true" [formControl]="form.controls.slug" />
+      </div>
+      <div class="modal-form-grid-2col">
+        <lib-select-field
+          label="Category"
+          placeholder="Select category..."
+          [filter]="true"
+          [clearable]="true"
+          [options]="categoryOptions()"
+          [formControl]="form.controls.categoryName" />
+        <lib-text-field label="Author" placeholder="Author name" [formControl]="form.controls.postedBy" />
+      </div>
       <lib-text-field label="Description" placeholder="Blog content or excerpt" [formControl]="form.controls.description" />
       <lib-select-field
         label="Status"

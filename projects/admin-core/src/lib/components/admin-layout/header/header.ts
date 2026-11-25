@@ -4,6 +4,7 @@ import { Menu } from 'primeng/menu';
 import { Badge } from 'primeng/badge';
 import { Avatar } from 'primeng/avatar';
 import { MenuItem } from 'primeng/api';
+import { getCookie, setCookie } from '../../../utils/cookie.util';
 
 @Component({
   selector: 'lib-header',
@@ -19,12 +20,12 @@ export class HeaderComponent {
   readonly isMobileSearchOpen = signal<boolean>(false);
   @ViewChild('searchInput') searchInput?: ElementRef<HTMLInputElement>;
 
-  // Theme state signal — defaults to light, persisted in sessionStorage
+  // Theme state signal — defaults to light, persisted in cookies
   readonly currentTheme = signal<'dark' | 'light'>(
     (() => {
       if (typeof window === 'undefined') return 'light';
       try {
-        const saved = sessionStorage.getItem('admin_theme') as 'dark' | 'light' | null;
+        const saved = getCookie('admin_theme') as 'dark' | 'light' | null;
         const theme = saved === 'dark' || saved === 'light' ? saved : 'light';
         document.documentElement.setAttribute('data-theme', theme);
         return theme;
@@ -87,7 +88,7 @@ export class HeaderComponent {
     const newTheme = this.currentTheme() === 'dark' ? 'light' : 'dark';
     this.currentTheme.set(newTheme);
     document.documentElement.setAttribute('data-theme', newTheme);
-    try { sessionStorage.setItem('admin_theme', newTheme); } catch { /* blocked */ }
+    setCookie('admin_theme', newTheme, { days: 365 });
   }
 
   openMobileSearch(): void {

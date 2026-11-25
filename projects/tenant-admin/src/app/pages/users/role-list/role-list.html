@@ -127,15 +127,23 @@
     [(visible)]="modalVisible"
     [title]="isEditing() ? 'Edit Role' : 'Add Role'"
     width="38rem"
+    [loading]="isSaving()"
     [submitLabel]="isEditing() ? 'Update' : 'Save & Assign Permissions'"
     submitIcon="save"
     (submitted)="saveRole()">
     <div class="modal-form-grid">
-      <lib-text-field
-        label="Role Name"
-        placeholder="e.g. Finance Manager"
-        [required]="true"
-        [formControl]="form.controls.name" />
+      <div class="form-row-2">
+        <lib-text-field
+          label="Role Name"
+          placeholder="e.g. Finance Manager"
+          [required]="true"
+          [formControl]="form.controls.name" />
+        <lib-select-field
+          label="Status"
+          [required]="true"
+          [options]="statusOptions"
+          [formControl]="form.controls.status" />
+      </div>
 
       <div class="form-row-2">
         <lib-select-field
@@ -149,12 +157,6 @@
           [options]="scopeOptions"
           [formControl]="form.controls.scope" />
       </div>
-
-      <lib-select-field
-        label="Status"
-        [required]="true"
-        [options]="statusOptions"
-        [formControl]="form.controls.status" />
 
       <lib-textarea-field
         label="Description"

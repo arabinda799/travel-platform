@@ -96,6 +96,11 @@ app-maintenance-tab[hidden],
   border-radius: var(--radius-lg);
   padding: 1.25rem;
 
+  & > *:last-child:nth-child(odd),
+  & > .full-col {
+    grid-column: 1 / -1;
+  }
+
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
   }

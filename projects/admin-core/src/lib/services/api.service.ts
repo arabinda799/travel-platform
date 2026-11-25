@@ -13,11 +13,13 @@ export class ApiService {
   private readonly baseUrl = inject(API_BASE_URL);
 
   private unwrap<T>(res: any): T {
-    if (res && typeof res === 'object' && 'success' in res && 'data' in res) {
-      if (res.meta !== undefined) {
+    if (res && typeof res === 'object') {
+      if ('data' in res && res.meta !== undefined) {
         return res as T;
       }
-      return res.data as T;
+      if ('data' in res) {
+        return res.data as T;
+      }
     }
     return res as T;
   }

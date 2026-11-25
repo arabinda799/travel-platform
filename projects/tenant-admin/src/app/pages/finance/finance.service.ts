@@ -30,12 +30,12 @@ export class FinanceService {
   private readonly api = inject(ApiService);
 
   private readonly _wallet = signal<WalletInfo>({
-    balance: 1480000,
+    balance: 0,
     currency: 'INR',
-    creditLimit: 500000,
-    holdAmount: 32500,
-    availableCredit: 1447500,
-    ledgerBalance: 1480000,
+    creditLimit: 0,
+    holdAmount: 0,
+    availableCredit: 0,
+    ledgerBalance: 0,
   });
   private readonly _transactions = signal<WalletTransactionItem[]>([]);
   private readonly _loading = signal(false);

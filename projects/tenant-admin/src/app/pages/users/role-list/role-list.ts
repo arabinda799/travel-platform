@@ -99,6 +99,7 @@ export class RoleListComponent implements OnInit {
   readonly modalVisible = signal<boolean>(false);
   readonly isEditing = signal<boolean>(false);
   readonly editingId = signal<string | null>(null);
+  readonly isSaving = signal<boolean>(false);
 
   // Confirm delete state
   readonly confirmDeleteVisible = signal<boolean>(false);
@@ -211,15 +212,20 @@ export class RoleListComponent implements OnInit {
       status: v.status as RoleStatus,
     };
 
+    this.isSaving.set(true);
     if (this.isEditing() && this.editingId()) {
       this.roleService.update(this.editingId()!, payload)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: () => {
+            this.isSaving.set(false);
             this.messageService.add({ severity: 'success', summary: 'Updated', detail: `"${payload.name}" updated.` });
             this.modalVisible.set(false);
           },
-          error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to update role.' }),
+          error: () => {
+            this.isSaving.set(false);
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to update role.' });
+          },
         });
       return;
     } else {
@@ -227,11 +233,15 @@ export class RoleListComponent implements OnInit {
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: created => {
+            this.isSaving.set(false);
             this.messageService.add({ severity: 'success', summary: 'Created', detail: `"${payload.name}" created. Assign permissions now.` });
             this.modalVisible.set(false);
             this.router.navigate(['/users/roles', created.id, 'permissions']);
           },
-          error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to create role.' }),
+          error: () => {
+            this.isSaving.set(false);
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to create role.' });
+          },
         });
       return;
     }

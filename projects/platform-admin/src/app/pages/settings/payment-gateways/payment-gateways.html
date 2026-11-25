@@ -9,14 +9,14 @@
     <lib-button
       variant="outline"
       icon="payments"
-      (btnClick)="goToConvenienceFees()">
+      (click)="goToConvenienceFees()">
       Convenience Fees
     </lib-button>
 
     <lib-button
       variant="primary"
       icon="add"
-      (btnClick)="openAddModal()">
+      (click)="openAddModal()">
       Add Payment Gateway
     </lib-button>
   </div>
@@ -114,12 +114,13 @@
           [required]="true"
           prefixIcon="badge" />
 
-        <lib-text-field
-          label="Logo Image URL"
+        <lib-file-upload-field
+          label="Gateway Logo"
           formControlName="image"
-          placeholder="https://.../logo.png"
-          [optional]="true"
-          prefixIcon="image" />
+          [fileName]="gatewayImageFileName()"
+          (fileNameChange)="gatewayImageFileName.set($event)"
+          accept="image/*"
+          hint="Upload logo image file" />
       </div>
 
       <!-- Row 2: Payment Mode Multi-Select Dropdown (Image 1) -->

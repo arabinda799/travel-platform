@@ -2,6 +2,43 @@
   <!-- Toast Provider Root for System Notifications -->
   <p-toast position="top-right" [baseZIndex]="99999" />
 
+  <!-- Static Preview Waving Flag Banner -->
+  @if (isCurrentPageStatic()) {
+    <aside
+      class="static-page-flag-wrapper"
+      [class.minimized]="flagMinimized()"
+      [attr.aria-label]="flagMinimized() ? 'Static Preview (Mock Data) - Click to expand' : 'Static Preview: This page is using static mockup data. Live API is not connected.'">
+      
+      <div class="flag-ribbon" (click)="flagMinimized.set(!flagMinimized())" role="button" tabindex="0">
+        <!-- Animated flag symbol / cloth -->
+        <div class="flag-cloth">
+          <span class="icon flag-symbol">flag</span>
+          <span class="flag-ripple"></span>
+        </div>
+
+        @if (!flagMinimized()) {
+          <div class="flag-content">
+            <div class="flag-header-row">
+              <span class="flag-title">Static Preview</span>
+              <button
+                type="button"
+                class="flag-close-btn"
+                (click)="$event.stopPropagation(); flagMinimized.set(true)"
+                title="Minimize preview banner"
+                aria-label="Minimize preview banner">
+                &times;
+              </button>
+            </div>
+            <div class="flag-badge-row">
+              <span class="flag-pill">Mock Data</span>
+              <span class="flag-desc">No API</span>
+            </div>
+          </div>
+        }
+      </div>
+    </aside>
+  }
+
   <!-- Sidebar -->
   <lib-sidebar [items]="navItems()" (logout)="onSignOut()">
     <ng-content select="[sidebar-brand]" sidebar-brand></ng-content>
@@ -27,7 +64,7 @@
     </main>
 
     <!-- Footer Strip -->
-    <lib-footer [systemStatus]="systemStatus()">
+    <lib-footer>
       <ng-content select="[footer-left]" footer-left></ng-content>
       <ng-content select="[footer-center]" footer-center></ng-content>
       <ng-content select="[footer-right]" footer-right></ng-content>

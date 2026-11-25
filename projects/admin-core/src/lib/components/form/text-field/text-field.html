@@ -34,7 +34,13 @@
         <span class="icon">close</span>
       </button>
     } @else if (suffixIcon()) {
-      <span class="icon input-suffix-icon">{{ suffixIcon() }}</span>
+      <button
+        type="button"
+        class="input-suffix-btn"
+        (click)="onSuffixClick()"
+        [attr.aria-label]="suffixIcon()">
+        <span class="icon input-suffix-icon">{{ suffixIcon() }}</span>
+      </button>
     }
   </div>
 </lib-form-field>

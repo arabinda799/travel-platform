@@ -143,6 +143,7 @@
     [(visible)]="modalVisible"
     [title]="isEditing() ? 'Edit Blog' : 'Add New Blog'"
     width="52rem"
+    [loading]="isSaving()"
     [submitLabel]="isEditing() ? 'Update' : 'Save'"
     submitIcon="save"
     (submitted)="saveBlog()">

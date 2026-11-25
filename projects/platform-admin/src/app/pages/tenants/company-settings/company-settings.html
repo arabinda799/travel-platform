@@ -90,10 +90,10 @@
           </div>
         </div>
         <div class="form-grid">
-          <lib-text-field label="Logo — Dark Background" placeholder="https://cdn.example.com/logo-dark.svg" prefixIcon="dark_mode" hint="Used in dark-themed navbar/sidebar" [formControl]="webForm.controls.logoDark" />
-          <lib-text-field label="Logo — Light Background" placeholder="https://cdn.example.com/logo-light.svg" prefixIcon="light_mode" hint="Used in light-themed navbar/sidebar" [formControl]="webForm.controls.logoLight" />
-          <lib-text-field label="Favicon" placeholder="https://cdn.example.com/favicon.ico" prefixIcon="tab" hint="Browser tab icon (16×16 or 32×32 ICO/PNG)" [formControl]="webForm.controls.favicon" />
-          <lib-text-field label="Login Background" placeholder="https://cdn.example.com/login-bg.jpg" prefixIcon="wallpaper" hint="Full-size image for login page background" [formControl]="webForm.controls.loginBg" />
+          <lib-file-upload-field label="Logo — Dark Background" moduleName="branding" moduleId="tenant" hint="Used in dark-themed navbar/sidebar" [formControl]="webForm.controls.logoDark" />
+          <lib-file-upload-field label="Logo — Light Background" moduleName="branding" moduleId="tenant" hint="Used in light-themed navbar/sidebar" [formControl]="webForm.controls.logoLight" />
+          <lib-file-upload-field label="Favicon" moduleName="branding" moduleId="tenant" hint="Browser tab icon (16×16 or 32×32 ICO/PNG)" [formControl]="webForm.controls.favicon" />
+          <lib-file-upload-field label="Login Background" moduleName="branding" moduleId="tenant" hint="Full-size image for login page background" [formControl]="webForm.controls.loginBg" />
         </div>
       </div>
 
@@ -145,9 +145,9 @@
           </div>
         </div>
         <div class="form-grid">
-          <lib-text-field label="App Logo — Dark" placeholder="https://cdn.example.com/app-logo-dark.png" prefixIcon="dark_mode" [formControl]="appForm.controls.logoDark" />
-          <lib-text-field label="App Logo — Light" placeholder="https://cdn.example.com/app-logo-light.png" prefixIcon="light_mode" [formControl]="appForm.controls.logoLight" />
-          <lib-text-field label="Splash Screen" placeholder="https://cdn.example.com/splash.png" prefixIcon="screen_rotation_up" hint="Full-screen image shown on app launch" [formControl]="appForm.controls.splash" />
+          <lib-file-upload-field label="App Logo — Dark" moduleName="branding" moduleId="tenant" [formControl]="appForm.controls.logoDark" />
+          <lib-file-upload-field label="App Logo — Light" moduleName="branding" moduleId="tenant" [formControl]="appForm.controls.logoLight" />
+          <lib-file-upload-field label="Splash Screen" moduleName="branding" moduleId="tenant" hint="Full-screen image shown on app launch" [formControl]="appForm.controls.splash" />
         </div>
       </div>
 

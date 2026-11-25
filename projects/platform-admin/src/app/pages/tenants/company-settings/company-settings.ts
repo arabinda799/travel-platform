@@ -17,6 +17,7 @@ import {
   ButtonComponent,
   TextFieldComponent,
   SwitchFieldComponent,
+  FileUploadFieldComponent,
 } from 'admin-core';
 import { TenantCompany, TenantBranding, TenantSmtp, CompanyService } from '../company-list/company.service';
 
@@ -42,6 +43,7 @@ const TABS: TabItem[] = [
     ButtonComponent,
     TextFieldComponent,
     SwitchFieldComponent,
+    FileUploadFieldComponent,
   ],
   templateUrl: './company-settings.html',
   styleUrl: './company-settings.scss',

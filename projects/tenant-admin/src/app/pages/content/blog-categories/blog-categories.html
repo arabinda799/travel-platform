@@ -132,6 +132,7 @@
   [subtitle]="isEditing() ? 'Update the details for this category' : 'Create a new blog category'"
   [icon]="isEditing() ? 'edit' : 'add_circle'"
   width="52rem"
+  [loading]="isSaving()"
   submitLabel="Save"
   submitIcon="save"
   (submitted)="onSaveCategory()">

@@ -7,18 +7,19 @@ import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angula
 import { MessageService } from 'primeng/api';
 import {
   PageContainerComponent, DataTableComponent, ButtonComponent,
-  FormModalComponent, TextFieldComponent, SelectFieldComponent,
+  FormModalComponent, TextFieldComponent, SelectFieldComponent, FileUploadFieldComponent,
   ConfirmDialogComponent, StatusBadgeComponent, TableActionComponent,
   TableColumn, TableLazyEvent,
 } from 'admin-core';
 import { BlogPost, BlogService } from './blog.service';
+import { BlogCategoryService } from '../blog-categories/blog-category.service';
 
 @Component({
   selector: 'app-blog-list',
   standalone: true,
   imports: [
     ReactiveFormsModule, PageContainerComponent, DataTableComponent, ButtonComponent,
-    FormModalComponent, TextFieldComponent, SelectFieldComponent,
+    FormModalComponent, TextFieldComponent, SelectFieldComponent, FileUploadFieldComponent,
     ConfirmDialogComponent, StatusBadgeComponent, TableActionComponent,
   ],
   templateUrl: './blog-list.html',
@@ -27,8 +28,16 @@ import { BlogPost, BlogService } from './blog.service';
 })
 export class BlogListComponent implements OnInit {
   readonly service = inject(BlogService);
+  readonly categoryService = inject(BlogCategoryService);
   private readonly messageService = inject(MessageService);
   private readonly destroyRef = inject(DestroyRef);
+
+  readonly categoryOptions = computed(() =>
+    this.categoryService.categories().map(c => ({
+      label: c.name,
+      value: c.name,
+    }))
+  );
 
   readonly searchQuery = signal('');
   readonly modalVisible = signal(false);
@@ -36,6 +45,8 @@ export class BlogListComponent implements OnInit {
   readonly editingId = signal<string | null>(null);
   readonly confirmDeleteVisible = signal(false);
   readonly itemToDelete = signal<BlogPost | null>(null);
+  readonly formImageFileName = signal('');
+  readonly isSaving = signal(false);
 
   readonly form = new FormGroup({
     title: new FormControl('', Validators.required),
@@ -64,7 +75,10 @@ export class BlogListComponent implements OnInit {
     { field: 'actions', header: 'Action', width: '8rem', align: 'center', frozen: true, frozenAlign: 'right', bodyTemplate: this.actionsTpl() },
   ]);
 
-  ngOnInit(): void { this.service.load(); }
+  ngOnInit(): void {
+    this.service.load();
+    this.categoryService.load();
+  }
 
   onSearch(q: string): void { this.searchQuery.set(q); }
 
@@ -77,6 +91,7 @@ export class BlogListComponent implements OnInit {
     this.isEditing.set(false);
     this.editingId.set(null);
     this.form.reset({ title: '', slug: '', categoryName: '', image: '', description: '', postedBy: '', status: 'Active' });
+    this.formImageFileName.set('');
     this.modalVisible.set(true);
   }
 
@@ -84,6 +99,7 @@ export class BlogListComponent implements OnInit {
     this.isEditing.set(true);
     this.editingId.set(item.id);
     this.form.patchValue({ title: item.title, slug: item.slug, categoryName: item.categoryName, image: item.image, description: item.description, postedBy: item.postedBy, status: item.status });
+    this.formImageFileName.set('');
     this.modalVisible.set(true);
   }
 
@@ -97,6 +113,7 @@ export class BlogListComponent implements OnInit {
   save(): void {
     this.form.markAllAsTouched();
     if (this.form.invalid) return;
+    this.isSaving.set(true);
     const v = this.form.getRawValue();
     const payload = {
       title: v.title!.trim(),
@@ -111,8 +128,15 @@ export class BlogListComponent implements OnInit {
       ? this.service.update(this.editingId()!, payload)
       : this.service.add(payload);
     obs.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => { this.messageService.add({ severity: 'success', summary: this.isEditing() ? 'Updated' : 'Created', detail: `"${payload.title}" saved.` }); this.modalVisible.set(false); },
-      error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save.' }),
+      next: () => {
+        this.isSaving.set(false);
+        this.messageService.add({ severity: 'success', summary: this.isEditing() ? 'Updated' : 'Created', detail: `"${payload.title}" saved.` });
+        this.modalVisible.set(false);
+      },
+      error: () => {
+        this.isSaving.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save.' });
+      },
     });
   }
 

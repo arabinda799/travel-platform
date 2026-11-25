@@ -137,20 +137,23 @@
           <lib-select-field
             label="Country"
             placeholder="Select country"
-            [options]="countryOptions"
-            [formControl]="companyForm.controls.country" />
+            [options]="countryOptions()"
+            [filter]="true"
+            [formControl]="companyForm.controls.countryId" />
 
           <lib-select-field
             label="State"
             placeholder="Select state"
-            [options]="stateOptions"
-            [formControl]="companyForm.controls.state" />
+            [options]="stateOptions()"
+            [filter]="true"
+            [formControl]="companyForm.controls.stateId" />
 
           <lib-select-field
             label="City"
             placeholder="Select city"
-            [options]="cityOptions"
-            [formControl]="companyForm.controls.city" />
+            [options]="cityOptions()"
+            [filter]="true"
+            [formControl]="companyForm.controls.cityId" />
         </div>
       </div>
     }
@@ -236,8 +239,13 @@
           @for (logo of logoConfigs; track logo.key) {
             <div class="logo-upload-card">
               <div class="logo-preview {{ logo.previewClass }}" (click)="fileInput.click()">
-                @if (logoPreviews()[logo.key]) {
-                  <img [src]="logoPreviews()[logo.key]" [alt]="logo.label + ' preview'" class="logo-img {{ logo.imgClass }}" />
+                @if (uploadingLogo()[logo.key]) {
+                  <div class="placeholder-content">
+                    <span class="icon logo-placeholder-icon">sync</span>
+                    <span class="placeholder-hint">Uploading...</span>
+                  </div>
+                } @else if (logoPreviews()[logo.key]) {
+                  <img [src]="resolveLogoUrl(logoPreviews()[logo.key])" [alt]="logo.label + ' preview'" class="logo-img {{ logo.imgClass }}" />
                   <button type="button" class="btn-remove-logo" [title]="'Remove ' + logo.label" (click)="$event.stopPropagation(); onRemoveLogo(logo.key)">
                     <span class="icon">close</span>
                   </button>
@@ -253,7 +261,7 @@
                 <span class="logo-specs">{{ logo.specs }}</span>
               </div>
               <input type="file" #fileInput [accept]="logo.accept" hidden (change)="onUploadLogo(logo.key, $event)" />
-              <lib-button variant="outline" size="sm" icon="upload" (click)="fileInput.click()">
+              <lib-button variant="outline" size="sm" icon="upload" [loading]="uploadingLogo()[logo.key]" (click)="fileInput.click()">
                 Upload
               </lib-button>
             </div>
@@ -392,7 +400,7 @@
         </div>
 
         <div class="smtp-test-row">
-          <lib-button variant="outline" icon="send" size="sm">Send Test Email</lib-button>
+          <lib-button variant="outline" icon="send" size="sm" [loading]="sendingTestEmail()" (clicked)="sendTestEmail()">Send Test Email</lib-button>
           <span class="smtp-test-hint">Sends a test email to verify your SMTP configuration.</span>
         </div>
       </div>

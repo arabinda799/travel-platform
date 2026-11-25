@@ -110,6 +110,7 @@
   subtitle="Update the navigation group names"
   icon="label"
   width="32rem"
+  [loading]="isSaving()"
   submitLabel="Update"
   submitIcon="check"
   (submitted)="onUpdateLabels()">

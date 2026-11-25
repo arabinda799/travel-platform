@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy, Component, DestroyRef, OnInit,
   computed, inject, signal,
 } from '@angular/core';
+import { forkJoin, Observable, of } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule, ReactiveFormsModule, FormGroup, FormControl } from '@angular/forms';
 import { MessageService } from 'primeng/api';
@@ -50,6 +51,7 @@ export class MenuListComponent implements OnInit {
   readonly selectedMenuId = signal<string>('');
   readonly activeMenuId = signal<string>('');
   readonly labelsModalVisible = signal(false);
+  readonly isSaving = signal(false);
   readonly leftChecked = signal<Set<string>>(new Set());
   readonly rightChecked = signal<Set<string>>(new Set());
   readonly leftSelectAll = signal(false);
@@ -200,15 +202,30 @@ export class MenuListComponent implements OnInit {
     const names = [v.label1, v.label2, v.label3, v.label4];
     const labels = this.menuLabels();
 
+    const updates: Observable<any>[] = [];
     names.forEach((name, i) => {
       const label = labels[i];
       if (label && name && name !== label.name) {
-        this.service.updateLabel(label.id, name)
-          .pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
+        updates.push(this.service.updateLabel(label.id, name));
       }
     });
 
-    this.labelsModalVisible.set(false);
+    if (updates.length > 0) {
+      this.isSaving.set(true);
+      forkJoin(updates)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: () => {
+            this.isSaving.set(false);
+            this.labelsModalVisible.set(false);
+          },
+          error: () => {
+            this.isSaving.set(false);
+          },
+        });
+    } else {
+      this.labelsModalVisible.set(false);
+    }
   }
 
   onDragStart(index: number): void {

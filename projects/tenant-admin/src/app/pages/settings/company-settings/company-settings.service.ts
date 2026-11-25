@@ -1,5 +1,5 @@
 import { Injectable, signal, inject } from '@angular/core';
-import { Observable, of, tap, catchError } from 'rxjs';
+import { Observable, of, tap, catchError, take } from 'rxjs';
 import { ApiService } from 'admin-core';
 
 export interface CompanySettingsData {
@@ -18,6 +18,9 @@ export interface CompanySettingsData {
   country: string;
   state: string;
   city: string;
+  countryId?: string | null;
+  stateId?: string | null;
+  cityId?: string | null;
 
   // Localization
   timezone: string;
@@ -101,6 +104,9 @@ export const INITIAL_COMPANY_SETTINGS: CompanySettingsData = {
   country: 'India',
   state: 'Maharashtra',
   city: 'Mumbai',
+  countryId: null,
+  stateId: null,
+  cityId: null,
 
   timezone: 'Asia/Kolkata',
   dateFormat: 'DD/MM/YYYY',
@@ -176,7 +182,8 @@ export class CompanySettingsService {
     this._loading.set(true);
     return this.api.get<any>('/tenant/settings').pipe(
       tap(backendConfig => {
-        const merged = { ...INITIAL_COMPANY_SETTINGS, ...backendConfig };
+        const raw = backendConfig?.data ?? backendConfig;
+        const merged = { ...INITIAL_COMPANY_SETTINGS, ...(raw || {}) };
         this._settings.set(merged);
         this._loading.set(false);
       }),
@@ -192,10 +199,15 @@ export class CompanySettingsService {
     this._settings.set(updated);
     return this.api.patch<any>('/tenant/settings', data).pipe(
       tap(saved => {
-        const merged = { ...this._settings(), ...saved };
+        const raw = saved?.data ?? saved;
+        const merged = { ...this._settings(), ...(raw || {}) };
         this._settings.set(merged);
       }),
       catchError(() => of(updated)),
     );
+  }
+
+  sendTestEmail(smtpConfig: any): Observable<any> {
+    return this.api.post<any>('/tenant/settings/smtp/test', smtpConfig).pipe(take(1));
   }
 }

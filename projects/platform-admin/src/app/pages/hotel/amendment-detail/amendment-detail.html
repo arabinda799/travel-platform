@@ -6,19 +6,19 @@
 
   <!-- Action Bar -->
   <div page-actions class="page-top-actions">
-    <lib-button variant="outline-danger" icon="arrow_back" (btnClick)="goBack()">
+    <lib-button variant="outline-danger" icon="arrow_back" (click)="goBack()">
       Back
     </lib-button>
 
-    <lib-button variant="primary" icon="description" (btnClick)="viewBookingDetails()">
+    <lib-button variant="primary" icon="description" (click)="viewBookingDetails()">
       Booking Detail
     </lib-button>
 
     @if (amendment().amendmentStatus === 'Pending' || amendment().amendmentStatus === 'In Review') {
-      <lib-button variant="danger" icon="close" [loading]="isRejecting()" (btnClick)="onReject()">
+      <lib-button variant="danger" icon="close" [loading]="isRejecting()" (click)="onReject()">
         Reject
       </lib-button>
-      <lib-button variant="success" icon="check_circle" [loading]="isApproving()" (btnClick)="onApprove()">
+      <lib-button variant="success" icon="check_circle" [loading]="isApproving()" (click)="onApprove()">
         Approve
       </lib-button>
     }
@@ -192,7 +192,7 @@
                   variant="primary"
                   icon="save"
                   [loading]="isSaving()"
-                  (btnClick)="onSave()">
+                  (click)="onSave()">
                   Save Changes
                 </lib-button>
               </div>
@@ -208,7 +208,7 @@
               <span class="icon header-icon">hotel</span>
               <h3>Booking Basic Detail</h3>
             </div>
-            <lib-button variant="ghost" size="sm" icon="open_in_new" (btnClick)="viewBookingDetails()">
+            <lib-button variant="ghost" size="sm" icon="open_in_new" (click)="viewBookingDetails()">
               View Booking
             </lib-button>
           </header>

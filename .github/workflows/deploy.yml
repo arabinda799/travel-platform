@@ -1,0 +1,102 @@
+name: Deploy UI to Production
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    name: Build Angular Apps
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build all apps
+        run: npm run build:all
+
+      - name: Upload platform-admin dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: platform-admin-dist
+          path: dist/platform-admin/browser/
+
+      - name: Upload tenant-admin dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: tenant-admin-dist
+          path: dist/tenant-admin/browser/
+
+  deploy-platform-admin:
+    name: Deploy platform-admin
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download dist
+        uses: actions/download-artifact@v4
+        with:
+          name: platform-admin-dist
+          path: dist/platform-admin
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            mkdir -p ~/apps/platform-admin/dist
+            rm -rf ~/apps/platform-admin/dist/*
+
+      - name: Copy files to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: 'dist/platform-admin/*'
+          target: '~/apps/platform-admin/dist/'
+          strip_components: 2
+
+  deploy-tenant-admin:
+    name: Deploy tenant-admin
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download dist
+        uses: actions/download-artifact@v4
+        with:
+          name: tenant-admin-dist
+          path: dist/tenant-admin
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            mkdir -p ~/apps/tenant-admin/dist
+            rm -rf ~/apps/tenant-admin/dist/*
+
+      - name: Copy files to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: 'dist/tenant-admin/*'
+          target: '~/apps/tenant-admin/dist/'
+          strip_components: 2

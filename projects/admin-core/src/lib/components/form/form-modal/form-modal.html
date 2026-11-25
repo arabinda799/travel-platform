@@ -23,7 +23,7 @@
         <lib-button
           type="button"
           variant="outline"
-          (btnClick)="onCancel()">
+          (click)="onCancel()">
           {{ cancelLabel() }}
         </lib-button>
       }
@@ -33,7 +33,7 @@
         [icon]="submitIcon()"
         [loading]="loading()"
         [disabled]="submitDisabled()"
-        (btnClick)="onSubmit($event)">
+        (click)="onSubmit($event)">
         {{ submitLabel() }}
       </lib-button>
       <ng-content select="[form-modal-extra-actions]"></ng-content>

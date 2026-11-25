@@ -26,9 +26,9 @@
 
     <ng-template #imageTpl let-row>
       @if (row.imageUrl) {
-        <img [src]="row.imageUrl" alt="" style="width:48px;height:36px;object-fit:cover;border-radius:4px;" />
+        <img [src]="row.imageUrl" alt="" class="list-thumb" />
       } @else {
-        <span style="color:var(--text-muted)">—</span>
+        <span class="empty-dash">—</span>
       }
     </ng-template>
 
@@ -46,20 +46,66 @@
 
   <lib-form-modal
     [(visible)]="modalVisible"
+    [loading]="isSaving()"
     [title]="isEditing() ? 'Edit Destination' : 'Add Destination'"
     [submitLabel]="isEditing() ? 'Update' : 'Save'"
     submitIcon="save"
     (submitted)="save()">
     <div class="modal-form-grid">
-      <lib-text-field label="Name" placeholder="e.g. Dubai" [required]="true" [formControl]="form.controls.name" />
-      <lib-text-field label="Subtitle" placeholder="e.g. 1,240 properties" [formControl]="form.controls.subtitle" />
-      <lib-text-field label="Image URL" placeholder="https://..." [formControl]="form.controls.imageUrl" />
-      <lib-text-field label="Sort Order" placeholder="1" [formControl]="form.controls.sortOrder" />
-      <lib-select-field
-        label="Status"
-        [required]="true"
-        [options]="[{ label: 'Active', value: true }, { label: 'Inactive', value: false }]"
-        [formControl]="form.controls.isActive" />
+      <lib-file-upload-field
+        label="Destination Image"
+        accept="image/*"
+        [formControl]="form.controls.imageUrl"
+        [(fileName)]="formImageFileName"
+        hint="Recommended: 4:3 or 16:9 landscape image" />
+      <div class="ratehawk-autocomplete-wrapper">
+        <lib-text-field
+          label="Search RateHawk Region (City)"
+          placeholder="Type to search cities (e.g. Dubai, London, Mumbai)..."
+          [value]="destinationSearchQuery()"
+          (valueChange)="onDestinationSearchInput($event)"
+          hint="Select a verified city to auto-fill Destination Name and Property Count" />
+
+        @if (searchingDestinations()) {
+          <div class="ratehawk-searching-status">
+            <span class="icon searching-icon">sync</span>
+            Searching RateHawk regions...
+          </div>
+        }
+
+        @if (destinationSuggestions().length > 0) {
+          <div class="autocomplete-dropdown-panel">
+            @for (city of destinationSuggestions(); track city.id) {
+              <div
+                (click)="selectDestination(city)"
+                class="autocomplete-item">
+                <div>
+                  <span class="item-title">{{ city.name }}</span>
+                  <span class="item-sub">{{ city.country }}</span>
+                </div>
+                @if (city.hotelsCount) {
+                  <span class="item-badge">
+                    {{ city.hotelsCount.toLocaleString() }} hotels
+                  </span>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="modal-form-grid-2col">
+        <lib-text-field label="Name" placeholder="e.g. Dubai" [required]="true" [formControl]="form.controls.name" />
+        <lib-text-field label="Subtitle" placeholder="e.g. 1,240 properties in UAE" [formControl]="form.controls.subtitle" />
+      </div>
+      <div class="modal-form-grid-2col">
+        <lib-text-field label="Sort Order" type="number" placeholder="1" [formControl]="form.controls.sortOrder" />
+        <lib-select-field
+          label="Status"
+          [required]="true"
+          [options]="[{ label: 'Active', value: true }, { label: 'Inactive', value: false }]"
+          [formControl]="form.controls.isActive" />
+      </div>
     </div>
   </lib-form-modal>
 

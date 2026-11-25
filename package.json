@@ -3,8 +3,13 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
+    "start": "ng serve platform-admin --port 4200",
+    "start:platform": "ng serve platform-admin --port 4200",
+    "start:tenant": "ng serve tenant-admin --port 4201",
+    "start:platform:prod": "ng serve platform-admin --configuration production --port 4200",
+    "start:tenant:prod": "ng serve tenant-admin --configuration production --port 4201",
     "build": "ng build",
+    "build:all": "ng build admin-core && ng build platform-admin && ng build tenant-admin",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },

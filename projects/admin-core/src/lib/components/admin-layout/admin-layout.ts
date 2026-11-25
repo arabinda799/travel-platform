@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { ToastModule } from 'primeng/toast';
 import { HeaderComponent } from './header/header';
@@ -6,6 +6,7 @@ import { SidebarComponent } from './sidebar/sidebar';
 import { FooterComponent } from './footer/footer';
 import { NavItem } from '../../interfaces/nav-item';
 import { AuthService } from '../../services/auth.service';
+import { PageModeService } from '../../services/page-mode.service';
 
 @Component({
   selector: 'lib-admin-layout',
@@ -17,6 +18,10 @@ import { AuthService } from '../../services/auth.service';
 export class AdminLayoutComponent {
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
+  private readonly pageModeService = inject(PageModeService);
+
+  readonly isCurrentPageStatic = this.pageModeService.isStatic;
+  readonly flagMinimized = signal<boolean>(false);
 
   readonly navItems = input<NavItem[]>([]);
 

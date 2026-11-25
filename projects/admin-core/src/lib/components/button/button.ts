@@ -42,6 +42,7 @@ export class ButtonComponent {
   readonly title = input<string>('');
 
   readonly btnClick = output<MouseEvent>();
+  readonly clicked = output<MouseEvent>();
 
   readonly buttonClasses = computed(() => {
     let v = this.variant();
@@ -58,5 +59,6 @@ export class ButtonComponent {
       return;
     }
     this.btnClick.emit(event);
+    this.clicked.emit(event);
   }
 }

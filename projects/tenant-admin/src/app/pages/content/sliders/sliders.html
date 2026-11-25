@@ -186,6 +186,7 @@
   [subtitle]="isEditing() ? 'Update banner headline, badges, and image' : 'Create a new hero section slider for mobile or web'"
   [icon]="isEditing() ? 'edit' : 'add_circle'"
   width="52rem"
+  [loading]="isSaving()"
   submitLabel="Save"
   submitIcon="save"
   (submitted)="onSaveSlider()">

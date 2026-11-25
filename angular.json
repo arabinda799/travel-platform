@@ -131,7 +131,13 @@
                   "maximumError": "28kB"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "fileReplacements": [
+                {
+                  "replace": "projects/tenant-admin/src/environments/environment.ts",
+                  "with": "projects/tenant-admin/src/environments/environment.prod.ts"
+                }
+              ]
             },
             "development": {
               "optimization": false,

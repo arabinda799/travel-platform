@@ -13,13 +13,31 @@
     z-index: 2;
   }
 
-  .input-suffix-icon {
+  .input-suffix-btn {
     position: absolute;
-    right: 0.75rem;
-    font-size: var(--fs-xl);
+    right: 0.625rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
     color: var(--fg-muted);
-    pointer-events: none;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 50%;
+    transition: color 0.15s, background 0.15s;
     z-index: 2;
+
+    &:hover {
+      color: var(--fg);
+      background: var(--bg-sidebar-hover);
+    }
+
+    .input-suffix-icon {
+      font-size: var(--fs-xl);
+      color: inherit;
+      pointer-events: none;
+    }
   }
 
   .input-clear-btn {

@@ -18,6 +18,9 @@ export interface CompanySettingsData {
   country: string;
   state: string;
   city: string;
+  countryId?: string | null;
+  stateId?: string | null;
+  cityId?: string | null;
 
   // Localization
   timezone: string;
@@ -101,6 +104,9 @@ export const INITIAL_COMPANY_SETTINGS: CompanySettingsData = {
   country: 'India',
   state: 'Maharashtra',
   city: 'Mumbai',
+  countryId: null,
+  stateId: null,
+  cityId: null,
 
   timezone: 'Asia/Kolkata',
   dateFormat: 'DD/MM/YYYY',
@@ -175,11 +181,12 @@ export class CompanySettingsService {
 
   load(): Observable<CompanySettingsData> {
     this._loading.set(true);
-    return this.api.get<CompanySettingsData>('/platform/settings').pipe(
+    return this.api.get<any>('/platform/settings').pipe(
       take(1),
       tap({
-        next: data => {
-          this._settings.set({ ...INITIAL_COMPANY_SETTINGS, ...data });
+        next: (data: any) => {
+          const raw = data?.data ?? data;
+          this._settings.set({ ...INITIAL_COMPANY_SETTINGS, ...(raw || {}) });
           this._loading.set(false);
         },
         error: () => this._loading.set(false),
@@ -188,9 +195,36 @@ export class CompanySettingsService {
   }
 
   updateSettings(data: Partial<CompanySettingsData>): Observable<CompanySettingsData> {
-    return this.api.patch<CompanySettingsData>('/platform/settings', { ...this._settings(), ...data }).pipe(
+    const current = this._settings() as any;
+    const {
+      id: _id,
+      createdAt: _cAt,
+      updatedAt: _uAt,
+      deletedAt: _dAt,
+      createdBy: _cb,
+      updatedBy: _ub,
+      country: _country,
+      state: _state,
+      city: _city,
+      preferredCurrency: _curr,
+      branding: _b,
+      smtp: _smtp,
+      integrations: _i,
+      securityConfig: _sec,
+      onboardingConfig: _onb,
+      ...cleanCurrent
+    } = current || {};
+
+    return this.api.patch<any>('/platform/settings', { ...cleanCurrent, ...data }).pipe(
       take(1),
-      tap(updated => this._settings.set({ ...INITIAL_COMPANY_SETTINGS, ...updated })),
+      tap((updated: any) => {
+        const raw = updated?.data ?? updated;
+        this._settings.set({ ...INITIAL_COMPANY_SETTINGS, ...(raw || {}) });
+      }),
     );
+  }
+
+  sendTestEmail(smtpConfig: any): Observable<any> {
+    return this.api.post<any>('/platform/settings/smtp/test', smtpConfig).pipe(take(1));
   }
 }

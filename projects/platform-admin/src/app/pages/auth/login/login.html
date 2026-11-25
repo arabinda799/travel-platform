@@ -38,6 +38,7 @@
         placeholder="Enter your password"
         prefixIcon="lock"
         [suffixIcon]="showPassword() ? 'visibility_off' : 'visibility'"
+        (suffixClick)="togglePassword()"
         autocomplete="current-password"
         [required]="true"
         [error]="passwordError">

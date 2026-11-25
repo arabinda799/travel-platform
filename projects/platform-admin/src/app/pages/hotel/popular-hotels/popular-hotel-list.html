@@ -26,9 +26,9 @@
 
     <ng-template #imageTpl let-row>
       @if (row.imageUrl) {
-        <img [src]="row.imageUrl" alt="" style="width:48px;height:36px;object-fit:cover;border-radius:4px;" />
+        <img [src]="row.imageUrl" alt="" class="list-thumb" />
       } @else {
-        <span style="color:var(--text-muted)">—</span>
+        <span class="text-muted-dash">—</span>
       }
     </ng-template>
 
@@ -46,14 +46,58 @@
 
   <lib-form-modal
     [(visible)]="modalVisible"
+    [loading]="isSaving()"
     [title]="isEditing() ? 'Edit Hotel' : 'Add Hotel'"
     [submitLabel]="isEditing() ? 'Update' : 'Save'"
     submitIcon="save"
     (submitted)="save()">
     <div class="modal-form-grid">
-      <lib-text-field label="Hotel Name" placeholder="e.g. Taj Palace New Delhi" [required]="true" [formControl]="form.controls.title" />
-      <lib-text-field label="Image URL" placeholder="https://..." [formControl]="form.controls.imageUrl" />
-      <lib-text-field label="Sort Order" placeholder="1" [formControl]="form.controls.sortOrder" />
+      <lib-file-upload-field
+        label="Hotel Image"
+        accept="image/*"
+        [formControl]="form.controls.imageUrl"
+        [(fileName)]="formImageFileName"
+        hint="Recommended: 4:3 or 16:9 landscape image" />
+      <div class="ratehawk-autocomplete-wrapper">
+        <lib-text-field
+          label="Search RateHawk Hotel"
+          placeholder="Type hotel name (e.g. Taj, Marriott, Hilton)..."
+          [value]="hotelSearchQuery()"
+          (valueChange)="onHotelSearchInput($event)"
+          hint="Search real hotels in RateHawk database to auto-fill Hotel Name" />
+
+        @if (searchingHotels()) {
+          <div class="ratehawk-searching-status">
+            <span class="icon searching-icon">sync</span>
+            Searching RateHawk hotels...
+          </div>
+        }
+
+        @if (hotelSuggestions().length > 0) {
+          <div class="autocomplete-dropdown-panel">
+            @for (hotel of hotelSuggestions(); track hotel.id) {
+              <div
+                (click)="selectHotel(hotel)"
+                class="autocomplete-item">
+                <div>
+                  <div class="autocomplete-title-row">
+                    <span class="item-title">{{ hotel.name }}</span>
+                    @if (hotel.starRating) {
+                      <span class="item-rating">★ {{ hotel.starRating }}</span>
+                    }
+                  </div>
+                  <span class="item-sub item-sub--flush">{{ hotel.address }}</span>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="modal-form-grid-2col">
+        <lib-text-field label="Hotel Name" placeholder="e.g. Taj Palace New Delhi" [required]="true" [formControl]="form.controls.title" />
+        <lib-text-field label="Sort Order" type="number" placeholder="1" [formControl]="form.controls.sortOrder" />
+      </div>
       <lib-select-field
         label="Status"
         [required]="true"

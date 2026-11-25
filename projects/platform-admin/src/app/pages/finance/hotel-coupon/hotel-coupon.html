@@ -214,12 +214,13 @@
 <!-- Add / Edit Hotel Coupon Modal (Matching user screenshot) -->
 <lib-form-modal
   [(visible)]="modalVisible"
-  [title]="isEditing() ? 'EDIT HOTEL COUPON' : 'ADD HOTEL COUPON'"
+  [title]="isEditing() ? 'Edit Hotel Coupon' : 'Add Hotel Coupon'"
   [subtitle]="isEditing() ? 'Update coupon criteria, discount and image' : 'Configure hotel discount criteria, validity windows and promotional banner'"
   [icon]="isEditing() ? 'edit' : 'sell'"
   width="56rem"
-  submitLabel="SAVE"
+  submitLabel="Save"
   submitIcon="check"
+  [loading]="isSaving()"
   (submitted)="onSaveCoupon()">
 
   <div class="coupon-form-grid">
@@ -299,10 +300,10 @@
         [required]="true" />
     </div>
 
-    <!-- Row 4: Coupan Max Limit *, Status *, Valid From Date * -->
+    <!-- Row 4: Coupon Max Limit *, Status *, Valid From Date * -->
     <div class="form-row three-cols">
       <lib-text-field
-        label="Coupan Max Limit"
+        label="Coupon Max Limit"
         type="number"
         placeholder="Coupon Max Limit"
         [formControl]="form.controls.couponMaxLimit"

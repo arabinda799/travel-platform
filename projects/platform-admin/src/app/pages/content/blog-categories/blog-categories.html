@@ -38,14 +38,22 @@
 
   <lib-form-modal
     [(visible)]="modalVisible"
+    [loading]="isSaving()"
     [title]="isEditing() ? 'Edit Category' : 'Add Category'"
     [submitLabel]="isEditing() ? 'Update' : 'Save'"
     submitIcon="save"
     (submitted)="save()">
     <div class="modal-form-grid">
-      <lib-text-field label="Name" placeholder="e.g. Travel Tips" [required]="true" [formControl]="form.controls.name" (input)="onNameInput()" />
-      <lib-text-field label="Slug" placeholder="e.g. travel-tips" [required]="true" [formControl]="form.controls.slug" />
-      <lib-text-field label="Image URL" placeholder="https://..." [formControl]="form.controls.image" />
+      <lib-file-upload-field
+        label="Category Image"
+        accept="image/*"
+        [formControl]="form.controls.image"
+        [(fileName)]="formImageFileName"
+        hint="Recommended: square or 4:3 image" />
+      <div class="modal-form-grid-2col">
+        <lib-text-field label="Name" placeholder="e.g. Travel Tips" [required]="true" [formControl]="form.controls.name" (input)="onNameInput()" />
+        <lib-text-field label="Slug" placeholder="e.g. travel-tips" [required]="true" [formControl]="form.controls.slug" />
+      </div>
       <lib-text-field label="Description" placeholder="Category description" [formControl]="form.controls.description" />
       <lib-select-field
         label="Status"

@@ -88,6 +88,7 @@
     [(visible)]="modalVisible"
     [title]="isEditing() ? 'Edit Tenant' : 'Add Tenant'"
     width="44rem"
+    [loading]="isSaving()"
     [submitLabel]="isEditing() ? 'Update' : 'Save & Configure'"
     submitIcon="save"
     (submitted)="saveCompany()">

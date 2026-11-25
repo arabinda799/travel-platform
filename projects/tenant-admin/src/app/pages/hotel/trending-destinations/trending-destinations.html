@@ -98,11 +98,49 @@
   [subtitle]="isEditing() ? 'Update destination details and display settings' : 'Add a new destination to the trending section on the booking homepage'"
   [icon]="isEditing() ? 'edit' : 'add_location_alt'"
   width="48rem"
+  [loading]="isSaving()"
   submitLabel="Save"
   submitIcon="save"
   (submitted)="onSave()">
 
   <div class="dest-form-grid">
+
+    <!-- RateHawk Autocomplete Search -->
+    <div class="ratehawk-autocomplete-wrapper">
+      <lib-text-field
+        label="Search RateHawk Region (City)"
+        placeholder="Type to search cities (e.g. Dubai, London, Mumbai)..."
+        [value]="destinationSearchQuery()"
+        (valueChange)="onDestinationSearchInput($event)"
+        hint="Select a verified city from RateHawk to auto-fill Destination Name and Property Count" />
+
+      @if (searchingDestinations()) {
+        <div class="ratehawk-searching-status">
+          <span class="icon searching-icon">sync</span>
+          Searching RateHawk regions...
+        </div>
+      }
+
+      @if (destinationSuggestions().length > 0) {
+        <div class="autocomplete-dropdown-panel">
+          @for (city of destinationSuggestions(); track city.id) {
+            <div
+              (click)="selectDestination(city)"
+              class="autocomplete-item">
+              <div>
+                <span class="item-title">{{ city.name }}</span>
+                <span class="item-sub">{{ city.country }}</span>
+              </div>
+              @if (city.hotelsCount) {
+                <span class="item-badge">
+                  {{ city.hotelsCount.toLocaleString() }} hotels
+                </span>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
 
     <!-- Name -->
     <div class="form-row">

@@ -9,7 +9,7 @@
     <lib-button
       variant="primary"
       icon="add"
-      (btnClick)="openAddModal()">
+      (click)="openAddModal()">
       Add Hotel Markup
     </lib-button>
   </div>
@@ -83,7 +83,7 @@
     [title]="modalTitle"
     icon="add_circle"
     width="50rem"
-    submitLabel="SAVE"
+    submitLabel="Save"
     submitIcon="check"
     [loading]="isSaving()"
     (submitted)="onSubmitMarkup()"
@@ -174,7 +174,7 @@
       </div>
 
       <!-- Row 3: Status * -->
-      <div class="form-grid-1col">
+      <div class="form-grid-2col">
         <lib-select-field
           label="Status"
           formControlName="status"

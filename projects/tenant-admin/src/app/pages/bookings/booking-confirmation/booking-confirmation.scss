@@ -356,6 +356,10 @@
   width: 100%;
   border-collapse: collapse;
 
+  .th-num { width: 3rem; }
+  .th-room { width: 14rem; }
+  .th-guests { width: 17rem; }
+
   th {
     padding: 0.6875rem 1.125rem;
     font-size: var(--fs-xs);

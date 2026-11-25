@@ -10,6 +10,7 @@ import {
   SelectFieldComponent,
   FormModalComponent,
   ApiService,
+  MediaUploadService,
 } from 'admin-core';
 
 export interface AdminProfile {
@@ -52,8 +53,14 @@ function confirmPasswordValidator(control: AbstractControl): ValidationErrors | 
 export class ProfileComponent {
   private readonly messageService = inject(MessageService);
   private readonly api = inject(ApiService);
+  private readonly mediaUploadService = inject(MediaUploadService);
   private readonly destroyRef = inject(DestroyRef);
   readonly changingPassword = signal(false);
+  readonly uploadingAvatar = signal(false);
+
+  resolveUrl(url: string): string {
+    return this.mediaUploadService.resolveUrl(url);
+  }
 
   readonly breadcrumbs: BreadcrumbItem[] = [
     { label: 'Settings', route: '/system/settings/company' },
@@ -158,7 +165,7 @@ export class ProfileComponent {
           phone: user.mobileNo ? `${user.dialCode ? user.dialCode + ' ' : ''}${user.mobileNo}` : '',
           role: 'Tenant Admin',
           department: 'Operations',
-          timezone: 'Asia/Kolkata',
+          timezone: user.timezone ?? 'Asia/Kolkata',
           twoFactorEnabled: false,
           avatarUrl: user.profilePic ?? '',
           lastLoginAt: user.updatedAt ?? user.createdAt ?? '',
@@ -196,10 +203,23 @@ export class ProfileComponent {
     }
     this.saving.set(true);
     const v = this.profileForm.getRawValue();
+    const rawPhone = (v.phone ?? '').trim();
+    let dialCode: string | null = null;
+    let mobileNo = rawPhone;
+    if (rawPhone.startsWith('+')) {
+      const match = rawPhone.match(/^(\+\d{1,4})[\s-]?(.*)$/);
+      if (match) {
+        dialCode = match[1];
+        mobileNo = match[2].replace(/\s+/g, '');
+      }
+    }
+
     this.api.patch<any>('/tenant/auth/profile', {
       firstName: v.firstName!.trim(),
       lastName: v.lastName!.trim(),
-      mobileNo: (v.phone ?? '').trim(),
+      dialCode,
+      mobileNo,
+      timezone: v.timezone,
     }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.saving.set(false);
@@ -259,11 +279,40 @@ export class ProfileComponent {
   onAvatarUpload(event: Event): void {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-      const url = e.target?.result as string;
-      this.profile.update(curr => ({ ...curr, avatarUrl: url }));
-    };
-    reader.readAsDataURL(file);
+
+    this.uploadingAvatar.set(true);
+    this.mediaUploadService.uploadFile(file, 'profile', 'avatar').pipe(
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: res => {
+        const url = res.relativePath || res.url;
+        this.profile.update(curr => ({ ...curr, avatarUrl: url }));
+        this.api.patch<any>('/tenant/auth/profile', { profilePic: url }).pipe(
+          takeUntilDestroyed(this.destroyRef),
+        ).subscribe({
+          next: () => {
+            this.uploadingAvatar.set(false);
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Avatar Updated',
+              detail: 'Profile picture updated successfully.',
+              life: 2500,
+            });
+          },
+          error: () => {
+            this.uploadingAvatar.set(false);
+          },
+        });
+      },
+      error: err => {
+        this.uploadingAvatar.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Upload Failed',
+          detail: err?.error?.message || 'Could not upload avatar image. Please try again.',
+          life: 4000,
+        });
+      },
+    });
   }
 }

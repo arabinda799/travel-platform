@@ -9,7 +9,7 @@
       label="Recharge Wallet"
       icon="add_card"
       variant="primary"
-      (btnClick)="openTopUp()">
+      (click)="openTopUp()">
       Recharge Wallet
     </lib-button>
   </div>
@@ -86,24 +86,25 @@
     title="Recharge Agency Wallet"
     icon="add_card"
     submitLabel="Proceed to Recharge"
-    (submitForm)="submitTopUp()">
-    <lib-text-field
-      label="Amount (₹)"
-      type="number"
-      placeholder="e.g. 50000"
-      [ngModel]="topUpAmount()"
-      (ngModelChange)="topUpAmount.set($event)">
-    </lib-text-field>
+    [loading]="recharging()"
+    (submitted)="submitTopUp()">
+    <form [formGroup]="topUpForm">
+      <lib-text-field
+        label="Amount (₹)"
+        type="number"
+        placeholder="e.g. 50000"
+        [formControl]="topUpForm.controls.amount">
+      </lib-text-field>
 
-    <lib-select-field
-      label="Payment Method"
-      [options]="[
-        { label: 'UPI / QR Code', value: 'UPI' },
-        { label: 'Internet Banking', value: 'NetBanking' },
-        { label: 'NEFT / RTGS Transfer', value: 'NEFT/RTGS' }
-      ]"
-      [ngModel]="paymentMethod()"
-      (ngModelChange)="paymentMethod.set($event)">
-    </lib-select-field>
+      <lib-select-field
+        label="Payment Method"
+        [options]="[
+          { label: 'UPI / QR Code', value: 'UPI' },
+          { label: 'Internet Banking', value: 'NetBanking' },
+          { label: 'NEFT / RTGS Transfer', value: 'NEFT/RTGS' }
+        ]"
+        [formControl]="topUpForm.controls.paymentMethod">
+      </lib-select-field>
+    </form>
   </lib-form-modal>
 </lib-page-container>

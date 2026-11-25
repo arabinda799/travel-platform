@@ -1,4 +1,4 @@
-﻿<lib-page-container
+<lib-page-container
   title="Page List"
   subtitle="Manage website pages, templates and publication status"
   [breadcrumbs]="breadcrumbs">
@@ -102,6 +102,7 @@
   [subtitle]="isEditing() ? 'Update page details and publication status' : 'Create a new website page'"
   [icon]="isEditing() ? 'edit' : 'add_circle'"
   width="42rem"
+  [loading]="isSaving()"
   submitLabel="Save"
   submitIcon="save"
   (submitted)="onSavePage()">

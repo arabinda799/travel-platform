@@ -1,4 +1,4 @@
-﻿<lib-page-container
+<lib-page-container
   title="Vendor List"
   subtitle="Manage 3rd-party inventory suppliers, bedbanks, GDS integrations, and API credentials"
   [breadcrumbs]="[
@@ -206,6 +206,7 @@
   [subtitle]="isEditing() ? 'Update API endpoints, credentials, and environment mode' : 'Integrate a new 3rd-party inventory provider'"
   [icon]="isEditing() ? 'settings_suggest' : 'add_business'"
   width="48rem"
+  [loading]="isSaving()"
   submitLabel="Save"
   submitIcon="save"
   (submitted)="onSaveVendor()">

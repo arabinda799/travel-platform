@@ -14,6 +14,8 @@ import {
   DATE_FORMAT_OPTIONS,
   TIME_FORMAT_OPTIONS,
   META_ROBOTS_OPTIONS,
+  MediaUploadService,
+  ApiService,
 } from 'admin-core';
 import { CompanySettingsService } from './company-settings.service';
 
@@ -61,6 +63,8 @@ export interface LogoConfig {
 })
 export class CompanySettingsComponent implements OnInit {
   private readonly settingsService = inject(CompanySettingsService);
+  private readonly mediaUploadService = inject(MediaUploadService);
+  private readonly apiService = inject(ApiService);
   private readonly messageService = inject(MessageService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -72,6 +76,30 @@ export class CompanySettingsComponent implements OnInit {
 
   readonly activeTab = signal<SettingsTab>('company');
   readonly saving = signal<boolean>(false);
+  readonly sendingTestEmail = signal(false);
+
+  sendTestEmail(): void {
+    this.sendingTestEmail.set(true);
+    const s = this.smtpForm.getRawValue();
+    this.settingsService.sendTestEmail(s).subscribe({
+      next: () => {
+        this.sendingTestEmail.set(false);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Email Sent',
+          detail: 'Test email has been queued / sent successfully.',
+        });
+      },
+      error: (err: any) => {
+        this.sendingTestEmail.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'SMTP Error',
+          detail: err?.error?.message || 'Could not send test email. Check your SMTP settings.',
+        });
+      },
+    });
+  }
 
   readonly tabs: TabItem[] = [
     { key: 'company', label: 'Company Info', icon: 'business' },
@@ -136,31 +164,12 @@ export class CompanySettingsComponent implements OnInit {
     { label: 'Last First', value: 'LAST_FIRST' },
   ];
 
-  readonly countryOptions = [
-    { label: 'India', value: 'India' },
-    { label: 'United Arab Emirates', value: 'United Arab Emirates' },
-    { label: 'Singapore', value: 'Singapore' },
-    { label: 'United Kingdom', value: 'United Kingdom' },
-    { label: 'United States', value: 'United States' },
-  ];
-
-  readonly stateOptions = [
-    { label: 'Maharashtra', value: 'Maharashtra' },
-    { label: 'Delhi', value: 'Delhi' },
-    { label: 'Karnataka', value: 'Karnataka' },
-    { label: 'Kerala', value: 'Kerala' },
-    { label: 'Gujarat', value: 'Gujarat' },
-    { label: 'Tamil Nadu', value: 'Tamil Nadu' },
-  ];
-
-  readonly cityOptions = [
-    { label: 'Mumbai', value: 'Mumbai' },
-    { label: 'New Delhi', value: 'New Delhi' },
-    { label: 'Bengaluru', value: 'Bengaluru' },
-    { label: 'Kochi', value: 'Kochi' },
-    { label: 'Ahmedabad', value: 'Ahmedabad' },
-    { label: 'Chennai', value: 'Chennai' },
-  ];
+  readonly countryOptions = signal<{ label: string; value: string }[]>([]);
+  readonly stateOptions = signal<{ label: string; value: string }[]>([]);
+  readonly cityOptions = signal<{ label: string; value: string }[]>([]);
+  private readonly rawCountries = signal<any[]>([]);
+  private readonly rawStates = signal<any[]>([]);
+  private readonly rawCities = signal<any[]>([]);
 
   readonly captchaProviderOptions = [
     { label: 'None', value: '' },
@@ -190,6 +199,9 @@ export class CompanySettingsComponent implements OnInit {
     panNumber: new FormControl('', Validators.maxLength(20)),
     address: new FormControl(''),
     zipCode: new FormControl('', Validators.maxLength(20)),
+    countryId: new FormControl<string | null>(null),
+    stateId: new FormControl<string | null>(null),
+    cityId: new FormControl<string | null>(null),
     country: new FormControl('India'),
     state: new FormControl('Maharashtra'),
     city: new FormControl('Mumbai'),
@@ -273,6 +285,17 @@ export class CompanySettingsComponent implements OnInit {
     login: '',
   });
 
+  readonly uploadingLogo = signal<Record<string, boolean>>({
+    dark: false,
+    light: false,
+    favicon: false,
+    login: false,
+  });
+
+  resolveLogoUrl(url: string): string {
+    return this.mediaUploadService.resolveUrl(url);
+  }
+
   /* ── Reactive Form Value Signals for Live Previews ─────── */
   private readonly companyFormValue = toSignal(
     this.companyForm.valueChanges.pipe(startWith(this.companyForm.getRawValue())),
@@ -302,9 +325,142 @@ export class CompanySettingsComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.setupGeographyListeners();
     this.settingsService.load()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(s => this.hydrateFromService(s));
+  }
+
+  private setupGeographyListeners(): void {
+    this.companyForm.controls.countryId.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(countryId => {
+        if (countryId) {
+          const match = this.rawCountries().find(c => c.id === countryId);
+          this.companyForm.controls.country.setValue(match ? match.name : '', { emitEvent: false });
+          this.companyForm.controls.stateId.setValue(null, { emitEvent: false });
+          this.companyForm.controls.state.setValue('', { emitEvent: false });
+          this.companyForm.controls.cityId.setValue(null, { emitEvent: false });
+          this.companyForm.controls.city.setValue('', { emitEvent: false });
+          this.stateOptions.set([]);
+          this.cityOptions.set([]);
+          this.loadStates(countryId);
+        } else {
+          this.companyForm.controls.country.setValue('', { emitEvent: false });
+          this.companyForm.controls.stateId.setValue(null, { emitEvent: false });
+          this.companyForm.controls.state.setValue('', { emitEvent: false });
+          this.companyForm.controls.cityId.setValue(null, { emitEvent: false });
+          this.companyForm.controls.city.setValue('', { emitEvent: false });
+          this.stateOptions.set([]);
+          this.cityOptions.set([]);
+        }
+      });
+
+    this.companyForm.controls.stateId.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(stateId => {
+        if (stateId) {
+          const match = this.rawStates().find(s => s.id === stateId);
+          this.companyForm.controls.state.setValue(match ? match.name : '', { emitEvent: false });
+          this.companyForm.controls.cityId.setValue(null, { emitEvent: false });
+          this.companyForm.controls.city.setValue('', { emitEvent: false });
+          this.cityOptions.set([]);
+          this.loadCities(stateId);
+        } else {
+          this.companyForm.controls.state.setValue('', { emitEvent: false });
+          this.companyForm.controls.cityId.setValue(null, { emitEvent: false });
+          this.companyForm.controls.city.setValue('', { emitEvent: false });
+          this.cityOptions.set([]);
+        }
+      });
+
+    this.companyForm.controls.cityId.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(cityId => {
+        if (cityId) {
+          const match = this.rawCities().find(c => c.id === cityId);
+          this.companyForm.controls.city.setValue(match ? match.name : '', { emitEvent: false });
+        } else {
+          this.companyForm.controls.city.setValue('', { emitEvent: false });
+        }
+      });
+  }
+
+  private loadCountries(selectedCountryId?: string | null, selectedCountryName?: string, stateId?: string | null, stateName?: string, cityId?: string | null, cityName?: string): void {
+    this.apiService.get<any[]>('/geography/countries')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (countries: any) => {
+          const list = Array.isArray(countries) ? countries : (countries?.data || []);
+          this.rawCountries.set(list);
+          this.countryOptions.set(list.map((c: any) => ({ label: c.name, value: c.id })));
+
+          let targetCountryId = selectedCountryId;
+          if (!targetCountryId && selectedCountryName) {
+            const found = list.find((c: any) => c.name.toLowerCase() === selectedCountryName.toLowerCase());
+            if (found) targetCountryId = found.id;
+          }
+
+          if (targetCountryId) {
+            this.companyForm.controls.countryId.setValue(targetCountryId, { emitEvent: false });
+            const match = list.find((c: any) => c.id === targetCountryId);
+            if (match) this.companyForm.controls.country.setValue(match.name, { emitEvent: false });
+            this.loadStates(targetCountryId, stateId, stateName, cityId, cityName);
+          }
+        },
+        error: () => {},
+      });
+  }
+
+  loadStates(countryId: string, selectedStateId?: string | null, selectedStateName?: string, cityId?: string | null, cityName?: string): void {
+    this.apiService.get<any[]>('/geography/states', { countryId })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (states: any) => {
+          const list = Array.isArray(states) ? states : (states?.data || []);
+          this.rawStates.set(list);
+          this.stateOptions.set(list.map((s: any) => ({ label: s.name, value: s.id })));
+
+          let targetStateId = selectedStateId;
+          if (!targetStateId && selectedStateName) {
+            const found = list.find((s: any) => s.name.toLowerCase() === selectedStateName.toLowerCase());
+            if (found) targetStateId = found.id;
+          }
+
+          if (targetStateId) {
+            this.companyForm.controls.stateId.setValue(targetStateId, { emitEvent: false });
+            const match = list.find((s: any) => s.id === targetStateId);
+            if (match) this.companyForm.controls.state.setValue(match.name, { emitEvent: false });
+            this.loadCities(targetStateId, cityId, cityName);
+          }
+        },
+        error: () => {},
+      });
+  }
+
+  loadCities(stateId: string, selectedCityId?: string | null, selectedCityName?: string): void {
+    this.apiService.get<any[]>('/geography/cities', { stateId })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (cities: any) => {
+          const list = Array.isArray(cities) ? cities : (cities?.data || []);
+          this.rawCities.set(list);
+          this.cityOptions.set(list.map((c: any) => ({ label: c.name, value: c.id })));
+
+          let targetCityId = selectedCityId;
+          if (!targetCityId && selectedCityName) {
+            const found = list.find((c: any) => c.name.toLowerCase() === selectedCityName.toLowerCase());
+            if (found) targetCityId = found.id;
+          }
+
+          if (targetCityId) {
+            this.companyForm.controls.cityId.setValue(targetCityId, { emitEvent: false });
+            const match = list.find((c: any) => c.id === targetCityId);
+            if (match) this.companyForm.controls.city.setValue(match.name, { emitEvent: false });
+          }
+        },
+        error: () => {},
+      });
   }
 
   private hydrateFromService(s = this.settingsService.settings()): void {
@@ -320,10 +476,14 @@ export class CompanySettingsComponent implements OnInit {
       panNumber: s.panNumber,
       address: s.address,
       zipCode: s.zipCode,
+      countryId: s.countryId || null,
+      stateId: s.stateId || null,
+      cityId: s.cityId || null,
       country: s.country,
       state: s.state,
       city: s.city,
     });
+    this.loadCountries(s.countryId, s.country, s.stateId, s.state, s.cityId, s.city);
 
     this.localizationForm.patchValue({
       timezone: s.timezone,
@@ -367,8 +527,8 @@ export class CompanySettingsComponent implements OnInit {
       smtpFromEmail: s.smtpFromEmail,
       smtpFromName: s.smtpFromName,
       smtpReplyToEmail: s.smtpReplyToEmail,
-      smtpCcEmails: s.smtpCcEmails,
-      smtpBccEmails: s.smtpBccEmails,
+      smtpCcEmails: Array.isArray(s.smtpCcEmails) ? s.smtpCcEmails.join(', ') : (s.smtpCcEmails || ''),
+      smtpBccEmails: Array.isArray(s.smtpBccEmails) ? s.smtpBccEmails.join(', ') : (s.smtpBccEmails || ''),
     });
 
     this.integrationsForm.patchValue({
@@ -406,14 +566,34 @@ export class CompanySettingsComponent implements OnInit {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files[0]) {
       const file = input.files[0];
-      const reader = new FileReader();
-      reader.onload = e => {
-        this.logoPreviews.update(prev => ({
-          ...prev,
-          [key]: (e.target?.result as string) || '',
-        }));
-      };
-      reader.readAsDataURL(file);
+      this.uploadingLogo.update(prev => ({ ...prev, [key]: true }));
+
+      this.mediaUploadService.uploadFile(file, 'platform', 'logos').pipe(
+        takeUntilDestroyed(this.destroyRef),
+      ).subscribe({
+        next: res => {
+          this.uploadingLogo.update(prev => ({ ...prev, [key]: false }));
+          this.logoPreviews.update(prev => ({
+            ...prev,
+            [key]: res.relativePath || res.url,
+          }));
+          this.messageService.add({
+            severity: 'info',
+            summary: 'Image Uploaded',
+            detail: `${key} logo uploaded to media assets.`,
+            life: 2500,
+          });
+        },
+        error: err => {
+          this.uploadingLogo.update(prev => ({ ...prev, [key]: false }));
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Upload Failed',
+            detail: err?.error?.message || 'Could not upload image. Please try again.',
+            life: 4000,
+          });
+        },
+      });
     }
   }
 
@@ -478,6 +658,9 @@ export class CompanySettingsComponent implements OnInit {
       panNumber: (c.panNumber || '').trim(),
       address: (c.address || '').trim(),
       zipCode: (c.zipCode || '').trim(),
+      countryId: c.countryId || null,
+      stateId: c.stateId || null,
+      cityId: c.cityId || null,
       country: c.country || 'India',
       state: c.state || 'Maharashtra',
       city: c.city || 'Mumbai',
@@ -519,8 +702,8 @@ export class CompanySettingsComponent implements OnInit {
       smtpFromEmail: (s.smtpFromEmail || '').trim(),
       smtpFromName: (s.smtpFromName || '').trim(),
       smtpReplyToEmail: (s.smtpReplyToEmail || '').trim(),
-      smtpCcEmails: (s.smtpCcEmails || '').trim(),
-      smtpBccEmails: (s.smtpBccEmails || '').trim(),
+      smtpCcEmails: Array.isArray(s.smtpCcEmails) ? s.smtpCcEmails.join(', ') : String(s.smtpCcEmails || '').trim(),
+      smtpBccEmails: Array.isArray(s.smtpBccEmails) ? s.smtpBccEmails.join(', ') : String(s.smtpBccEmails || '').trim(),
 
       smsProvider: i.smsProvider || '',
       smsSenderId: (i.smsSenderId || '').trim(),

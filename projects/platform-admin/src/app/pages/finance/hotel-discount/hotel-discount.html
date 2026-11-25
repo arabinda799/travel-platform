@@ -9,7 +9,7 @@
     <lib-button
       variant="primary"
       icon="add"
-      (btnClick)="openAddModal()">
+      (click)="openAddModal()">
       Add Hotel Discount
     </lib-button>
   </div>
@@ -90,7 +90,7 @@
     [title]="modalTitle"
     icon="local_offer"
     width="50rem"
-    submitLabel="SAVE"
+    submitLabel="Save"
     submitIcon="check"
     [loading]="isSaving()"
     (submitted)="onSubmitDiscount()"

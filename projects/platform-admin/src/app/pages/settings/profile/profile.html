@@ -22,7 +22,7 @@
       <div class="avatar-card">
         <div class="avatar-wrapper">
           @if (profile().avatarUrl) {
-            <img [src]="profile().avatarUrl" [alt]="displayName()" class="avatar-img" />
+            <img [src]="resolveUrl(profile().avatarUrl)" [alt]="displayName()" class="avatar-img" />
           } @else {
             <div class="avatar-initials">{{ avatarInitials() }}</div>
           }
@@ -121,7 +121,7 @@
           <span class="icon">tune</span>
           <span>Preferences</span>
         </div>
-        <div class="form-grid one-col">
+        <div class="form-grid two-cols">
           <lib-select-field
             label="Timezone"
             [options]="timezoneOptions"

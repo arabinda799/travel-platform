@@ -102,6 +102,7 @@ export class CustomerListComponent implements OnInit {
   readonly modalVisible = signal<boolean>(false);
   readonly isEditing = signal<boolean>(false);
   readonly editingId = signal<string | null>(null);
+  readonly isSaving = signal<boolean>(false);
 
   // Confirm delete state
   readonly confirmDeleteVisible = signal<boolean>(false);
@@ -285,6 +286,7 @@ export class CustomerListComponent implements OnInit {
     };
 
     const fullName = `${payload.firstName} ${payload.lastName}`;
+    this.isSaving.set(true);
 
     const obs = this.isEditing() && this.editingId()
       ? this.customerService.update(this.editingId()!, payload)
@@ -292,11 +294,15 @@ export class CustomerListComponent implements OnInit {
 
     obs.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
+        this.isSaving.set(false);
         const msg = this.isEditing() ? `${fullName} has been updated.` : `${fullName} has been added.`;
         this.messageService.add({ severity: 'success', summary: this.isEditing() ? 'Updated' : 'Created', detail: msg });
         this.modalVisible.set(false);
       },
-      error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Operation failed.' }),
+      error: () => {
+        this.isSaving.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Operation failed.' });
+      },
     });
   }
 

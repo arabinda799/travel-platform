@@ -33,6 +33,7 @@ export * from './lib/utils/slug';
 export * from './lib/utils/date-format';
 export * from './lib/utils/export-csv';
 export * from './lib/utils/image-trim';
+export * from './lib/utils/cookie.util';
 
 // Filter Sidebar
 export * from './lib/components/filter-sidebar/filter-sidebar';
@@ -67,6 +68,10 @@ export * from './lib/services/api.service';
 export * from './lib/services/base-api-crud.service';
 export * from './lib/services/error-handler.service';
 export * from './lib/services/auth.service';
+export * from './lib/services/health.service';
+export * from './lib/services/page-mode.service';
+export * from './lib/services/media-upload.service';
+export * from './lib/services/hotel-autocomplete.service';
 
 // HTTP Interceptors
 export * from './lib/interceptors/auth.interceptor';

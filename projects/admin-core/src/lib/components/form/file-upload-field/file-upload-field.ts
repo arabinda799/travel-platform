@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DoCheck, inject, Injector, input, model, OnInit, output, signal } from '@angular/core';
 import { ControlValueAccessor, NgControl } from '@angular/forms';
 import { FormFieldComponent } from '../form-field/form-field';
+import { MediaUploadService } from '../../../services/media-upload.service';
 
 let nextId = 0;
 
@@ -15,6 +16,7 @@ let nextId = 0;
 export class FileUploadFieldComponent implements ControlValueAccessor, OnInit, DoCheck {
   private readonly injector = inject(Injector);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly mediaUploadService = inject(MediaUploadService);
   ngControl: NgControl | null = null;
 
   readonly inputId = input<string>(`lib-file-${++nextId}`);
@@ -27,7 +29,12 @@ export class FileUploadFieldComponent implements ControlValueAccessor, OnInit, D
   readonly disabled = input<boolean>(false);
   readonly clearable = input<boolean>(true);
 
-  // Model holds the value (string dataURL or file url)
+  // Upload parameters
+  readonly moduleName = input<string>('TEMP');
+  readonly moduleId = input<string>('temp');
+  readonly autoUpload = input<boolean>(true);
+
+  // Model holds the value (string uploaded file url)
   readonly value = model<string>('');
   readonly fileName = model<string>('');
   readonly previewUrl = model<string>('');
@@ -35,6 +42,8 @@ export class FileUploadFieldComponent implements ControlValueAccessor, OnInit, D
   readonly fileChanged = output<File | null>();
 
   readonly isTouched = signal<boolean>(false);
+  readonly isUploading = signal<boolean>(false);
+  readonly uploadError = signal<string>('');
 
   private onChange: (val: string) => void = () => {};
   private onTouched: () => void = () => {};
@@ -93,7 +102,7 @@ export class FileUploadFieldComponent implements ControlValueAccessor, OnInit, D
   writeValue(val: any): void {
     const str = val ?? '';
     this.value.set(str);
-    this.previewUrl.set(str);
+    this.previewUrl.set(str ? this.mediaUploadService.resolveUrl(str) : '');
     if (str && !this.fileName()) {
       const parts = str.split('/');
       this.fileName.set(parts[parts.length - 1].split('?')[0] || 'Image uploaded');
@@ -116,19 +125,35 @@ export class FileUploadFieldComponent implements ControlValueAccessor, OnInit, D
     if (input.files && input.files.length > 0) {
       const file = input.files[0];
       this.fileName.set(file.name);
+      this.uploadError.set('');
 
-      const reader = new FileReader();
-      reader.onload = () => {
-        const result = reader.result as string;
-        this.value.set(result);
-        this.previewUrl.set(result);
-        this.onChange(result);
-        this.ngControl?.control?.markAsDirty();
-        this.onTouched();
+      if (this.autoUpload()) {
+        this.isUploading.set(true);
         this.cdr.markForCheck();
+
+        this.mediaUploadService.uploadFile(file, this.moduleName(), this.moduleId()).subscribe({
+          next: res => {
+            const uploadedPath = res.relativePath || res.url;
+            this.value.set(uploadedPath);
+            this.previewUrl.set(res.url);
+            this.onChange(uploadedPath);
+            this.ngControl?.control?.markAsDirty();
+            this.onTouched();
+            this.isUploading.set(false);
+            this.cdr.markForCheck();
+            this.fileChanged.emit(file);
+          },
+          error: err => {
+            this.isUploading.set(false);
+            const msg = err?.error?.message || err?.message || 'Upload failed. Please try again.';
+            this.uploadError.set(msg);
+            this.cdr.markForCheck();
+            this.fileChanged.emit(file);
+          },
+        });
+      } else {
         this.fileChanged.emit(file);
-      };
-      reader.readAsDataURL(file);
+      }
     }
   }
 

@@ -37,6 +37,7 @@ export class TextFieldComponent implements ControlValueAccessor, OnInit, DoCheck
   readonly value = model<string>('');
 
   readonly blurred = output<void>();
+  readonly suffixClick = output<void>();
 
   readonly isTouched = signal<boolean>(false);
 
@@ -136,5 +137,9 @@ export class TextFieldComponent implements ControlValueAccessor, OnInit, DoCheck
     this.ngControl?.control?.markAsTouched();
     this.onTouched();
     this.cdr.markForCheck();
+  }
+
+  onSuffixClick(): void {
+    this.suffixClick.emit();
   }
 }

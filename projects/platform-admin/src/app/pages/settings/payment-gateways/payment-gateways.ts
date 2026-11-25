@@ -10,7 +10,7 @@ import { MessageService } from 'primeng/api';
 import {
   PageContainerComponent, DataTableComponent, ButtonComponent,
   StatusBadgeComponent, StatusModalComponent, FormModalComponent,
-  TextFieldComponent, TextareaFieldComponent, SelectFieldComponent,
+  TextFieldComponent, TextareaFieldComponent, SelectFieldComponent, FileUploadFieldComponent,
   TableActionComponent, ThumbImageComponent, TableColumn, TableLazyEvent, BreadcrumbItem,
 } from 'admin-core';
 import {
@@ -24,7 +24,7 @@ import {
     DatePipe, ReactiveFormsModule,
     PageContainerComponent, DataTableComponent, ButtonComponent,
     StatusBadgeComponent, StatusModalComponent, FormModalComponent,
-    TextFieldComponent, TextareaFieldComponent, SelectFieldComponent,
+    TextFieldComponent, TextareaFieldComponent, SelectFieldComponent, FileUploadFieldComponent,
     TableActionComponent, ThumbImageComponent,
   ],
   templateUrl: './payment-gateways.html',
@@ -88,6 +88,7 @@ export class PaymentGatewaysComponent implements OnInit {
   readonly isSaving = signal<boolean>(false);
   readonly editingGatewayId = signal<string | null>(null);
   readonly isModeDropdownOpen = signal<boolean>(false);
+  readonly gatewayImageFileName = signal<string>('');
 
   gatewayForm: FormGroup = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(2)]],
@@ -122,6 +123,7 @@ export class PaymentGatewaysComponent implements OnInit {
 
   openAddModal(): void {
     this.editingGatewayId.set(null);
+    this.gatewayImageFileName.set('');
     this.gatewayForm.reset({
       name: '', image: '', paymentModes: [...ALL_PAYMENT_MODES], remark: '',
       credentialsJson: JSON.stringify({ key: '', salt: '', merchantId: '', environment: 'production' }, null, 2),
@@ -133,6 +135,7 @@ export class PaymentGatewaysComponent implements OnInit {
 
   openEditModal(gateway: PaymentGateway): void {
     this.editingGatewayId.set(gateway.id);
+    this.gatewayImageFileName.set(gateway.image ? gateway.image.split('/').pop() || 'logo' : '');
     this.gatewayForm.patchValue({
       name: gateway.name, image: gateway.image, paymentModes: [...gateway.paymentModes],
       remark: gateway.remark, credentialsJson: JSON.stringify(gateway.credentials || {}, null, 2),
